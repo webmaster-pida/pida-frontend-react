@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import LandingPage from './pages/LandingPage';
 import AuthModal from './components/AuthModal';
 import Dashboard from './pages/Dashboard';
+import SystemBanner from './components/SystemBanner'; // <--- 1. IMPORTAR
 import { auth } from './config/firebase';
 
 function App() {
@@ -21,6 +22,9 @@ function App() {
 
   return (
     <>
+      {/* <--- 2. COLOCAR EL BANNER AQUÍ ARRIBA ---> */}
+      <SystemBanner /> 
+
       {!user ? (
         <>
           <LandingPage 
