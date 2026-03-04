@@ -1,10 +1,12 @@
+import React from 'react';
+import LandingPage from './pages/LandingPage';
+
 function App() {
   return (
-    <div>
-      <h1>Migración a React Iniciada 🚀</h1>
-      <p>Nuestra configuración base funciona perfectamente.</p>
-    </div>
-  )
+    <>
+      <LandingPage />
+    </>
+  );
 }
 
-export default App
+export default App;
