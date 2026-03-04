@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function LandingPage() {
+export default function LandingPage({ onOpenAuth }) {
   return (
     <div id="landing-page-root">
       {/* HEADER / NAVBAR */}
@@ -41,7 +41,7 @@ export default function LandingPage() {
               </p>
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
                 {/* Nota: Más adelante le daremos la función de abrir el modal a este botón */}
-                <button id="cta-hero" className="btn btn-primary trigger-login">
+                <button id="cta-hero" className="btn btn-primary trigger-login" onClick={onOpenAuth}>
                   Entrar a PIDA
                 </button>
               </div>
