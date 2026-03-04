@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { Exporter, getTimestampedName } from '../utils/exporter';
 
 const API_PRE = "https://precalifier-v20-stripe-elements-465781488910.us-central1.run.app";
 
-export default function PrequalifierInterface({ user }) {
+export default function PrequalifierInterface({ user, resetSignal }) {
   // Estados para los inputs del usuario
   const [title, setTitle] = useState('');
   const [country, setCountry] = useState('');
@@ -24,6 +25,13 @@ export default function PrequalifierInterface({ user }) {
     setError('');
     setStatusMsg('Analizando delitos y violaciones a DDHH...');
   };
+
+  // Escuchar la señal desde la barra superior (Dashboard) para limpiar
+  useEffect(() => {
+    if (resetSignal > 0) {
+      handleClear();
+    }
+  }, [resetSignal]);
 
   // Enviar a analizar
   const handleAnalyze = async () => {
@@ -138,8 +146,18 @@ export default function PrequalifierInterface({ user }) {
 
       </div>
 
-      {/* Formulario */}
+      {/* Formulario e inputs */}
       <div className="pida-view-form">
+        
+        {/* Botones de Descarga (Solo se muestran si hay un análisis completado) */}
+        {resultText && (
+          <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '10px' }}>
+            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Precalificador-PIDA"), "Precalificación de Caso", resultText)}>TXT</button>
+            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Precalificador-PIDA"), "Precalificación de Caso", resultText)}>DOCX</button>
+            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Precalificador-PIDA"), "Precalificación de Caso", resultText)}>PDF</button>
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
           <input 
             type="text" 

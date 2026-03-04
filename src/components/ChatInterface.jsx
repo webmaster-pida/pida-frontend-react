@@ -1,15 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { Exporter, getTimestampedName } from '../utils/exporter';
 
-// Definimos la ruta de tu API
 const API_CHAT = "https://chat-v20-stripe-elements-465781488910.us-central1.run.app";
 
-export default function ChatInterface({ user }) {
+export default function ChatInterface({ user, resetSignal }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [chatId, setChatId] = useState(null);
   const messagesEndRef = useRef(null);
+
+  // Escuchar la señal desde la barra superior (Dashboard) para iniciar un Nuevo Chat
+  useEffect(() => {
+    if (resetSignal > 0) {
+      setMessages([]);
+      setChatId(null);
+      setInput('');
+    }
+  }, [resetSignal]);
 
   // Efecto para hacer auto-scroll hacia abajo cuando hay un mensaje nuevo
   useEffect(() => {
@@ -136,8 +145,18 @@ export default function ChatInterface({ user }) {
         </div>
       </div>
 
-      {/* Formulario de envío */}
+      {/* Formulario de envío y Descargas */}
       <form className="pida-view-form" onSubmit={handleSend}>
+        
+        {/* BOTONES DE DESCARGA (Solo se muestran si hay mensajes) */}
+        {messages.length > 0 && (
+          <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '8px' }}>
+            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>TXT</button>
+            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>DOCX</button>
+            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>PDF</button>
+          </div>
+        )}
+
         <textarea 
           className="pida-textarea" 
           rows="2" 
