@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import LandingPage from './pages/LandingPage';
 import AuthModal from './components/AuthModal';
-import Dashboard from './pages/Dashboard'; // Importamos el Dashboard
+import Dashboard from './pages/Dashboard';
 import { auth } from './config/firebase';
 
 function App() {
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalConfig, setAuthModalConfig] = useState({ isOpen: false, mode: 'login' });
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -23,14 +23,16 @@ function App() {
     <>
       {!user ? (
         <>
-          <LandingPage onOpenAuth={() => setIsAuthModalOpen(true)} />
+          <LandingPage 
+            onOpenAuth={(mode = 'login') => setAuthModalConfig({ isOpen: true, mode })} 
+          />
           <AuthModal 
-            isOpen={isAuthModalOpen} 
-            onClose={() => setIsAuthModalOpen(false)} 
+            isOpen={authModalConfig.isOpen} 
+            initialMode={authModalConfig.mode}
+            onClose={() => setAuthModalConfig({ isOpen: false, mode: 'login' })} 
           />
         </>
       ) : (
-        /* Renderizamos el Dashboard pasándole el usuario */
         <Dashboard user={user} />
       )}
     </>

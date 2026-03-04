@@ -1,37 +1,62 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { STRIPE_PRICES } from '../config/constants';
 
 export default function LandingPage({ onOpenAuth }) {
+  // Estados para controlar los precios
+  const [interval, setInterval] = useState('monthly'); // 'monthly' o 'annual'
+  const [currency, setCurrency] = useState('USD');     // 'USD' o 'MXN'
+
+  // Detección automática de ubicación para ajustar moneda (como tenías en Vanilla JS)
+  useEffect(() => {
+    const detectLocation = async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const response = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+        const data = await response.json();
+        clearTimeout(timeoutId);
+        
+        if (data.country_code === 'MX') {
+          setCurrency('MXN');
+        }
+      } catch (e) {
+        // Fallback por zona horaria
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (/Mexico|Monterrey|Chihuahua|Tijuana|Cancun/i.test(tz)) {
+          setCurrency('MXN');
+        }
+      }
+    };
+    detectLocation();
+  }, []);
+
+  // Función al hacer clic en un plan
+  const handleSelectPlan = (planKey) => {
+    // Guardamos las opciones para que el AuthModal sepa qué cobrar
+    sessionStorage.setItem('pida_pending_plan', planKey);
+    sessionStorage.setItem('pida_pending_interval', interval);
+    localStorage.setItem('pida_currency', currency);
+    
+    // Abrimos el modal
+    onOpenAuth('register');
+  };
+
   return (
     <div id="landing-page-root">
-      {/* HEADER / NAVBAR */}
       <header className="nav" id="navbar">
         <div className="wrapper nav-inner">
           <nav className="nav-menu">
             <a href="#diferencia" className="nav-link">Diferencia PIDA</a>
-            <a href="#bondades" className="nav-link">Bondades</a>
             <a href="#planes" className="nav-link">Planes</a>
-            <div className="nav-dropdown-container">
-              <span className="nav-link" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                Newsletter <span style={{ fontSize: '0.7em' }}>▼</span>
-              </span>
-              <div className="nav-dropdown-menu">
-                <a href="/newsletter-001.pdf" target="_blank" rel="noreferrer">Enero 2026</a>
-                <a href="/newsletter-002.pdf" target="_blank" rel="noreferrer">Febrero 2026</a>
-                <a href="/newsletter-003.pdf" target="_blank" rel="noreferrer">Marzo 2026</a>
-              </div>
-            </div>
           </nav>
         </div>
       </header>
 
       <main>
-        {/* SECCIÓN HERO */}
         <section className="hero">
           <div className="wrapper hero-grid">
             <div className="hero-content">
-              <div>
-                <img src="/img/PIDA_logo-576.png" alt="Logo PIDA" />
-              </div>
+              <div><img src="/img/PIDA_logo-576.png" alt="Logo PIDA" /></div>
               <h1>
                 Inteligencia Aumentada para la Defensa de los <br />
                 <span className="text-gradient">Derechos Humanos</span>
@@ -40,46 +65,102 @@ export default function LandingPage({ onOpenAuth }) {
                 Los asistentes de Inteligencia Artificial genéricos son un océano de información, pero sin un ancla, pueden llevarte a la deriva con datos imprecisos.
               </p>
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
-                {/* Nota: Más adelante le daremos la función de abrir el modal a este botón */}
-                <button id="cta-hero" className="btn btn-primary trigger-login" onClick={onOpenAuth}>
+                <button className="btn btn-primary" onClick={() => onOpenAuth('login')}>
                   Entrar a PIDA
                 </button>
               </div>
             </div>
-            
             <div className="hero-visual-column">
               <img style={{ borderRadius: '8px' }} src="/img/PIDA-MASCOTA-576-trans.png" alt="Robot PIDA" />
-              <div className="video-trigger-wrapper">
-                <button id="open-video-modal-btn" className="video-link-btn">
-                  <div className="play-icon-circle">▶</div>
-                  <span>Ver video</span>
-                </button>
-              </div>
             </div>
           </div>
         </section>
 
-        {/* SECCIÓN BONDADES (Ejemplo) */}
-        <section id="bondades" style={{ background: '#FAFAFA' }}>
+        {/* SECCIÓN DE PLANES CON LÓGICA REACTIVA */}
+        <section id="planes">
           <div className="wrapper">
-            <h2 style={{ marginBottom: '40px', textAlign: 'center' }}>Bondades únicas de PIDA</h2>
-            <div className="bento-grid">
-              <div className="bento-card">
-                <h3 className="bento-title">Respuestas Ancladas, no Adivinanzas</h3>
-                <p>Cada respuesta está fundamentada y prioriza el conocimiento del IIRESODH. Esto le da un nivel de fiabilidad y precisión que las IAs genéricas no pueden ofrecer.</p>
+            <div className="section-intro">
+              <h2>Planes Flexibles</h2>
+              <p style={{ marginBottom: '10px' }}>Selecciona el plan que mejor se adapte a tu nivel de investigación.</p>
+              <p style={{ color: '#0284C7', fontWeight: 700, fontSize: '1.1rem', marginBottom: '20px' }}>
+                Todos los planes incluyen 5 días de prueba sin costo
+              </p>
+            </div>
+
+            {/* SWITCH MENSUAL / ANUAL */}
+            <div className="billing-toggle-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginBottom: '40px' }}>
+              <span style={{ fontWeight: 700, color: interval === 'monthly' ? 'var(--pida-primary)' : '#94a3b8', transition: '0.3s' }}>
+                Mensual
+              </span>
+              
+              <label className="switch">
+                <input 
+                  type="checkbox" 
+                  checked={interval === 'annual'} 
+                  onChange={(e) => setInterval(e.target.checked ? 'annual' : 'monthly')} 
+                />
+                <span className="slider round"></span>
+              </label>
+
+              <span style={{ fontWeight: 700, color: interval === 'annual' ? 'var(--pida-primary)' : '#94a3b8', transition: '0.3s', position: 'relative' }}>
+                Anual
+                {interval === 'annual' && <span className="discount-badge" style={{ display: 'inline-block' }}>¡Dos meses gratis!</span>}
+              </span>
+            </div>
+
+            {/* TARJETAS DE PRECIOS DINÁMICAS */}
+            <div className="pricing-grid">
+              
+              {/* Básico */}
+              <div className="pricing-card">
+                <h3>Básico</h3>
+                <div className="price-container">
+                  <span className="price-val">{STRIPE_PRICES.basico[interval][currency].text}</span>
+                  <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
+                </div>
+                <ul className="plan-features">
+                  <li>✅ Newsletter mensual</li>
+                  <li>✅ 5 consultas diarias</li>
+                  <li>✅ 3 análisis de documentos</li>
+                  <li>❌ Sin precalificador</li>
+                </ul>
+                <button className="btn btn-primary plan-cta" onClick={() => handleSelectPlan('basico')}>Elegir Básico</button>
               </div>
-              <div className="bento-card">
-                <h3 className="bento-title">Lo Mejor de Dos Mundos</h3>
-                <p>Combina la sabiduría especializada del IIRESODH con la capacidad de razonamiento y redacción de un modelo de IA de vanguardia.</p>
+
+              {/* Avanzado */}
+              <div className="pricing-card featured">
+                <div className="card-badge">Más Popular</div>
+                <h3>Avanzado</h3>
+                <div className="price-container">
+                  <span className="price-val">{STRIPE_PRICES.avanzado[interval][currency].text}</span>
+                  <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
+                </div>
+                <ul className="plan-features">
+                  <li>✅ 20 consultas diarias</li>
+                  <li>✅ 15 análisis de documentos</li>
+                  <li>✅ 20 precalificaciones diarias</li>
+                </ul>
+                <button className="btn btn-primary plan-cta" onClick={() => handleSelectPlan('avanzado')}>Elegir Avanzado</button>
               </div>
-              <div className="bento-card">
-                <h3 className="bento-title">Eficiencia Acelerada</h3>
-                <p>El "Analizador de Documentos" sigue siendo tu experto incansable, capaz de procesar tus archivos y extraer información clave en minutos.</p>
+
+              {/* Premium */}
+              <div className="pricing-card">
+                <h3>Premium</h3>
+                <div className="price-container">
+                  <span className="price-val">{STRIPE_PRICES.premium[interval][currency].text}</span>
+                  <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
+                </div>
+                <ul className="plan-features">
+                  <li>✅ 100 consultas diarias</li>
+                  <li>✅ 25 análisis de documentos</li>
+                  <li>✅ 100 precalificaciones diarias</li>
+                </ul>
+                <button className="btn btn-primary plan-cta" onClick={() => handleSelectPlan('premium')}>Elegir Premium</button>
               </div>
+
             </div>
           </div>
         </section>
-
       </main>
     </div>
   );
