@@ -3,12 +3,34 @@ import ReactMarkdown from 'react-markdown';
 
 const API_ANA = "https://analize-v20-stripe-elements-465781488910.us-central1.run.app";
 
-export default function AnalyzerInterface({ user }) {
+export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [files, setFiles] = useState([]);
   const [instructions, setInstructions] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [resultText, setResultText] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (loadAnaId) {
+      const loadPastAna = async () => {
+        setIsAnalyzing(true);
+        try {
+          const token = await user.getIdToken();
+          const res = await fetch(`${API_ANA}/analysis-history/${loadAnaId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          setResultText(data.analysis);
+          setFiles([]); // Vaciamos los chips de archivos locales
+        } catch (err) {
+          setError("Error cargando el análisis guardado.");
+        } finally {
+          setIsAnalyzing(false);
+        }
+      };
+      loadPastAna();
+    }
+  }, [loadAnaId, user]);
   
   // Referencia para ocultar el input real de archivos y usar el botón bonito
   const fileInputRef = useRef(null);

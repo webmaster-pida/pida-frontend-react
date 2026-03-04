@@ -4,7 +4,7 @@ import { Exporter, getTimestampedName } from '../utils/exporter';
 
 const API_PRE = "https://precalifier-v20-stripe-elements-465781488910.us-central1.run.app";
 
-export default function PrequalifierInterface({ user, resetSignal }) {
+export default function PrequalifierInterface({ user, resetSignal, loadPreData }) {
   // Estados para los inputs del usuario
   const [title, setTitle] = useState('');
   const [country, setCountry] = useState('');
@@ -32,6 +32,16 @@ export default function PrequalifierInterface({ user, resetSignal }) {
       handleClear();
     }
   }, [resetSignal]);
+
+  useEffect(() => {
+    if (loadPreData) {
+      setTitle(loadPreData.title || '');
+      setCountry(loadPreData.country_code || '');
+      setFacts(loadPreData.facts || '');
+      setResultText(loadPreData.analysis || '');
+      setError('');
+    }
+  }, [loadPreData]);
 
   // Enviar a analizar
   const handleAnalyze = async () => {

@@ -4,7 +4,7 @@ import { Exporter, getTimestampedName } from '../utils/exporter';
 
 const API_CHAT = "https://chat-v20-stripe-elements-465781488910.us-central1.run.app";
 
-export default function ChatInterface({ user, resetSignal }) {
+export default function ChatInterface({ user, resetSignal, loadChatId }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -24,6 +24,26 @@ export default function ChatInterface({ user, resetSignal }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  // Escuchar cuando el usuario hace clic en el historial del Dashboard
+  useEffect(() => {
+    if (loadChatId) {
+      const loadPastChat = async () => {
+        try {
+          const token = await user.getIdToken();
+          const res = await fetch(`${API_CHAT}/conversations/${loadChatId}/messages`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const msgs = await res.json();
+          setChatId(loadChatId);
+          setMessages(msgs);
+        } catch (err) {
+          console.error("Error cargando chat", err);
+        }
+      };
+      loadPastChat();
+    }
+  }, [loadChatId, user]);
 
   // Función para crear una nueva conversación en el backend
   const startConversation = async () => {
