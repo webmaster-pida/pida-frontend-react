@@ -4,31 +4,36 @@ import ChatInterface from '../components/ChatInterface';
 import AnalyzerInterface from '../components/AnalyzerInterface';
 import PrequalifierInterface from '../components/PrequalifierInterface';
 import AccountInterface from '../components/AccountInterface';
-import { db } from '../config/firebase';
+// Se agrega 'auth' a la importación para que el botón de cerrar sesión sea funcional
+import { db, auth } from '../config/firebase'; 
 import { PIDA_CONFIG } from '../config/constants';
 
 export default function Dashboard({ user }) {
   const [currentView, setCurrentView] = useState('investigador'); 
   
-  // Estados de acceso y carga
+  // --- NUEVOS ESTADOS DE SEGURIDAD (SIN AFECTAR LO ANTERIOR) ---
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
   const [hasValidAccess, setHasValidAccess] = useState(false);
 
-  // Estados del Plan
-  const [userPlan, setUserPlan] = useState('basico');
+  // Estados para el Plan
+  const [userPlan, setUserPlan] = useState('basico'); 
   const [isVip, setIsVip] = useState(false);
   const [isTrial, setIsTrial] = useState(false);
 
-  // Estados de limpieza y limpieza
+  // Estados de limpieza (Gatillos)
   const [resetChat, setResetChat] = useState(0);
   const [resetAna, setResetAna] = useState(0);
   const [resetPre, setResetPre] = useState(0);
 
+  // --- ESTADOS PARA LOS HISTORIALES ---
   const [chatHistory, setChatHistory] = useState([]);
   const [anaHistory, setAnaHistory] = useState([]);
   const [preHistory, setPreHistory] = useState([]);
+
+  // Control visual de los menús desplegables
   const [showMenu, setShowMenu] = useState({ chat: false, ana: false, pre: false });
 
+  // IDs seleccionados para cargar
   const [loadChatId, setLoadChatId] = useState(null);
   const [loadAnaId, setLoadAnaId] = useState(null);
   const [loadPreData, setLoadPreData] = useState(null);
@@ -36,12 +41,12 @@ export default function Dashboard({ user }) {
   useEffect(() => {
     if (!user) return;
 
+    // Lógica de validación de acceso
     let vipConfirmed = false;
     let stripeConfirmed = false;
 
-    // Función para validar acceso total
-    const validateAccess = (vipStatus, stripeStatus) => {
-      if (vipStatus || stripeStatus === 'active' || stripeStatus === 'trialing') {
+    const validateFinalAccess = (vip, stripeStatus) => {
+      if (vip || stripeStatus === 'active' || stripeStatus === 'trialing') {
         setHasValidAccess(true);
       } else {
         setHasValidAccess(false);
@@ -49,47 +54,36 @@ export default function Dashboard({ user }) {
       setIsCheckingAccess(false);
     };
 
-    // 1. Verificar acceso VIP (Backend)
     const checkVip = async () => {
       try {
         const token = await user.getIdToken();
-        const res = await fetch(`${PIDA_CONFIG.API_CHAT}/check-vip-access`, { 
-          method: 'POST', 
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await fetch(`${PIDA_CONFIG.API_CHAT}/check-vip-access`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }});
         if (res.ok) {
           const data = await res.json();
-          const isVipUser = data.is_vip_user;
-          setIsVip(isVipUser);
-          vipConfirmed = isVipUser;
-          if (isVipUser) validateAccess(true, null);
+          const vipVal = data.is_vip_user;
+          setIsVip(vipVal);
+          vipConfirmed = vipVal;
+          if (vipVal) validateFinalAccess(true, null);
         }
-      } catch (e) {
-        console.error("Error VIP:", e);
-      }
+      } catch (e) {}
     };
     checkVip();
 
-    // 2. Verificar Suscripción Stripe (Firestore)
     const unsubscribe = db.collection('customers').doc(user.uid).onSnapshot((doc) => {
       if (doc.exists) {
         const data = doc.data();
-        const status = data.status;
-        stripeConfirmed = (status === 'active' || status === 'trialing');
-        
-        setUserPlan(data.plan || 'basico');
-        setIsTrial(data.has_trial || false);
-        
-        validateAccess(vipConfirmed, status);
+        if (data.status === 'active' || data.status === 'trialing') {
+          setUserPlan(data.plan || 'basico');
+          setIsTrial(data.has_trial || false);
+          stripeConfirmed = true;
+        }
+        validateFinalAccess(vipConfirmed, data.status);
       } else {
-        // Si no hay documento en 'customers', no hay pago registrado
         if (!vipConfirmed) {
           setHasValidAccess(false);
           setIsCheckingAccess(false);
         }
       }
-    }, (error) => {
-      setIsCheckingAccess(false);
     });
 
     fetchChatHistory();
@@ -99,24 +93,66 @@ export default function Dashboard({ user }) {
     return () => unsubscribe();
   }, [user]);
 
-  // Funciones de historial (se mantienen igual)
-  const fetchChatHistory = async () => { /* ... */ };
-  const fetchAnaHistory = async () => { /* ... */ };
-  const fetchPreHistory = async () => { /* ... */ };
+  // --- TUS FUNCIONES ORIGINALES (SIN MODIFICAR UNA SOLA LETRA) ---
+  const fetchChatHistory = async () => {
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${PIDA_CONFIG.API_CHAT}/conversations`, { headers: { 'Authorization': `Bearer ${token}` }});
+      if (res.ok) setChatHistory(await res.json());
+    } catch (e) { console.error("Error chats", e); }
+  };
 
-  // --- LÓGICA DE RENDERIZADO CONDICIONAL ---
+  const fetchAnaHistory = async () => {
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${PIDA_CONFIG.API_ANA}/analysis-history/`, { headers: { 'Authorization': `Bearer ${token}` }});
+      if (res.ok) setAnaHistory(await res.json());
+    } catch (e) { console.error("Error análisis", e); }
+  };
 
-  // 1. Pantalla de carga inicial
+  const fetchPreHistory = async () => {
+    try {
+      const snap = await db.collection('users').doc(user.uid).collection('prequalifications').orderBy('created_at', 'desc').limit(20).get();
+      setPreHistory(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (e) { console.error("Error precalificaciones", e); }
+  };
+
+  const deleteChat = async (id, e) => {
+    e.stopPropagation();
+    try {
+      const token = await user.getIdToken();
+      await fetch(`${PIDA_CONFIG.API_CHAT}/conversations/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }});
+      fetchChatHistory();
+    } catch (err) {}
+  };
+
+  const deleteAna = async (id, e) => {
+    e.stopPropagation();
+    try {
+      const token = await user.getIdToken();
+      await fetch(`${PIDA_CONFIG.API_ANA}/analysis-history/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }});
+      fetchAnaHistory();
+    } catch (err) {}
+  };
+
+  const deletePre = async (id, e) => {
+    e.stopPropagation();
+    try {
+      await db.collection('users').doc(user.uid).collection('prequalifications').doc(id).delete();
+      fetchPreHistory();
+    } catch (err) {}
+  };
+
+  // --- VISTAS DE BLOQUEO (PARA QUE LOS BOTONES FUNCIONEN) ---
   if (isCheckingAccess) {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: '#f9fafb' }}>
         <div className="loader"></div>
-        <p style={{ marginTop: '20px', color: '#666', fontFamily: 'sans-serif' }}>Verificando credenciales de acceso...</p>
+        <p style={{ marginTop: '20px', color: '#666' }}>Verificando suscripción...</p>
       </div>
     );
   }
 
-  // 2. Bloqueo si no tiene acceso válido (Stripe fallido o sin pagar)
   if (!hasValidAccess) {
     return (
       <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f3f4f6', padding: '20px' }}>
@@ -126,13 +162,13 @@ export default function Dashboard({ user }) {
           <button 
             className="pida-button-primary" 
             style={{ marginTop: '25px', width: '100%' }}
-            onClick={() => window.location.href = '/'} // O a tu URL de checkout de Stripe
+            onClick={() => window.location.href = 'https://pida-ai.com/#planes'}
           >
             Ir a Planes de Suscripción
           </button>
           <button 
-            style={{ marginTop: '15px', background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', textDecoration: 'underline' }}
-            onClick={() => auth.signOut()}
+            style={{ marginTop: '15px', background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', textDecoration: 'underline', width: '100%' }}
+            onClick={() => auth.signOut().then(() => window.location.href = '/')}
           >
             Cerrar sesión
           </button>
@@ -141,7 +177,7 @@ export default function Dashboard({ user }) {
     );
   }
 
-  // 3. Renderizado normal (Solo si pasó las validaciones anteriores)
+  // --- RENDERIZADO ORIGINAL (SIN MODIFICAR NADA) ---
   let displayPlan = isVip ? 'VIP 🌟' : userPlan.charAt(0).toUpperCase() + userPlan.slice(1);
   if (displayPlan === 'Basico' || displayPlan === 'Basic') displayPlan = 'Básico';
   if (isTrial && !isVip) displayPlan += ' (Prueba)';
@@ -151,21 +187,96 @@ export default function Dashboard({ user }) {
   return (
     <div id="pida-app-layout" onClick={closeMenus}>
       <Sidebar currentView={currentView} setCurrentView={setCurrentView} user={user} />
+
       <main id="pida-main-content">
         <header className="pida-top-header">
-           <div className="pida-context-controls">
-             {/* ... Controles de Chat, Analizador, Precalificador ... */}
-             <div className={`plan-badge plan-${userPlan} ${isVip ? 'vip-active' : ''}`}>
-               Plan: <strong className={isVip ? 'vip-text' : ''}>{displayPlan}</strong>
-             </div>
-             <img src="/img/PIDA-MASCOTA-menu.png" alt="PIDA Mascota" className="pida-header-mascot" />
-           </div>
+          <div className="pida-context-controls">
+            
+            {currentView === 'investigador' && (
+              <div className="context-group">
+                <button className="pida-header-btn primary" onClick={() => { setResetChat(prev => prev + 1); setLoadChatId(null); fetchChatHistory(); }}>+ Nuevo Chat</button>
+                <div className="pida-dropdown">
+                  <button className="pida-header-btn" onClick={(e) => { e.stopPropagation(); setShowMenu({ chat: !showMenu.chat, ana: false, pre: false }); fetchChatHistory(); }}>
+                    Chats Previos <span style={{ fontSize: '0.7rem' }}>▼</span>
+                  </button>
+                  {showMenu.chat && (
+                    <div className="pida-dropdown-content show">
+                      {chatHistory.length === 0 ? <div style={{ padding: '15px', textAlign: 'center', color: '#999' }}>No hay consultas previas.</div> : null}
+                      {chatHistory.map(c => (
+                        <div key={c.id} className={`pida-history-item ${loadChatId === c.id ? 'active' : ''}`}>
+                          <span className="pida-history-item-title" onClick={() => { setLoadChatId(c.id); setShowMenu({ chat: false, ana: false, pre: false }); }}>{c.title || "Sin título"}</span>
+                          <button className="delete-icon-btn" onClick={(e) => deleteChat(c.id, e)}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {currentView === 'analizador' && (
+              <div className="context-group">
+                <button className="pida-header-btn primary" onClick={() => { setResetAna(prev => prev + 1); setLoadAnaId(null); fetchAnaHistory(); }}>+ Nuevo Análisis</button>
+                <div className="pida-dropdown">
+                  <button className="pida-header-btn" onClick={(e) => { e.stopPropagation(); setShowMenu({ chat: false, ana: !showMenu.ana, pre: false }); fetchAnaHistory(); }}>
+                    Análisis Previos <span style={{ fontSize: '0.7rem' }}>▼</span>
+                  </button>
+                  {showMenu.ana && (
+                    <div className="pida-dropdown-content show">
+                      {anaHistory.length === 0 ? <div style={{ padding: '15px', textAlign: 'center', color: '#999' }}>No hay análisis previos.</div> : null}
+                      {anaHistory.map(a => (
+                        <div key={a.id} className={`pida-history-item ${loadAnaId === a.id ? 'active' : ''}`}>
+                          <span className="pida-history-item-title" onClick={() => { setLoadAnaId(a.id); setShowMenu({ chat: false, ana: false, pre: false }); }}>{a.title || "Sin título"}</span>
+                          <button className="delete-icon-btn" onClick={(e) => deleteAna(a.id, e)}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {currentView === 'precalificador' && (
+              <div className="context-group">
+                <button className="pida-header-btn primary" onClick={() => { setResetPre(prev => prev + 1); setLoadPreData(null); fetchPreHistory(); }}>+ Nueva Precalificación</button>
+                <div className="pida-dropdown">
+                  <button className="pida-header-btn" onClick={(e) => { e.stopPropagation(); setShowMenu({ chat: false, ana: false, pre: !showMenu.pre }); fetchPreHistory(); }}>
+                    Historial <span style={{ fontSize: '0.7rem' }}>▼</span>
+                  </button>
+                  {showMenu.pre && (
+                    <div className="pida-dropdown-content show">
+                      {preHistory.length === 0 ? <div style={{ padding: '15px', textAlign: 'center', color: '#999' }}>No hay historial.</div> : null}
+                      {preHistory.map(p => (
+                        <div key={p.id} className="pida-history-item">
+                          <span className="pida-history-item-title" onClick={() => { setLoadPreData(p); setShowMenu({ chat: false, ana: false, pre: false }); }}>{p.title || "Sin título"}</span>
+                          <button className="delete-icon-btn" onClick={(e) => deletePre(p.id, e)}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {currentView === 'cuenta' && (
+              <div className="context-group">
+                <h2 style={{ margin:0, fontSize: '1.2rem', color: 'var(--pida-primary)' }}>Gestión de Cuenta</h2>
+              </div>
+            )}
+            
+            <div className={`plan-badge plan-${userPlan} ${isVip ? 'vip-active' : ''}`}>
+              Plan: <strong className={isVip ? 'vip-text' : ''}>{displayPlan}</strong>
+            </div>
+            
+            <img src="/img/PIDA-MASCOTA-menu.png" alt="PIDA Mascota" className="pida-header-mascot" />
+          </div>
         </header>
 
         {currentView === 'investigador' && <ChatInterface user={user} resetSignal={resetChat} loadChatId={loadChatId} refreshHistory={fetchChatHistory} />}
         {currentView === 'analizador' && <AnalyzerInterface user={user} resetSignal={resetAna} loadAnaId={loadAnaId} />}
         {currentView === 'precalificador' && <PrequalifierInterface user={user} resetSignal={resetPre} loadPreData={loadPreData} />}
         {currentView === 'cuenta' && <AccountInterface user={user} isVip={isVip} />}
+
       </main>
     </div>
   );
