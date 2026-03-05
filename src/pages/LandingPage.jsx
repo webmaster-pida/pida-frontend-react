@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { STRIPE_PRICES } from '../config/constants';
-import { db } from '../config/firebase'; // <- IMPORTANTE: Agregado para el formulario corporativo
+import { db } from '../config/firebase'; 
 
 export default function LandingPage({ onOpenAuth }) {
   // Estados para controlar los precios
@@ -10,7 +10,10 @@ export default function LandingPage({ onOpenAuth }) {
   // Estado para controlar el carrusel de testimonios
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // --- ESTADOS PARA EL FORMULARIO CORPORATIVO (RESTAURADO) ---
+  // --- NUEVO: ESTADO PARA EL MENÚ NEWSLETTER ---
+  const [showNewsletter, setShowNewsletter] = useState(false);
+
+  // --- ESTADOS PARA EL FORMULARIO CORPORATIVO ---
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({
       name: '', company: '', email: '', confirmEmail: '', countryCode: '+503', phone: '', message: ''
@@ -57,11 +60,10 @@ export default function LandingPage({ onOpenAuth }) {
     onOpenAuth('register');
   };
 
-  // --- FUNCIÓN RESTAURADA: ENVÍO A LEADS CORPORATIVOS ---
+  // ENVÍO A LEADS CORPORATIVOS 
   const handleContactSubmit = async (e) => {
       e.preventDefault();
       
-      // VERIFICACIÓN: ¿Coinciden los correos? (Tal como lo tenías)
       if (contactForm.email !== contactForm.confirmEmail) {
           setContactStatus({ text: '❌ Los correos electrónicos no coinciden.', type: 'error', isSubmitting: false });
           return;
@@ -75,7 +77,7 @@ export default function LandingPage({ onOpenAuth }) {
           email: contactForm.email,
           phone: `${contactForm.countryCode} ${contactForm.phone}`,
           message: contactForm.message,
-          createdAt: new Date(), // Usamos Date nativo equivalente a serverTimestamp
+          createdAt: new Date(), 
           status: 'nuevo'
       };
 
@@ -83,7 +85,6 @@ export default function LandingPage({ onOpenAuth }) {
           await db.collection('leads_corporativos').add(leadData);
           setContactStatus({ text: 'Datos recibidos. Te contactaremos pronto.', type: 'success', isSubmitting: false });
           
-          // Cerrar modal y limpiar después de 3 segundos
           setTimeout(() => {
               setIsContactOpen(false);
               setContactForm({ name: '', company: '', email: '', confirmEmail: '', countryCode: '+503', phone: '', message: '' });
@@ -99,10 +100,48 @@ export default function LandingPage({ onOpenAuth }) {
     <div id="landing-page-root">
       <header className="nav" id="navbar">
         <div className="wrapper nav-inner">
-          <nav className="nav-menu">
+          <nav className="nav-menu" style={{ display: 'flex', alignItems: 'center' }}>
             <a href="#diferencia" className="nav-link">Diferencia PIDA</a>
             <a href="#ecosistema" className="nav-link">Ecosistema</a>
             <a href="#planes" className="nav-link">Planes</a>
+
+            {/* NUEVO: MENÚ DESPLEGABLE DE NEWSLETTER */}
+            <div 
+              style={{ position: 'relative', display: 'inline-block' }}
+              onMouseEnter={() => setShowNewsletter(true)}
+              onMouseLeave={() => setShowNewsletter(false)}
+            >
+              <span className="nav-link" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                Newsletter <span style={{ fontSize: '0.7em' }}>▼</span>
+              </span>
+              
+              {showNewsletter && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  backgroundColor: '#ffffff',
+                  boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                  borderRadius: '8px',
+                  padding: '8px 0',
+                  minWidth: '160px',
+                  zIndex: 9999,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  marginTop: '5px',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  {/* Puente invisible para que el mouse no pierda el hover al bajar */}
+                  <div style={{ position: 'absolute', top: '-10px', left: 0, width: '100%', height: '15px' }}></div>
+                  
+                  <a href="/newsletter-001.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 001</a>
+                  <a href="/newsletter-002.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 002</a>
+                  <a href="/newsletter-003.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 003</a>
+                </div>
+              )}
+            </div>
+
           </nav>
         </div>
       </header>
@@ -306,7 +345,6 @@ export default function LandingPage({ onOpenAuth }) {
                     <br /><br />
                     Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario. Haz clic en el botón para solicitar una propuesta adaptada a tu organización.
                 </p>
-                {/* BOTÓN QUE ABRE EL NUEVO MODAL REACTIVO */}
                 <button 
                   id="btn-corp-contact" 
                   className="btn btn-primary" 
@@ -373,35 +411,28 @@ export default function LandingPage({ onOpenAuth }) {
         </div>
       </main>
 
-      {/* ========================================================================= */}
-      {/* MODAL DE CONTACTO CORPORATIVO (RESTAURADO CON REACT Y ESTILOS PIDA) */}
-      {/* ========================================================================= */}
+      {/* MODAL DE CONTACTO CORPORATIVO */}
       {isContactOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(29, 53, 87, 0.6)', zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
             <div style={{ background: 'white', padding: '30px', borderRadius: '16px', width: '90%', maxWidth: '550px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', position: 'relative' }}>
-                
                 <button onClick={() => setIsContactOpen(false)} style={{ position: 'absolute', top: '15px', right: '20px', background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: '#666' }}>×</button>
                 
                 <h3 style={{ color: 'var(--pida-primary)', marginTop: 0, marginBottom: '5px', fontSize: '1.4rem' }}>Contacto Corporativo</h3>
                 <p style={{ color: '#666', fontSize: '0.95rem', marginBottom: '20px', lineHeight: '1.4' }}>Déjanos tus datos y un asesor se pondrá en contacto contigo para diseñar un plan a la medida de tu organización.</p>
 
                 <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <input type="text" className="login-input" placeholder="Nombre completo" required value={contactForm.name} onChange={e => setContactForm({...contactForm, name: e.target.value})} style={{ flex: 1, marginBottom: 0 }} />
                         <input type="text" className="login-input" placeholder="Organización / Empresa" required value={contactForm.company} onChange={e => setContactForm({...contactForm, company: e.target.value})} style={{ flex: 1, marginBottom: 0 }} />
                     </div>
-                    
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <input type="email" className="login-input" placeholder="Correo electrónico" required value={contactForm.email} onChange={e => setContactForm({...contactForm, email: e.target.value})} style={{ flex: 1, marginBottom: 0 }} />
                         <input type="email" className="login-input" placeholder="Confirmar correo" required value={contactForm.confirmEmail} onChange={e => setContactForm({...contactForm, confirmEmail: e.target.value})} style={{ flex: 1, marginBottom: 0 }} />
                     </div>
-                    
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <input type="text" className="login-input" placeholder="Cód. (Ej: +503)" required value={contactForm.countryCode} onChange={e => setContactForm({...contactForm, countryCode: e.target.value})} style={{ width: '120px', marginBottom: 0 }} />
                         <input type="tel" className="login-input" placeholder="Número de teléfono" required value={contactForm.phone} onChange={e => setContactForm({...contactForm, phone: e.target.value})} style={{ flex: 1, marginBottom: 0 }} />
                     </div>
-                    
                     <textarea className="login-input" placeholder="Cuéntanos un poco sobre las necesidades de tu equipo..." rows="3" required value={contactForm.message} onChange={e => setContactForm({...contactForm, message: e.target.value})} style={{ marginBottom: 0, resize: 'vertical' }}></textarea>
 
                     {contactStatus.text && (
@@ -413,12 +444,10 @@ export default function LandingPage({ onOpenAuth }) {
                     <button type="submit" className="btn btn-primary" disabled={contactStatus.isSubmitting} style={{ padding: '15px', fontSize: '1.05rem', fontWeight: 'bold', width: '100%', marginTop: '5px' }}>
                         {contactStatus.isSubmitting ? 'Enviando información...' : 'Enviar Solicitud'}
                     </button>
-
                 </form>
             </div>
         </div>
       )}
-
     </div>
   );
 }
