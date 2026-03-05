@@ -4,16 +4,19 @@ import { db } from '../config/firebase';
 
 export default function LandingPage({ onOpenAuth }) {
   // Estados para controlar los precios
-  const [interval, setInterval] = useState('monthly'); // 'monthly' o 'annual'
-  const [currency, setCurrency] = useState('USD');     // 'USD' o 'MXN'
+  const [interval, setInterval] = useState('monthly'); 
+  const [currency, setCurrency] = useState('USD');     
 
   // Estado para controlar el carrusel de testimonios
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // --- NUEVO: ESTADO PARA EL MENÚ NEWSLETTER ---
+  // Estado para el menú Newsletter
   const [showNewsletter, setShowNewsletter] = useState(false);
 
-  // --- ESTADOS PARA EL FORMULARIO CORPORATIVO ---
+  // Estado para el Modal de Video
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+
+  // Estados para el Formulario Corporativo
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({
       name: '', company: '', email: '', confirmEmail: '', countryCode: '+503', phone: '', message: ''
@@ -105,7 +108,7 @@ export default function LandingPage({ onOpenAuth }) {
             <a href="#ecosistema" className="nav-link">Ecosistema</a>
             <a href="#planes" className="nav-link">Planes</a>
 
-            {/* NUEVO: MENÚ DESPLEGABLE DE NEWSLETTER */}
+            {/* MENÚ DESPLEGABLE DE NEWSLETTER */}
             <div 
               style={{ position: 'relative', display: 'inline-block' }}
               onMouseEnter={() => setShowNewsletter(true)}
@@ -132,16 +135,13 @@ export default function LandingPage({ onOpenAuth }) {
                   marginTop: '5px',
                   border: '1px solid #e5e7eb'
                 }}>
-                  {/* Puente invisible para que el mouse no pierda el hover al bajar */}
                   <div style={{ position: 'absolute', top: '-10px', left: 0, width: '100%', height: '15px' }}></div>
-                  
                   <a href="/newsletter-001.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 001</a>
                   <a href="/newsletter-002.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 002</a>
                   <a href="/newsletter-003.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 003</a>
                 </div>
               )}
             </div>
-
           </nav>
         </div>
       </header>
@@ -164,8 +164,32 @@ export default function LandingPage({ onOpenAuth }) {
                 </button>
               </div>
             </div>
-            <div className="hero-visual-column">
-              <img style={{ borderRadius: '8px' }} src="/img/PIDA-MASCOTA-576-trans.png" alt="Robot PIDA" />
+            <div className="hero-visual-column" style={{ textAlign: 'center' }}>
+              <img style={{ borderRadius: '8px', marginBottom: '20px' }} src="/img/PIDA-MASCOTA-576-trans.png" alt="Robot PIDA" />
+              
+              {/* BOTÓN DE VIDEO */}
+              <button 
+                id="open-video-modal-btn" 
+                onClick={() => setIsVideoOpen(true)}
+                style={{ 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: '10px', 
+                  background: 'transparent', 
+                  border: '2px solid var(--pida-primary)', 
+                  color: 'var(--pida-primary)', 
+                  padding: '10px 25px', 
+                  borderRadius: '30px', 
+                  fontWeight: 'bold', 
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'var(--pida-primary)'; e.currentTarget.style.color = 'white'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--pida-primary)'; }}
+              >
+                <span style={{ fontSize: '1.2rem' }}>▶</span> Ver PIDA en acción
+              </button>
+
             </div>
           </div>
         </section>
@@ -213,7 +237,6 @@ export default function LandingPage({ onOpenAuth }) {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '50px', maxWidth: '900px', margin: '0 auto' }}>
-                    
                     <div style={{ borderLeft: '4px solid #0284C7', paddingLeft: '30px' }}>
                         <h3 style={{ color: 'var(--navy)', fontSize: '1.5rem', marginBottom: '10px' }}>
                             1. Experto en Derechos Humanos
@@ -252,7 +275,6 @@ export default function LandingPage({ onOpenAuth }) {
                             <strong>Aplicación Práctica:</strong> Ideal para la primera entrevista con el cliente. Simplemente narra los hechos del caso y el sistema realizará un análisis preliminar instantáneo para identificar posibles <strong>delitos penales</strong> y <strong>violaciones a Derechos Humanos</strong> conforme a estándares internacionales. Esto te permite trazar una ruta de defensa clara desde el primer minuto.
                         </p>
                     </div>
-
                 </div>
             </div>
         </section>
@@ -411,7 +433,42 @@ export default function LandingPage({ onOpenAuth }) {
         </div>
       </main>
 
+      {/* ========================================================================= */}
+      {/* MODAL DE VIDEO (CON LA URL ACTUALIZADA DE GCP) */}
+      {/* ========================================================================= */}
+      {isVideoOpen && (
+        <div 
+          id="pida-video-modal"
+          style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0.85)', zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }} 
+          onClick={() => setIsVideoOpen(false)}
+        >
+          <div style={{ position: 'relative', width: '90%', maxWidth: '850px', backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 15px 40px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()}>
+            <button 
+              id="close-video-modal-btn"
+              onClick={() => setIsVideoOpen(false)} 
+              style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontSize: '1.5rem', cursor: 'pointer', borderRadius: '50%', width: '40px', height: '40px', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.3s' }}
+              onMouseOver={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.9)'}
+              onMouseOut={e => e.currentTarget.style.background = 'rgba(0,0,0,0.6)'}
+            >
+              ×
+            </button>
+            <video 
+              id="pida-presentation-video" 
+              controls 
+              autoPlay 
+              style={{ width: '100%', display: 'block', maxHeight: '80vh' }}
+            >
+              {/* LA NUEVA RUTA PROPORCIONADA */}
+              <source src="https://storage.googleapis.com/img-pida/PIDA.mp4" type="video/mp4" />
+              Tu navegador no soporta la reproducción de videos.
+            </video>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
       {/* MODAL DE CONTACTO CORPORATIVO */}
+      {/* ========================================================================= */}
       {isContactOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(29, 53, 87, 0.6)', zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
             <div style={{ background: 'white', padding: '30px', borderRadius: '16px', width: '90%', maxWidth: '550px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', position: 'relative' }}>
