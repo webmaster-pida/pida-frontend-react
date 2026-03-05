@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { Exporter, getTimestampedName } from '../utils/exporter';
 
 const API_ANA = "https://analize-v20-stripe-elements-465781488910.us-central1.run.app";
 
@@ -9,21 +10,35 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [resultText, setResultText] = useState('');
   const [error, setError] = useState('');
+  
+  // Referencia para ocultar el input real de archivos
+  const fileInputRef = useRef(null);
 
+  // 1. Escuchar la señal desde la barra superior para limpiar pantalla
+  useEffect(() => {
+    if (resetSignal > 0) {
+      handleClear();
+    }
+  }, [resetSignal]);
+
+  // 2. Escuchar cuando el usuario hace clic en el historial del Dashboard
   useEffect(() => {
     if (loadAnaId) {
       const loadPastAna = async () => {
         setIsAnalyzing(true);
+        setError('');
         try {
           const token = await user.getIdToken();
           const res = await fetch(`${API_ANA}/analysis-history/${loadAnaId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
+          if (!res.ok) throw new Error("Error del servidor");
+          
           const data = await res.json();
           setResultText(data.analysis);
           setFiles([]); // Vaciamos los chips de archivos locales
         } catch (err) {
-          setError("Error cargando el análisis guardado.");
+          setError("❌ Error cargando el análisis guardado.");
         } finally {
           setIsAnalyzing(false);
         }
@@ -31,9 +46,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       loadPastAna();
     }
   }, [loadAnaId, user]);
-  
-  // Referencia para ocultar el input real de archivos y usar el botón bonito
-  const fileInputRef = useRef(null);
 
   // Manejar selección de archivos
   const handleFileChange = (e) => {
@@ -75,11 +87,14 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       const token = await user.getIdToken();
       const res = await fetch(`${API_ANA}/analyze/`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }, // Ojo: FormData no necesita 'Content-Type'
+        headers: { 'Authorization': `Bearer ${token}` }, 
         body: fd
       });
 
       if (!res.ok) {
+        if (res.status === 403 || res.status === 402 || res.status === 429) {
+          throw new Error("Has alcanzado tu límite de análisis diarios o tu suscripción no está activa.");
+        }
         throw new Error(`Error del servidor (${res.status})`);
       }
 
@@ -109,7 +124,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       }
     } catch (err) {
       console.error(err);
-      setError("❌ Ocurrió un error de conexión o el servidor rechazó la solicitud (CORS).");
+      setError(`❌ Ocurrió un problema: ${err.message}`);
     } finally {
       setIsAnalyzing(false);
     }
@@ -119,7 +134,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     <div className="pida-view">
       <div className="pida-view-content">
         
-        {/* Pantalla de Bienvenida (Se muestra si no hay resultados ni está cargando) */}
+        {/* Pantalla de Bienvenida */}
         {!isAnalyzing && !resultText && !error && (
           <div className="pida-bubble pida-message-bubble" style={{ margin: '0 auto' }}>
             <div className="pida-welcome-content">
@@ -164,6 +179,15 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       {/* Formulario Inferior */}
       <div className="pida-view-form">
         
+        {/* Botones de Descarga (Solo si hay resultados) */}
+        {resultText && (
+          <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '8px' }}>
+            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", resultText)}>TXT</button>
+            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", resultText)}>DOCX</button>
+            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", resultText)}>PDF</button>
+          </div>
+        )}
+
         {/* Botón oculto para subir archivos */}
         <input 
           type="file" 
@@ -174,7 +198,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           onChange={handleFileChange}
         />
 
-        {/* Fila de botones superiores (Subir y descargar) */}
+        {/* Fila de botón de subir */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
           <button 
             className="pida-header-btn primary" 
