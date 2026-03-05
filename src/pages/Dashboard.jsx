@@ -11,7 +11,7 @@ export default function Dashboard({ user }) {
   const [currentView, setCurrentView] = useState('investigador'); 
   
   // Estados para el Plan
-  const [userPlan, setUserPlan] = useState('básico');
+  const [userPlan, setUserPlan] = useState('basico'); // en minúsculas para la clase CSS
   const [isVip, setIsVip] = useState(false);
   const [isTrial, setIsTrial] = useState(false);
 
@@ -36,7 +36,6 @@ export default function Dashboard({ user }) {
   useEffect(() => {
     if (!user) return;
 
-    // Verificar VIP y Plan Stripe
     const checkVip = async () => {
       try {
         const token = await user.getIdToken();
@@ -56,7 +55,6 @@ export default function Dashboard({ user }) {
       }
     });
 
-    // Cargar Historiales al iniciar
     fetchChatHistory();
     fetchAnaHistory();
     fetchPreHistory();
@@ -120,7 +118,7 @@ export default function Dashboard({ user }) {
   if (displayPlan === 'Basico' || displayPlan === 'Basic') displayPlan = 'Básico';
   if (isTrial && !isVip) displayPlan += ' (Prueba)';
 
-  // Cerrar menús si se hace clic fuera (simulado)
+  // Cerrar menús si se hace clic fuera
   const closeMenus = () => setShowMenu({ chat: false, ana: false, pre: false });
 
   return (
@@ -206,15 +204,17 @@ export default function Dashboard({ user }) {
               </div>
             )}
             
-            <div className={`plan-badge ${isVip ? 'vip-active' : ''}`}>
+            {/* BADGE CON CLASES DINÁMICAS DE COLOR */}
+            <div className={`plan-badge plan-${userPlan} ${isVip ? 'vip-active' : ''}`}>
               Plan: <strong className={isVip ? 'vip-text' : ''}>{displayPlan}</strong>
             </div>
+            
             <img src="/img/PIDA-MASCOTA-menu.png" alt="PIDA Mascota" className="pida-header-mascot" />
           </div>
         </header>
 
-        {/* Pasamos los IDs a los componentes para que ellos descarguen la información al detectarlos */}
-        {currentView === 'investigador' && <ChatInterface user={user} resetSignal={resetChat} loadChatId={loadChatId} />}
+        {/* Le pasamos refreshHistory al Chat para que actualice el menú superior cuando cambie el título */}
+        {currentView === 'investigador' && <ChatInterface user={user} resetSignal={resetChat} loadChatId={loadChatId} refreshHistory={fetchChatHistory} />}
         {currentView === 'analizador' && <AnalyzerInterface user={user} resetSignal={resetAna} loadAnaId={loadAnaId} />}
         {currentView === 'precalificador' && <PrequalifierInterface user={user} resetSignal={resetPre} loadPreData={loadPreData} />}
         {currentView === 'cuenta' && <AccountInterface user={user} />}

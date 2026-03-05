@@ -1029,37 +1029,71 @@ input:checked + .slider:before { transform: translateX(24px); }
    UNIFORMIDAD DE BOTONES SUPERIORES Y BADGE (REACT)
    ========================================= */
 
-/* 1. Aplica a TODOS los botones superiores y al badge del plan */
+/* 1. Regla base para mantener la misma altura en todos */
 .pida-context-controls .pida-header-btn,
 .pida-context-controls .plan-badge {
-    width: 240px !important; 
-    min-width: 240px !important;
     height: 42px !important;
     display: inline-flex !important;
     align-items: center !important;
     box-sizing: border-box !important;
 }
 
-/* 2. Botones de Acción Principal (+ Nuevo...) */
-.pida-context-controls .pida-header-btn.primary {
-    justify-content: center !important; /* Centra el texto */
+/* 2. Botón de Acción Principal (+ Nuevo...) */
+.pida-context-controls .context-group > .pida-header-btn.primary {
+    width: 220px !important; 
+    min-width: 220px !important;
+    justify-content: center !important; /* Texto centrado */
 }
 
-/* 3. Botones de Historial (Desplegables) */
+/* 3. Botón del Desplegable (Historiales) */
 .pida-context-controls .pida-dropdown .pida-header-btn {
+    width: 280px !important; /* Más ancho para los títulos largos */
+    min-width: 280px !important;
     justify-content: space-between !important; /* Texto a la izq, flecha a la der */
     padding: 0 15px !important;
 }
 
-/* 4. Badge del Plan */
+/* 4. Badge del Plan y sus Colores */
 .pida-context-controls .plan-badge {
-    justify-content: center !important; /* Centra el texto del plan */
-    margin-right: 0 !important; /* Limpia márgenes residuales */
+    width: auto !important;
+    min-width: 130px !important;
+    justify-content: center !important;
+    margin-right: 0 !important;
 }
 
-/* Ajuste preventivo para pantallas de celular */
+/* Color Plan Básico */
+.plan-badge.plan-basico {
+    background-color: #EEF2FF !important;
+    border: 1px solid #C7D2FE !important;
+    color: #1D3557 !important;
+}
+
+/* Color Plan Avanzado (Celeste/Azul brillante) */
+.plan-badge.plan-avanzado {
+    background-color: #E0F2FE !important;
+    border: 1px solid #7DD3FC !important;
+    color: #0369A1 !important;
+}
+
+/* Color Plan Premium (Degradado Morado/Premium) */
+.plan-badge.plan-premium {
+    background: linear-gradient(to right, #FAF5FF, #F3E8FF) !important;
+    border: 1px solid #D8B4FE !important;
+    color: #7E22CE !important;
+}
+
+/* Color VIP */
+.plan-badge.vip-active {
+    background-color: #FFFBEB !important;
+    border: 1px solid #FCD34D !important;
+    color: #92400E !important;
+    box-shadow: 0 2px 5px rgba(245, 158, 11, 0.2) !important;
+}
+
+/* Responsividad para móviles */
 @media (max-width: 768px) {
-    .pida-context-controls .pida-header-btn,
+    .pida-context-controls .context-group > .pida-header-btn.primary,
+    .pida-context-controls .pida-dropdown .pida-header-btn,
     .pida-context-controls .plan-badge {
         width: auto !important;
         min-width: auto !important;

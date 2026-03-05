@@ -4,14 +4,15 @@ import { Exporter, getTimestampedName } from '../utils/exporter';
 
 const API_CHAT = "https://chat-v20-stripe-elements-465781488910.us-central1.run.app";
 
-export default function ChatInterface({ user, resetSignal, loadChatId }) {
+// Añadimos refreshHistory en las props
+export default function ChatInterface({ user, resetSignal, loadChatId, refreshHistory }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [chatId, setChatId] = useState(null);
   const messagesEndRef = useRef(null);
 
-  // Escuchar la señal desde la barra superior (Dashboard) para iniciar un Nuevo Chat
+  // Limpiar chat nuevo
   useEffect(() => {
     if (resetSignal > 0) {
       setMessages([]);
@@ -20,12 +21,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId }) {
     }
   }, [resetSignal]);
 
-  // Efecto para hacer auto-scroll hacia abajo cuando hay un mensaje nuevo
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
-
-  // Escuchar cuando el usuario hace clic en el historial del Dashboard
+  // Cargar chat previo
   useEffect(() => {
     if (loadChatId) {
       const loadPastChat = async () => {
@@ -45,7 +41,10 @@ export default function ChatInterface({ user, resetSignal, loadChatId }) {
     }
   }, [loadChatId, user]);
 
-  // Función para crear una nueva conversación en el backend
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
+
   const startConversation = async () => {
     const token = await user.getIdToken();
     const res = await fetch(`${API_CHAT}/conversations`, {
@@ -54,16 +53,13 @@ export default function ChatInterface({ user, resetSignal, loadChatId }) {
       body: JSON.stringify({ title: "Nuevo Chat" })
     });
     
-    if (!res.ok) {
-      throw new Error(res.status === 403 ? "Tu plan no está activo o no tienes permisos." : "Error al crear la conversación.");
-    }
+    if (!res.ok) throw new Error(res.status === 403 ? "Suscripción inactiva." : "Error al crear la conversación.");
     
     const data = await res.json();
     setChatId(data.id);
     return data.id;
   };
 
-  // Función principal para enviar el mensaje y recibir la respuesta (Streaming)
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim() || isTyping) return;
@@ -75,11 +71,26 @@ export default function ChatInterface({ user, resetSignal, loadChatId }) {
 
     try {
       let currentChatId = chatId;
+      let isNewConversation = false; // Bandera para saber si hay que actualizar el título
+      
       if (!currentChatId) {
         currentChatId = await startConversation();
+        isNewConversation = true; 
       }
 
       const token = await user.getIdToken();
+      
+      // Enviar la petición para actualizar el título en segundo plano si es un chat nuevo
+      if (isNewConversation) {
+        fetch(`${API_CHAT}/conversations/${currentChatId}/title`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: textToSend.substring(0, 40) })
+        }).then(() => {
+          if (refreshHistory) refreshHistory(); // Le avisa al Dashboard que descargue los nombres de nuevo
+        }).catch(err => console.error("Error actualizando título:", err));
+      }
+
       const res = await fetch(`${API_CHAT}/chat-stream/${currentChatId}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -123,8 +134,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId }) {
         }
       }
     } catch (error) {
-      console.error("Error en Chat:", error);
-      // Ahora muestra el error real (Ej: límite alcanzado) en la burbuja
+      console.error(error);
       setMessages(prev => [...prev, { role: 'model', content: `❌ **Ocurrió un problema:** ${error.message}` }]);
     } finally {
       setIsTyping(false);
@@ -136,7 +146,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId }) {
       <div className="pida-view-content">
         <div id="pida-chat-box">
           
-          {/* Mensaje de bienvenida (se oculta si ya hay mensajes) */}
           {messages.length === 0 && (
             <div className="pida-bubble pida-message-bubble">
               <div className="pida-welcome-content">
@@ -150,14 +159,12 @@ export default function ChatInterface({ user, resetSignal, loadChatId }) {
             </div>
           )}
 
-          {/* Renderizado de mensajes */}
           {messages.map((msg, idx) => (
             <div key={idx} className={`pida-bubble ${msg.role === 'user' ? 'user-message-bubble' : 'pida-message-bubble'}`}>
               <ReactMarkdown>{msg.content}</ReactMarkdown>
             </div>
           ))}
 
-          {/* Animación de "PIDA está escribiendo..." */}
           {isTyping && (
             <div className="pida-bubble pida-message-bubble">
               <div className="typing-indicator">
@@ -168,15 +175,11 @@ export default function ChatInterface({ user, resetSignal, loadChatId }) {
             </div>
           )}
           
-          {/* Elemento invisible para el auto-scroll */}
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Formulario de envío y Descargas */}
       <form className="pida-view-form" onSubmit={handleSend}>
-        
-        {/* BOTONES DE DESCARGA (Solo se muestran si hay mensajes) */}
         {messages.length > 0 && (
           <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '8px' }}>
             <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>TXT</button>
