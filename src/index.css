@@ -1617,56 +1617,42 @@ input:checked + .slider:before { transform: translateX(24px); }
 }
 
 /* =========================================
-   ESTABILIZACIÓN MÓVIL (IPHONE VS ANDROID)
+   ESTABILIZACIÓN MÓVIL CORREGIDA (PRO)
    ========================================= */
 
-/* 1. Usar el alto dinámico real (dvh) y evitar rebotes de pantalla en iOS */
+/* 1. Quitamos el bloqueo total del body para que la Landing y Planes funcionen */
 html, body {
-    height: 100dvh !important;
-    width: 100vw !important;
-    overflow: hidden !important; /* Evita que la página entera haga scroll, solo el chat debe hacerlo */
-    overscroll-behavior-y: none !important; /* Quita el efecto "goma" del iPhone al hacer scroll */
+    min-height: 100dvh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Evita que la web se mueva de lado */
+    overflow-y: auto !important; /* REHABILITA el scroll vertical para ver los planes */
 }
 
-/* 2. El contenedor maestro toma exactamente el alto de la pantalla visible */
+/* 2. El bloqueo de scroll SOLO ocurre cuando estamos DENTRO del Dashboard de PIDA */
 #pida-app-layout {
-    height: 100dvh !important;
+    height: 100dvh;
+    height: 100svh; /* Alto dinámico para Safari */
     display: flex;
     flex-direction: row;
-    overflow: hidden !important;
+    overflow: hidden !important; /* Solo la App se comporta como una pantalla fija */
 }
 
-#pida-main-content {
-    height: 100dvh !important;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    overflow: hidden !important;
-}
-
-/* 3. Estructura Flexbox estricta para el Chat */
-.pida-view {
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100% !important;
-    overflow: hidden !important;
-}
-
-/* El área de los mensajes crece y hace scroll */
+/* 3. Aseguramos que el contenido del chat siga teniendo su propio scroll interno */
 .pida-view-content {
-    flex: 1 1 auto !important;
+    flex: 1 1 auto;
     overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important; /* Scroll suave y nativo en iOS */
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 20px;
 }
 
-/* 4. Anclaje estricto del formulario inferior */
+/* 4. El formulario de abajo se queda siempre visible */
 .pida-view-form {
-    flex: 0 0 auto !important; /* Evita que se encoja o expanda mágicamente */
-    position: relative !important;
-    z-index: 100 !important;
-    /* MAGIA PARA iPHONE: env(safe-area-inset-bottom) detecta si el cel tiene la raya negra abajo y le da espacio extra para que no tape los botones */
-    padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px)) !important;
-    background-color: var(--pida-bg, #ffffff) !important; 
+    flex: 0 0 auto;
+    background: white;
+    z-index: 10;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
 }
 
 /* =========================================
