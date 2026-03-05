@@ -1,13 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { STRIPE_PRICES } from '../config/constants';
+import { db } from '../config/firebase'; // <- IMPORTANTE: Agregado para el formulario corporativo
 
 export default function LandingPage({ onOpenAuth }) {
   // Estados para controlar los precios
   const [interval, setInterval] = useState('monthly'); // 'monthly' o 'annual'
   const [currency, setCurrency] = useState('USD');     // 'USD' o 'MXN'
 
-  // NUEVO: Estado para controlar el carrusel de testimonios
+  // Estado para controlar el carrusel de testimonios
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // --- ESTADOS PARA EL FORMULARIO CORPORATIVO (RESTAURADO) ---
+  const [isContactOpen, setIsContactOpen] = useState(false);
+  const [contactForm, setContactForm] = useState({
+      name: '', company: '', email: '', confirmEmail: '', countryCode: '+503', phone: '', message: ''
+  });
+  const [contactStatus, setContactStatus] = useState({ text: '', type: '', isSubmitting: false });
 
   // Detección automática de ubicación para ajustar moneda
   useEffect(() => {
@@ -33,23 +41,58 @@ export default function LandingPage({ onOpenAuth }) {
     detectLocation();
   }, []);
 
-  // NUEVO: Efecto para mover el carrusel automáticamente cada 5 segundos
+  // Efecto para mover el carrusel automáticamente cada 5 segundos
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % 3); // 3 es el número total de testimonios
+      setCurrentSlide((prev) => (prev + 1) % 3); 
     }, 5000);
     return () => window.clearInterval(timer);
   }, []);
 
   // Función al hacer clic en un plan
   const handleSelectPlan = (planKey) => {
-    // Guardamos las opciones para que el AuthModal sepa qué cobrar
     sessionStorage.setItem('pida_pending_plan', planKey);
     sessionStorage.setItem('pida_pending_interval', interval);
     localStorage.setItem('pida_currency', currency);
-    
-    // Abrimos el modal
     onOpenAuth('register');
+  };
+
+  // --- FUNCIÓN RESTAURADA: ENVÍO A LEADS CORPORATIVOS ---
+  const handleContactSubmit = async (e) => {
+      e.preventDefault();
+      
+      // VERIFICACIÓN: ¿Coinciden los correos? (Tal como lo tenías)
+      if (contactForm.email !== contactForm.confirmEmail) {
+          setContactStatus({ text: '❌ Los correos electrónicos no coinciden.', type: 'error', isSubmitting: false });
+          return;
+      }
+
+      setContactStatus({ text: '', type: '', isSubmitting: true });
+
+      const leadData = {
+          name: contactForm.name,
+          company: contactForm.company,
+          email: contactForm.email,
+          phone: `${contactForm.countryCode} ${contactForm.phone}`,
+          message: contactForm.message,
+          createdAt: new Date(), // Usamos Date nativo equivalente a serverTimestamp
+          status: 'nuevo'
+      };
+
+      try {
+          await db.collection('leads_corporativos').add(leadData);
+          setContactStatus({ text: 'Datos recibidos. Te contactaremos pronto.', type: 'success', isSubmitting: false });
+          
+          // Cerrar modal y limpiar después de 3 segundos
+          setTimeout(() => {
+              setIsContactOpen(false);
+              setContactForm({ name: '', company: '', email: '', confirmEmail: '', countryCode: '+503', phone: '', message: '' });
+              setContactStatus({ text: '', type: '', isSubmitting: false });
+          }, 3000);
+      } catch (error) {
+          console.error(error);
+          setContactStatus({ text: 'Error de conexión. Intenta de nuevo.', type: 'error', isSubmitting: false });
+      }
   };
 
   return (
@@ -132,7 +175,6 @@ export default function LandingPage({ onOpenAuth }) {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '50px', maxWidth: '900px', margin: '0 auto' }}>
                     
-                    {/* Herramienta 1 */}
                     <div style={{ borderLeft: '4px solid #0284C7', paddingLeft: '30px' }}>
                         <h3 style={{ color: 'var(--navy)', fontSize: '1.5rem', marginBottom: '10px' }}>
                             1. Experto en Derechos Humanos
@@ -146,7 +188,6 @@ export default function LandingPage({ onOpenAuth }) {
                         </p>
                     </div>
 
-                    {/* Herramienta 2 */}
                     <div style={{ borderLeft: '4px solid #0284C7', paddingLeft: '30px' }}>
                         <h3 style={{ color: 'var(--navy)', fontSize: '1.5rem', marginBottom: '10px' }}>
                             2. Analizador de Documentos
@@ -160,7 +201,6 @@ export default function LandingPage({ onOpenAuth }) {
                         </p>
                     </div>
 
-                    {/* Herramienta 3 */}
                     <div style={{ borderLeft: '4px solid #0284C7', paddingLeft: '30px' }}>
                         <h3 style={{ color: 'var(--navy)', fontSize: '1.5rem', marginBottom: '10px' }}>
                             3. Precalificador de Conductas
@@ -189,31 +229,19 @@ export default function LandingPage({ onOpenAuth }) {
               </p>
             </div>
 
-            {/* SWITCH MENSUAL / ANUAL */}
             <div className="billing-toggle-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginBottom: '40px' }}>
-              <span style={{ fontWeight: 700, color: interval === 'monthly' ? 'var(--pida-primary)' : '#94a3b8', transition: '0.3s' }}>
-                Mensual
-              </span>
-              
+              <span style={{ fontWeight: 700, color: interval === 'monthly' ? 'var(--pida-primary)' : '#94a3b8', transition: '0.3s' }}>Mensual</span>
               <label className="switch">
-                <input 
-                  type="checkbox" 
-                  checked={interval === 'annual'} 
-                  onChange={(e) => setInterval(e.target.checked ? 'annual' : 'monthly')} 
-                />
+                <input type="checkbox" checked={interval === 'annual'} onChange={(e) => setInterval(e.target.checked ? 'annual' : 'monthly')} />
                 <span className="slider round"></span>
               </label>
-
               <span style={{ fontWeight: 700, color: interval === 'annual' ? 'var(--pida-primary)' : '#94a3b8', transition: '0.3s', position: 'relative' }}>
-                Anual
-                {interval === 'annual' && <span className="discount-badge" style={{ display: 'inline-block' }}>¡Dos meses gratis!</span>}
+                Anual {interval === 'annual' && <span className="discount-badge" style={{ display: 'inline-block' }}>¡Dos meses gratis!</span>}
               </span>
             </div>
 
-            {/* TARJETAS DE PRECIOS DINÁMICAS */}
             <div className="pricing-grid">
               
-              {/* Básico */}
               <div className="pricing-card">
                 <h3>Básico</h3>
                 <div className="price-container">
@@ -230,7 +258,6 @@ export default function LandingPage({ onOpenAuth }) {
                 <button className="btn btn-primary plan-cta" onClick={() => handleSelectPlan('basico')}>Elegir Básico</button>
               </div>
 
-              {/* Avanzado */}
               <div className="pricing-card featured">
                 <div className="card-badge">Más Popular</div>
                 <h3>Avanzado</h3>
@@ -249,7 +276,6 @@ export default function LandingPage({ onOpenAuth }) {
                 <button className="btn btn-primary plan-cta" onClick={() => handleSelectPlan('avanzado')}>Elegir Avanzado</button>
               </div>
 
-              {/* Premium */}
               <div className="pricing-card">
                 <h3>Premium</h3>
                 <div className="price-container">
@@ -280,30 +306,25 @@ export default function LandingPage({ onOpenAuth }) {
                     <br /><br />
                     Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario. Haz clic en el botón para solicitar una propuesta adaptada a tu organización.
                 </p>
-                {/* AHORA LLAMA A LA FUNCIÓN QUE ABRE EL MODAL DE CONTACTO */}
+                {/* BOTÓN QUE ABRE EL NUEVO MODAL REACTIVO */}
                 <button 
                   id="btn-corp-contact" 
                   className="btn btn-primary" 
                   style={{ padding: '18px 45px', fontWeight: '700', fontSize: '1.1rem', borderRadius: '12px', boxShadow: '0 4px 15px rgba(29, 53, 87, 0.2)' }}
-                  onClick={() => {
-                    // Si el modal está renderizado en el index.html original:
-                    const contactModal = document.getElementById('contact-modal');
-                    if(contactModal) contactModal.classList.remove('hidden');
-                  }}
+                  onClick={() => setIsContactOpen(true)}
                 >
                     Contactar con Soporte Corporativo
                 </button>
             </div>
         </section>
 
-        {/* SECCIÓN TESTIMONIOS CON LÓGICA REACTIVA DE ANIMACIÓN */}
+        {/* SECCIÓN TESTIMONIOS */}
         <section id="testimonios">
             <div className="wrapper">
                 <div className="section-intro" style={{ marginBottom: '30px' }}>
                     <h2>Lo que dicen nuestros usuarios</h2>
                 </div>
                 <div className="carousel-container" style={{ overflow: 'hidden' }}>
-                    {/* NUEVO: Aplicación dinámica del transform para deslizar el carrusel */}
                     <div className="carousel-track" id="carouselTrack" style={{ display: 'flex', transform: `translateX(-${currentSlide * 100}%)`, transition: 'transform 0.5s ease-in-out' }}>
                         
                         <div className="testimonial-slide" style={{ minWidth: '100%' }}>
@@ -332,7 +353,6 @@ export default function LandingPage({ onOpenAuth }) {
 
                     </div>
                     <div className="carousel-dots" id="carouselDots">
-                        {/* NUEVO: Controles dinámicos para los puntos del carrusel */}
                         <button className={`dot-btn ${currentSlide === 0 ? 'active' : ''}`} onClick={() => setCurrentSlide(0)}></button>
                         <button className={`dot-btn ${currentSlide === 1 ? 'active' : ''}`} onClick={() => setCurrentSlide(1)}></button>
                         <button className={`dot-btn ${currentSlide === 2 ? 'active' : ''}`} onClick={() => setCurrentSlide(2)}></button>
@@ -352,6 +372,53 @@ export default function LandingPage({ onOpenAuth }) {
             <br />&nbsp;
         </div>
       </main>
+
+      {/* ========================================================================= */}
+      {/* MODAL DE CONTACTO CORPORATIVO (RESTAURADO CON REACT Y ESTILOS PIDA) */}
+      {/* ========================================================================= */}
+      {isContactOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(29, 53, 87, 0.6)', zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+            <div style={{ background: 'white', padding: '30px', borderRadius: '16px', width: '90%', maxWidth: '550px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', position: 'relative' }}>
+                
+                <button onClick={() => setIsContactOpen(false)} style={{ position: 'absolute', top: '15px', right: '20px', background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: '#666' }}>×</button>
+                
+                <h3 style={{ color: 'var(--pida-primary)', marginTop: 0, marginBottom: '5px', fontSize: '1.4rem' }}>Contacto Corporativo</h3>
+                <p style={{ color: '#666', fontSize: '0.95rem', marginBottom: '20px', lineHeight: '1.4' }}>Déjanos tus datos y un asesor se pondrá en contacto contigo para diseñar un plan a la medida de tu organización.</p>
+
+                <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <input type="text" className="login-input" placeholder="Nombre completo" required value={contactForm.name} onChange={e => setContactForm({...contactForm, name: e.target.value})} style={{ flex: 1, marginBottom: 0 }} />
+                        <input type="text" className="login-input" placeholder="Organización / Empresa" required value={contactForm.company} onChange={e => setContactForm({...contactForm, company: e.target.value})} style={{ flex: 1, marginBottom: 0 }} />
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <input type="email" className="login-input" placeholder="Correo electrónico" required value={contactForm.email} onChange={e => setContactForm({...contactForm, email: e.target.value})} style={{ flex: 1, marginBottom: 0 }} />
+                        <input type="email" className="login-input" placeholder="Confirmar correo" required value={contactForm.confirmEmail} onChange={e => setContactForm({...contactForm, confirmEmail: e.target.value})} style={{ flex: 1, marginBottom: 0 }} />
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <input type="text" className="login-input" placeholder="Cód. (Ej: +503)" required value={contactForm.countryCode} onChange={e => setContactForm({...contactForm, countryCode: e.target.value})} style={{ width: '120px', marginBottom: 0 }} />
+                        <input type="tel" className="login-input" placeholder="Número de teléfono" required value={contactForm.phone} onChange={e => setContactForm({...contactForm, phone: e.target.value})} style={{ flex: 1, marginBottom: 0 }} />
+                    </div>
+                    
+                    <textarea className="login-input" placeholder="Cuéntanos un poco sobre las necesidades de tu equipo..." rows="3" required value={contactForm.message} onChange={e => setContactForm({...contactForm, message: e.target.value})} style={{ marginBottom: 0, resize: 'vertical' }}></textarea>
+
+                    {contactStatus.text && (
+                        <div style={{ padding: '10px', borderRadius: '6px', fontSize: '0.9rem', textAlign: 'center', background: contactStatus.type === 'error' ? '#FEE2E2' : '#D1FAE5', color: contactStatus.type === 'error' ? '#EF4444' : '#10B981' }}>
+                            {contactStatus.text}
+                        </div>
+                    )}
+
+                    <button type="submit" className="btn btn-primary" disabled={contactStatus.isSubmitting} style={{ padding: '15px', fontSize: '1.05rem', fontWeight: 'bold', width: '100%', marginTop: '5px' }}>
+                        {contactStatus.isSubmitting ? 'Enviando información...' : 'Enviar Solicitud'}
+                    </button>
+
+                </form>
+            </div>
+        </div>
+      )}
+
     </div>
   );
 }
