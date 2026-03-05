@@ -6,7 +6,10 @@ export default function LandingPage({ onOpenAuth }) {
   const [interval, setInterval] = useState('monthly'); // 'monthly' o 'annual'
   const [currency, setCurrency] = useState('USD');     // 'USD' o 'MXN'
 
-  // Detección automática de ubicación para ajustar moneda (como tenías en Vanilla JS)
+  // NUEVO: Estado para controlar el carrusel de testimonios
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Detección automática de ubicación para ajustar moneda
   useEffect(() => {
     const detectLocation = async () => {
       try {
@@ -28,6 +31,14 @@ export default function LandingPage({ onOpenAuth }) {
       }
     };
     detectLocation();
+  }, []);
+
+  // NUEVO: Efecto para mover el carrusel automáticamente cada 5 segundos
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % 3); // 3 es el número total de testimonios
+    }, 5000);
+    return () => window.clearInterval(timer);
   }, []);
 
   // Función al hacer clic en un plan
@@ -269,46 +280,62 @@ export default function LandingPage({ onOpenAuth }) {
                     <br /><br />
                     Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario. Haz clic en el botón para solicitar una propuesta adaptada a tu organización.
                 </p>
-                <button id="btn-corp-contact" className="btn btn-primary" style={{ padding: '18px 45px', fontWeight: '700', fontSize: '1.1rem', borderRadius: '12px', boxShadow: '0 4px 15px rgba(29, 53, 87, 0.2)' }}>
+                {/* AHORA LLAMA A LA FUNCIÓN QUE ABRE EL MODAL DE CONTACTO */}
+                <button 
+                  id="btn-corp-contact" 
+                  className="btn btn-primary" 
+                  style={{ padding: '18px 45px', fontWeight: '700', fontSize: '1.1rem', borderRadius: '12px', boxShadow: '0 4px 15px rgba(29, 53, 87, 0.2)' }}
+                  onClick={() => {
+                    // Si el modal está renderizado en el index.html original:
+                    const contactModal = document.getElementById('contact-modal');
+                    if(contactModal) contactModal.classList.remove('hidden');
+                  }}
+                >
                     Contactar con Soporte Corporativo
                 </button>
             </div>
         </section>
 
-        {/* SECCIÓN TESTIMONIOS */}
+        {/* SECCIÓN TESTIMONIOS CON LÓGICA REACTIVA DE ANIMACIÓN */}
         <section id="testimonios">
             <div className="wrapper">
                 <div className="section-intro" style={{ marginBottom: '30px' }}>
                     <h2>Lo que dicen nuestros usuarios</h2>
                 </div>
-                <div className="carousel-container">
-                    <div className="carousel-track" id="carouselTrack">
-                        <div className="testimonial-slide">
+                <div className="carousel-container" style={{ overflow: 'hidden' }}>
+                    {/* NUEVO: Aplicación dinámica del transform para deslizar el carrusel */}
+                    <div className="carousel-track" id="carouselTrack" style={{ display: 'flex', transform: `translateX(-${currentSlide * 100}%)`, transition: 'transform 0.5s ease-in-out' }}>
+                        
+                        <div className="testimonial-slide" style={{ minWidth: '100%' }}>
                             <div className="testimonial-card">
                                 <span className="quote-icon">“</span>
                                 <p className="testimonial-text">PIDA me dio respuestas mucho más completas y técnicas de lo que yo andaba buscando, me da mucha confianza.</p>
                                 <span className="testimonial-author">Carlos Urquilla</span>
                             </div>
                         </div>
-                        <div className="testimonial-slide">
+                        
+                        <div className="testimonial-slide" style={{ minWidth: '100%' }}>
                             <div className="testimonial-card">
                                 <span className="quote-icon">“</span>
                                 <p className="testimonial-text">Este sistema PIDA me ha gustado mucho por la calidad de información que proporciona. He realizado varias consultas y han satisfecho mis expectativas.</p>
                                 <span className="testimonial-author">Alexandra Esquivel</span>
                             </div>
                         </div>
-                        <div className="testimonial-slide">
+                        
+                        <div className="testimonial-slide" style={{ minWidth: '100%' }}>
                             <div className="testimonial-card">
                                 <span className="quote-icon">“</span>
                                 <p className="testimonial-text">Creo que la limitante de creer en la IA es que uno no entiende cómo funciona. Cuando comprendes que la IA no sustituye la inteligencia humana sino que la complementa, entonces empezarás a trabajar en otro nivel, recuperando tiempo valiosísimo para otras cosas.</p>
                                 <span className="testimonial-author">Fabiola Galaviz</span>
                             </div>
                         </div>
+
                     </div>
                     <div className="carousel-dots" id="carouselDots">
-                        <button className="dot-btn active"></button>
-                        <button className="dot-btn"></button>
-                        <button className="dot-btn"></button>
+                        {/* NUEVO: Controles dinámicos para los puntos del carrusel */}
+                        <button className={`dot-btn ${currentSlide === 0 ? 'active' : ''}`} onClick={() => setCurrentSlide(0)}></button>
+                        <button className={`dot-btn ${currentSlide === 1 ? 'active' : ''}`} onClick={() => setCurrentSlide(1)}></button>
+                        <button className={`dot-btn ${currentSlide === 2 ? 'active' : ''}`} onClick={() => setCurrentSlide(2)}></button>
                     </div>
                 </div>
             </div>
@@ -320,7 +347,6 @@ export default function LandingPage({ onOpenAuth }) {
                 <span>&copy; 2025 IIRESODH PAYMENTS, LLC.</span>
                 <a href="https://pida-ai.com/terminos" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Términos de uso</a>
                 <a href="https://pida-ai.com/privacidad" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Política de privacidad</a>
-                {/* <a href="#" id="open-legal-btn" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Términos de uso y política de privacidad</a> */}
                 <a href="mailto:contacto@pida-ai.com" style={{ color: 'var(--navy)', textDecoration: 'none' }}>contacto@pida-ai.com</a>
             </div>
             <br />&nbsp;
