@@ -166,24 +166,24 @@ export default function Dashboard({ user }) {
           <h2 style={{ color: '#1D3557', marginBottom: '15px' }}>Suscripción requerida ⚖️</h2>
           <p style={{ color: '#4B5563', lineHeight: '1.6' }}>No hemos detectado una suscripción activa vinculada a tu cuenta. Para acceder a las herramientas de PIDA, debes completar el registro de pago.</p>
           
-          {/* Botón de Redirección Directa al Sitio Principal */}
+          {/* Botón de Redirección con URL Relativa (funciona en prueba y producción) */}
           <button 
             className="pida-button-primary" 
             style={{ marginTop: '25px', width: '100%' }}
-            onClick={() => window.location.href = 'https://pida-ai.com/#planes'}
+            onClick={() => window.location.href = '/#planes'}
           >
             Ir a Planes de Suscripción
           </button>
           
-          {/* Botón de Cierre de Sesión con salida forzosa */}
+          {/* Botón de Cierre de Sesión con salida forzosa relativa */}
           <button 
             style={{ marginTop: '15px', background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', textDecoration: 'underline', width: '100%' }}
             onClick={async () => {
               try {
                 await auth.signOut();
-                window.location.replace("https://pida-ai.com"); 
+                window.location.replace('/'); 
               } catch (err) {
-                window.location.replace("https://pida-ai.com");
+                window.location.replace('/');
               }
             }}
           >
