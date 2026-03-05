@@ -1503,3 +1503,78 @@ input:checked + .slider:before { transform: translateX(24px); }
     from { opacity: 0; transform: scale(0.9); }
     to { opacity: 1; transform: scale(1); }
 }
+
+/* =========================================
+   DISEÑO MEJORADO DEL CHAT Y FUENTES
+   ========================================= */
+
+/* Estilos mejorados para las fuentes y negritas dentro de las respuestas de PIDA */
+.markdown-content strong {
+    color: var(--pida-primary); /* Las negritas tomarán el color azul marino de PIDA */
+    font-weight: 700;
+}
+
+/* Enlaces (Fuentes) dentro del texto */
+.markdown-content a {
+    color: #0284C7; /* Azul claro llamativo */
+    text-decoration: none;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.markdown-content a:hover {
+    text-decoration: underline;
+}
+
+/* Listas más ordenadas */
+.markdown-content ul, .markdown-content ol {
+    padding-left: 20px;
+    margin-bottom: 15px;
+}
+
+.markdown-content li {
+    margin-bottom: 6px;
+}
+
+/* =========================================
+   BOTONES DE PREGUNTAS DE SEGUIMIENTO
+   ========================================= */
+
+.follow-up-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #ccc;
+}
+
+.follow-up-btn {
+    background-color: #F8FAFC;
+    border: 1px solid #CBD5E1;
+    color: #334155;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    line-height: 1.4;
+}
+
+/* Flechita antes del texto del botón */
+.follow-up-btn::before {
+    content: '💬';
+    margin-right: 10px;
+    font-size: 1rem;
+}
+
+.follow-up-btn:hover {
+    background-color: #EEF2FF;
+    border-color: #818CF8;
+    color: var(--pida-primary);
+    transform: translateX(3px); /* Pequeño empujón a la derecha al pasar el mouse */
+}
+
+.follow-up-btn:active {
+    transform: scale(0.98);
+}

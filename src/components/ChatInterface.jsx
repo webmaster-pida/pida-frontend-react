@@ -4,7 +4,6 @@ import { Exporter, getTimestampedName } from '../utils/exporter';
 
 const API_CHAT = "https://chat-v20-stripe-elements-465781488910.us-central1.run.app";
 
-// Añadimos refreshHistory en las props
 export default function ChatInterface({ user, resetSignal, loadChatId, refreshHistory }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -60,18 +59,21 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     return data.id;
   };
 
-  const handleSend = async (e) => {
-    e.preventDefault();
-    if (!input.trim() || isTyping) return;
+  // Función principal unificada para enviar mensajes (escritos o por botón)
+  const handleSend = async (e, textOverride = null) => {
+    if (e) e.preventDefault();
+    
+    const textToSend = textOverride || input.trim();
+    if (!textToSend || isTyping) return;
 
-    const textToSend = input.trim();
-    setInput('');
+    if (!textOverride) setInput('');
+    
     setMessages(prev => [...prev, { role: 'user', content: textToSend }]);
     setIsTyping(true);
 
     try {
       let currentChatId = chatId;
-      let isNewConversation = false; // Bandera para saber si hay que actualizar el título
+      let isNewConversation = false;
       
       if (!currentChatId) {
         currentChatId = await startConversation();
@@ -80,14 +82,13 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
       const token = await user.getIdToken();
       
-      // Enviar la petición para actualizar el título en segundo plano si es un chat nuevo
       if (isNewConversation) {
         fetch(`${API_CHAT}/conversations/${currentChatId}/title`, {
           method: 'PATCH',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: textToSend.substring(0, 40) })
         }).then(() => {
-          if (refreshHistory) refreshHistory(); // Le avisa al Dashboard que descargue los nombres de nuevo
+          if (refreshHistory) refreshHistory();
         }).catch(err => console.error("Error actualizando título:", err));
       }
 
@@ -99,7 +100,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
       if (!res.ok) {
         if (res.status === 403 || res.status === 402 || res.status === 429) {
-             throw new Error("Has alcanzado tu límite de consultas diarias o tu suscripción no está activa.");
+             throw new Error("Has alcanzado tu límite de consultas o tu suscripción no está activa.");
         }
         throw new Error(`Error del servidor (${res.status})`);
       }
@@ -122,12 +123,17 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
             try {
               const data = JSON.parse(line.substring(6));
               if (data.text) {
-                fullText += data.text;
-                setMessages(prev => {
-                  const newMsgs = [...prev];
-                  newMsgs[newMsgs.length - 1].content = fullText;
-                  return newMsgs;
-                });
+                // STREAMING LETRA POR LETRA: Añadimos un micro-retraso por cada caracter
+                for (let i = 0; i < data.text.length; i++) {
+                  fullText += data.text[i];
+                  setMessages(prev => {
+                    const newMsgs = [...prev];
+                    newMsgs[newMsgs.length - 1].content = fullText;
+                    return newMsgs;
+                  });
+                  // 10 milisegundos de espera por cada letra
+                  await new Promise(resolve => setTimeout(resolve, 10)); 
+                }
               }
             } catch (e) {}
           }
@@ -139,6 +145,66 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     } finally {
       setIsTyping(false);
     }
+  };
+
+  // Función para procesar y separar las preguntas de seguimiento del resto del texto
+  const renderMessageContent = (msg, index) => {
+    // Si es un mensaje del usuario, solo lo renderizamos normal
+    if (msg.role === 'user') {
+      return <ReactMarkdown>{msg.content}</ReactMarkdown>;
+    }
+
+    // Expresión regular para encontrar donde empiezan las preguntas de seguimiento
+    const regex = /(?:Preguntas de seguimiento|Preguntas sugeridas|Preguntas relacionadas):/is;
+    const match = msg.content.match(regex);
+
+    // Si encontramos preguntas de seguimiento Y la IA ya terminó de escribir (para que no salten los botones mientras escribe)
+    if (match && !isTyping && index === messages.length - 1) {
+      const mainContent = msg.content.substring(0, match.index);
+      const questionsRaw = msg.content.substring(match.index + match[0].length);
+      
+      // Limpiamos y extraemos las preguntas (quitamos asteriscos, guiones o números)
+      const questions = questionsRaw
+        .split('\n')
+        .map(q => q.replace(/^[-*0-9.]\s*/, '').replace(/\*/g, '').trim())
+        .filter(q => q.length > 5);
+
+      return (
+        <>
+          {/* El contenido principal formateado bonito */}
+          <div className="markdown-content">
+            <ReactMarkdown>{mainContent}</ReactMarkdown>
+          </div>
+          
+          {/* Los botones generados dinámicamente */}
+          {questions.length > 0 && (
+            <div className="follow-up-section">
+              <strong style={{ display: 'block', marginTop: '15px', marginBottom: '10px', color: 'var(--pida-primary)' }}>
+                Preguntas de seguimiento sugeridas:
+              </strong>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {questions.map((q, i) => (
+                  <button 
+                    key={i} 
+                    className="follow-up-btn"
+                    onClick={(e) => handleSend(e, q)}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      );
+    }
+
+    // Render normal si no hay preguntas detectadas o si todavía está escribiendo
+    return (
+      <div className="markdown-content">
+        <ReactMarkdown>{msg.content}</ReactMarkdown>
+      </div>
+    );
   };
 
   return (
@@ -161,7 +227,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
           {messages.map((msg, idx) => (
             <div key={idx} className={`pida-bubble ${msg.role === 'user' ? 'user-message-bubble' : 'pida-message-bubble'}`}>
-              <ReactMarkdown>{msg.content}</ReactMarkdown>
+              {renderMessageContent(msg, idx)}
             </div>
           ))}
 
@@ -179,7 +245,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
         </div>
       </div>
 
-      <form className="pida-view-form" onSubmit={handleSend}>
+      <form className="pida-view-form" onSubmit={(e) => handleSend(e)}>
         {messages.length > 0 && (
           <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '8px' }}>
             <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>TXT</button>
