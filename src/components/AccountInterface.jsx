@@ -3,7 +3,6 @@ import { auth } from '../config/firebase';
 
 const API_CHAT = "https://chat-v20-stripe-elements-465781488910.us-central1.run.app";
 
-// Recibimos isVip desde el Dashboard
 export default function AccountInterface({ user, isVip }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -34,7 +33,7 @@ export default function AccountInterface({ user, isVip }) {
   };
 
   const handleBillingPortal = async () => {
-    // Protección extra por si se intenta llamar a la función siendo VIP
+    // Si por alguna razón el botón no se bloqueó visualmente, esta función aborta si es VIP
     if (isVip) return;
 
     try {
@@ -98,8 +97,8 @@ export default function AccountInterface({ user, isVip }) {
           <div className="account-section" style={{ marginBottom: '30px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
             <h3 style={{ fontSize: '1rem', color: 'var(--pida-text-muted)', marginBottom: '15px', textTransform: 'uppercase' }}>Suscripción</h3>
             
-            {/* LÓGICA VIP PARA EL BOTÓN DE FACTURACIÓN */}
-            {isVip ? (
+            {/* LÓGICA VIP REFORZADA */}
+            {isVip === true ? (
               <button 
                 className="pida-button-primary" 
                 disabled 
@@ -107,7 +106,8 @@ export default function AccountInterface({ user, isVip }) {
                   width: '100%', 
                   backgroundColor: '#9ca3af', 
                   cursor: 'not-allowed',
-                  opacity: 0.8
+                  opacity: 0.8,
+                  border: 'none'
                 }}
               >
                 VIP: No posee facturación

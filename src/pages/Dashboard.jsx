@@ -9,26 +9,20 @@ import { PIDA_CONFIG } from '../config/constants';
 
 export default function Dashboard({ user }) {
   const [currentView, setCurrentView] = useState('investigador'); 
-  
-  // Estados para el Plan
-  const [userPlan, setUserPlan] = useState('basico'); // en minúsculas para la clase CSS
+  const [userPlan, setUserPlan] = useState('basico'); 
   const [isVip, setIsVip] = useState(false);
   const [isTrial, setIsTrial] = useState(false);
 
-  // Estados de limpieza (Gatillos)
   const [resetChat, setResetChat] = useState(0);
   const [resetAna, setResetAna] = useState(0);
   const [resetPre, setResetPre] = useState(0);
 
-  // --- ESTADOS PARA LOS HISTORIALES ---
   const [chatHistory, setChatHistory] = useState([]);
   const [anaHistory, setAnaHistory] = useState([]);
   const [preHistory, setPreHistory] = useState([]);
 
-  // Control visual de los menús desplegables
   const [showMenu, setShowMenu] = useState({ chat: false, ana: false, pre: false });
 
-  // IDs seleccionados para cargar
   const [loadChatId, setLoadChatId] = useState(null);
   const [loadAnaId, setLoadAnaId] = useState(null);
   const [loadPreData, setLoadPreData] = useState(null);
@@ -39,9 +33,17 @@ export default function Dashboard({ user }) {
     const checkVip = async () => {
       try {
         const token = await user.getIdToken();
-        const res = await fetch(`${PIDA_CONFIG.API_CHAT}/check-vip-access`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }});
-        if (res.ok) setIsVip((await res.json()).is_vip_user);
-      } catch (e) {}
+        const res = await fetch(`${PIDA_CONFIG.API_CHAT}/check-vip-access`, { 
+          method: 'POST', 
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setIsVip(data.is_vip_user);
+        }
+      } catch (e) {
+        console.error("Error verificando VIP", e);
+      }
     };
     checkVip();
 
@@ -62,7 +64,6 @@ export default function Dashboard({ user }) {
     return () => unsubscribe();
   }, [user]);
 
-  // --- FUNCIONES PARA OBTENER HISTORIALES ---
   const fetchChatHistory = async () => {
     try {
       const token = await user.getIdToken();
@@ -86,7 +87,6 @@ export default function Dashboard({ user }) {
     } catch (e) { console.error("Error precalificaciones", e); }
   };
 
-  // --- FUNCIONES PARA ELIMINAR ---
   const deleteChat = async (id, e) => {
     e.stopPropagation();
     try {
@@ -113,12 +113,10 @@ export default function Dashboard({ user }) {
     } catch (err) {}
   };
 
-  // Formateo del badge de plan
   let displayPlan = isVip ? 'VIP 🌟' : userPlan.charAt(0).toUpperCase() + userPlan.slice(1);
   if (displayPlan === 'Basico' || displayPlan === 'Basic') displayPlan = 'Básico';
   if (isTrial && !isVip) displayPlan += ' (Prueba)';
 
-  // Cerrar menús si se hace clic fuera
   const closeMenus = () => setShowMenu({ chat: false, ana: false, pre: false });
 
   return (
@@ -128,8 +126,6 @@ export default function Dashboard({ user }) {
       <main id="pida-main-content">
         <header className="pida-top-header">
           <div className="pida-context-controls">
-            
-            {/* CONTROLES DE CHAT */}
             {currentView === 'investigador' && (
               <div className="context-group">
                 <button className="pida-header-btn primary" onClick={() => { setResetChat(prev => prev + 1); setLoadChatId(null); fetchChatHistory(); }}>+ Nuevo Chat</button>
@@ -152,7 +148,6 @@ export default function Dashboard({ user }) {
               </div>
             )}
 
-            {/* CONTROLES DE ANALIZADOR */}
             {currentView === 'analizador' && (
               <div className="context-group">
                 <button className="pida-header-btn primary" onClick={() => { setResetAna(prev => prev + 1); setLoadAnaId(null); fetchAnaHistory(); }}>+ Nuevo Análisis</button>
@@ -175,7 +170,6 @@ export default function Dashboard({ user }) {
               </div>
             )}
 
-            {/* CONTROLES DE PRECALIFICADOR */}
             {currentView === 'precalificador' && (
               <div className="context-group">
                 <button className="pida-header-btn primary" onClick={() => { setResetPre(prev => prev + 1); setLoadPreData(null); fetchPreHistory(); }}>+ Nueva Precalificación</button>
@@ -204,7 +198,6 @@ export default function Dashboard({ user }) {
               </div>
             )}
             
-            {/* BADGE CON CLASES DINÁMICAS DE COLOR */}
             <div className={`plan-badge plan-${userPlan} ${isVip ? 'vip-active' : ''}`}>
               Plan: <strong className={isVip ? 'vip-text' : ''}>{displayPlan}</strong>
             </div>
@@ -213,11 +206,12 @@ export default function Dashboard({ user }) {
           </div>
         </header>
 
-        {/* Le pasamos refreshHistory al Chat para que actualice el menú superior cuando cambie el título */}
         {currentView === 'investigador' && <ChatInterface user={user} resetSignal={resetChat} loadChatId={loadChatId} refreshHistory={fetchChatHistory} />}
         {currentView === 'analizador' && <AnalyzerInterface user={user} resetSignal={resetAna} loadAnaId={loadAnaId} />}
         {currentView === 'precalificador' && <PrequalifierInterface user={user} resetSignal={resetPre} loadPreData={loadPreData} />}
-        {currentView === 'cuenta' && <AccountInterface user={user} />}
+        
+        {/* AQUÍ ESTÁ EL CAMBIO CLAVE: Pasar isVip explícitamente */}
+        {currentView === 'cuenta' && <AccountInterface user={user} isVip={isVip} />}
 
       </main>
     </div>
