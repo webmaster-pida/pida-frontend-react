@@ -53,6 +53,11 @@ export default function ChatInterface({ user, resetSignal, loadChatId }) {
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: "Nuevo Chat" })
     });
+    
+    if (!res.ok) {
+      throw new Error(res.status === 403 ? "Tu plan no está activo o no tienes permisos." : "Error al crear la conversación.");
+    }
+    
     const data = await res.json();
     setChatId(data.id);
     return data.id;
@@ -65,7 +70,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId }) {
 
     const textToSend = input.trim();
     setInput('');
-    // Agregamos el mensaje del usuario
     setMessages(prev => [...prev, { role: 'user', content: textToSend }]);
     setIsTyping(true);
 
@@ -82,13 +86,17 @@ export default function ChatInterface({ user, resetSignal, loadChatId }) {
         body: JSON.stringify({ prompt: textToSend })
       });
 
-      if (!res.ok) throw new Error('Error en el servidor');
+      if (!res.ok) {
+        if (res.status === 403 || res.status === 402 || res.status === 429) {
+             throw new Error("Has alcanzado tu límite de consultas diarias o tu suscripción no está activa.");
+        }
+        throw new Error(`Error del servidor (${res.status})`);
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let fullText = "";
 
-      // Agregamos un mensaje vacío de PIDA que iremos "rellenando" letra por letra
       setMessages(prev => [...prev, { role: 'model', content: '' }]);
 
       while (true) {
@@ -104,7 +112,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId }) {
               const data = JSON.parse(line.substring(6));
               if (data.text) {
                 fullText += data.text;
-                // Actualizamos el último mensaje (el de PIDA) con el texto nuevo
                 setMessages(prev => {
                   const newMsgs = [...prev];
                   newMsgs[newMsgs.length - 1].content = fullText;
@@ -116,8 +123,9 @@ export default function ChatInterface({ user, resetSignal, loadChatId }) {
         }
       }
     } catch (error) {
-      console.error(error);
-      setMessages(prev => [...prev, { role: 'model', content: '❌ Ocurrió un error de conexión.' }]);
+      console.error("Error en Chat:", error);
+      // Ahora muestra el error real (Ej: límite alcanzado) en la burbuja
+      setMessages(prev => [...prev, { role: 'model', content: `❌ **Ocurrió un problema:** ${error.message}` }]);
     } finally {
       setIsTyping(false);
     }
