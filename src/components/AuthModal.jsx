@@ -167,6 +167,13 @@ function AuthFormContent({ onClose, initialMode }) {
 
     } catch (err) {
       console.error(err);
+      
+      // CANDADO DE SEGURIDAD CRÍTICO: 
+      // Si estamos en registro, se creó el usuario en Firebase pero falló el pago, cerramos la sesión inmediatamente.
+      if (mode === 'register' && auth.currentUser) {
+        await auth.signOut();
+      }
+
       let msg = err.message || "Ocurrió un error.";
       if (err.code === 'auth/email-already-in-use') msg = "Este correo ya está registrado. Por favor, inicia sesión.";
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') msg = "Datos incorrectos.";
@@ -177,12 +184,7 @@ function AuthFormContent({ onClose, initialMode }) {
 
   return (
     <>
-      {mode !== 'reset' && (
-        <div className="login-tabs">
-          <button className={`login-tab-btn ${mode === 'login' ? 'active' : ''}`} onClick={() => { setMode('login'); setError(''); }}>Ingresar</button>
-          <button className={`login-tab-btn ${mode === 'register' ? 'active' : ''}`} onClick={() => { setMode('register'); setError(''); }}>Crear Cuenta</button>
-        </div>
-      )}
+      {/* SE ELIMINARON LAS PESTAÑAS (TABS) SUPERIORES PARA GARANTIZAR LA SEPARACIÓN DE FLUJOS */}
 
       <h2 id="auth-title" style={{ color: 'var(--pida-primary)', marginTop: 0, fontSize: '1.2rem' }}>
         {mode === 'login' && 'Bienvenido de nuevo'}
@@ -277,8 +279,7 @@ function AuthFormContent({ onClose, initialMode }) {
       </form>
 
       <div style={{ marginTop: '20px', fontSize: '0.85rem', color: '#666', textAlign: 'center' }}>
-        {mode === 'login' && <>¿No tienes cuenta? <span onClick={() => { setMode('register'); setError(''); }} style={{ color: 'var(--pida-accent)', textDecoration: 'underline', cursor: 'pointer' }}>Regístrate aquí</span></>}
-        {mode === 'register' && <>¿Ya tienes cuenta? <span onClick={() => { setMode('login'); setError(''); }} style={{ color: 'var(--pida-accent)', textDecoration: 'underline', cursor: 'pointer' }}>Inicia sesión aquí</span></>}
+        {/* SE ELIMINARON LOS ENLACES DE "REGÍSTRATE AQUÍ" E "INICIA SESIÓN AQUÍ" PARA BLOQUEAR EL SALTO ENTRE FLUJOS */}
         {mode === 'reset' && <span onClick={() => { setMode('login'); setError(''); }} style={{ color: 'var(--pida-accent)', textDecoration: 'underline', cursor: 'pointer' }}>← Volver al login</span>}
       </div>
     </>
