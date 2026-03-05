@@ -3,12 +3,12 @@ import { auth } from '../config/firebase';
 
 const API_CHAT = "https://chat-v20-stripe-elements-465781488910.us-central1.run.app";
 
-export default function AccountInterface({ user }) {
+// Recibimos isVip desde el Dashboard
+export default function AccountInterface({ user, isVip }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  // Cargar el nombre actual del usuario al abrir la vista
   useEffect(() => {
     if (user && user.displayName) {
       const parts = user.displayName.split(' ');
@@ -17,7 +17,6 @@ export default function AccountInterface({ user }) {
     }
   }, [user]);
 
-  // Utilidad para mostrar mensajes temporales
   const showMessage = (text, type = 'success') => {
     setMessage({ text, type });
     setTimeout(() => setMessage({ text: '', type: '' }), 4000);
@@ -35,6 +34,9 @@ export default function AccountInterface({ user }) {
   };
 
   const handleBillingPortal = async () => {
+    // Protección extra por si se intenta llamar a la función siendo VIP
+    if (isVip) return;
+
     try {
       const token = await user.getIdToken();
       const res = await fetch(`${API_CHAT}/create-portal-session`, {
@@ -48,7 +50,7 @@ export default function AccountInterface({ user }) {
       
       const data = await res.json();
       if (data.url) {
-        window.location.href = data.url; // Redirigir a Stripe
+        window.location.href = data.url; 
       } else {
         showMessage('❌ No se recibió URL del portal.', 'error');
       }
@@ -95,7 +97,30 @@ export default function AccountInterface({ user }) {
 
           <div className="account-section" style={{ marginBottom: '30px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
             <h3 style={{ fontSize: '1rem', color: 'var(--pida-text-muted)', marginBottom: '15px', textTransform: 'uppercase' }}>Suscripción</h3>
-            <button className="pida-button-primary" style={{ width: '100%', backgroundColor: '#2A4B7C' }} onClick={handleBillingPortal}>Portal de Facturación</button>
+            
+            {/* LÓGICA VIP PARA EL BOTÓN DE FACTURACIÓN */}
+            {isVip ? (
+              <button 
+                className="pida-button-primary" 
+                disabled 
+                style={{ 
+                  width: '100%', 
+                  backgroundColor: '#9ca3af', 
+                  cursor: 'not-allowed',
+                  opacity: 0.8
+                }}
+              >
+                VIP: No posee facturación
+              </button>
+            ) : (
+              <button 
+                className="pida-button-primary" 
+                style={{ width: '100%', backgroundColor: '#2A4B7C' }} 
+                onClick={handleBillingPortal}
+              >
+                Portal de Facturación
+              </button>
+            )}
           </div>
 
           <div className="account-section" style={{ borderTop: '1px solid #eee', paddingTop: '20px' }}>
