@@ -109,7 +109,7 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
-        {/* SECCIÓN ECOSISTEMA (TRADUCIDA A JSX) */}
+        {/* SECCIÓN ECOSISTEMA */}
         <section id="ecosistema" style={{ backgroundColor: '#FFFFFF', padding: '80px 0' }}>
             <div className="wrapper">
                 <div className="section-intro" style={{ marginBottom: '60px' }}>
@@ -259,6 +259,72 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
           </div>
         </section>
+
+        {/* SECCIÓN INFO CORPORATIVA */}
+        <section id="info-corporativa" style={{ marginTop: '60px', padding: '60px 20px', background: '#F8FAFC', borderRadius: '16px', border: '1px solid var(--pida-border)', textAlign: 'center' }}>
+            <div className="wrapper" style={{ maxWidth: '900px', margin: '0 auto' }}>
+                <h3 style={{ color: 'var(--pida-primary)', fontSize: '2rem', marginBottom: '20px' }}>¿Necesitas PIDA para tu Organización o Institución?</h3>
+                <p style={{ color: 'var(--pida-text-muted)', fontSize: '1.15rem', lineHeight: '1.7', marginBottom: '35px' }}>
+                    PIDA está diseñado para escalar con las necesidades de grandes equipos de litigio que requieren de mucha investigación y redacción. Si representas a una firma legal, una organización de defensa de derechos humanos, una fiscalía o formas parte de cualquier órgano de gobierno o bien, perteneces a una institución académica, ofrecemos esquemas de licenciamiento por volumen. 
+                    <br /><br />
+                    Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario. Haz clic en el botón para solicitar una propuesta adaptada a tu organización.
+                </p>
+                <button id="btn-corp-contact" className="btn btn-primary" style={{ padding: '18px 45px', fontWeight: '700', fontSize: '1.1rem', borderRadius: '12px', boxShadow: '0 4px 15px rgba(29, 53, 87, 0.2)' }}>
+                    Contactar con Soporte Corporativo
+                </button>
+            </div>
+        </section>
+
+        {/* SECCIÓN TESTIMONIOS */}
+        <section id="testimonios">
+            <div className="wrapper">
+                <div className="section-intro" style={{ marginBottom: '30px' }}>
+                    <h2>Lo que dicen nuestros usuarios</h2>
+                </div>
+                <div className="carousel-container">
+                    <div className="carousel-track" id="carouselTrack">
+                        <div className="testimonial-slide">
+                            <div className="testimonial-card">
+                                <span className="quote-icon">“</span>
+                                <p className="testimonial-text">PIDA me dio respuestas mucho más completas y técnicas de lo que yo andaba buscando, me da mucha confianza.</p>
+                                <span className="testimonial-author">Carlos Urquilla</span>
+                            </div>
+                        </div>
+                        <div className="testimonial-slide">
+                            <div className="testimonial-card">
+                                <span className="quote-icon">“</span>
+                                <p className="testimonial-text">Este sistema PIDA me ha gustado mucho por la calidad de información que proporciona. He realizado varias consultas y han satisfecho mis expectativas.</p>
+                                <span className="testimonial-author">Alexandra Esquivel</span>
+                            </div>
+                        </div>
+                        <div className="testimonial-slide">
+                            <div className="testimonial-card">
+                                <span className="quote-icon">“</span>
+                                <p className="testimonial-text">Creo que la limitante de creer en la IA es que uno no entiende cómo funciona. Cuando comprendes que la IA no sustituye la inteligencia humana sino que la complementa, entonces empezarás a trabajar en otro nivel, recuperando tiempo valiosísimo para otras cosas.</p>
+                                <span className="testimonial-author">Fabiola Galaviz</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="carousel-dots" id="carouselDots">
+                        <button className="dot-btn active"></button>
+                        <button className="dot-btn"></button>
+                        <button className="dot-btn"></button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {/* FOOTER / COPYRIGHT */}
+        <div className="wrapper">                   
+            <div className="copyright">
+                <span>&copy; 2025 IIRESODH PAYMENTS, LLC.</span>
+                <a href="https://pida-ai.com/terminos" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Términos de uso</a>
+                <a href="https://pida-ai.com/privacidad" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Política de privacidad</a>
+                {/* <a href="#" id="open-legal-btn" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Términos de uso y política de privacidad</a> */}
+                <a href="mailto:contacto@pida-ai.com" style={{ color: 'var(--navy)', textDecoration: 'none' }}>contacto@pida-ai.com</a>
+            </div>
+            <br />&nbsp;
+        </div>
       </main>
     </div>
   );
