@@ -4,14 +4,14 @@ import ChatInterface from '../components/ChatInterface';
 import AnalyzerInterface from '../components/AnalyzerInterface';
 import PrequalifierInterface from '../components/PrequalifierInterface';
 import AccountInterface from '../components/AccountInterface';
-// Se agrega 'auth' a la importación para que el botón de cerrar sesión sea funcional
+// Mantenemos tus importaciones y añadimos 'auth' para que el botón de salida funcione
 import { db, auth } from '../config/firebase'; 
 import { PIDA_CONFIG } from '../config/constants';
 
 export default function Dashboard({ user }) {
   const [currentView, setCurrentView] = useState('investigador'); 
   
-  // --- NUEVOS ESTADOS DE SEGURIDAD (SIN AFECTAR LO ANTERIOR) ---
+  // --- ESTADOS DE SEGURIDAD MANTENIDOS ---
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
   const [hasValidAccess, setHasValidAccess] = useState(false);
 
@@ -41,12 +41,13 @@ export default function Dashboard({ user }) {
   useEffect(() => {
     if (!user) return;
 
-    // Lógica de validación de acceso
+    // Lógica de validación de acceso rigurosa
     let vipConfirmed = false;
     let stripeConfirmed = false;
 
     const validateFinalAccess = (vip, stripeStatus) => {
-      if (vip || stripeStatus === 'active' || stripeStatus === 'trialing') {
+      // SOLO permite entrar si es VIP o tiene estatus active/trialing en Stripe
+      if (vip === true || stripeStatus === 'active' || stripeStatus === 'trialing') {
         setHasValidAccess(true);
       } else {
         setHasValidAccess(false);
@@ -65,7 +66,9 @@ export default function Dashboard({ user }) {
           vipConfirmed = vipVal;
           if (vipVal) validateFinalAccess(true, null);
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error("Error VIP", e);
+      }
     };
     checkVip();
 
@@ -79,11 +82,14 @@ export default function Dashboard({ user }) {
         }
         validateFinalAccess(vipConfirmed, data.status);
       } else {
+        // Si no existe documento de cliente y no es VIP, bloqueamos
         if (!vipConfirmed) {
           setHasValidAccess(false);
           setIsCheckingAccess(false);
         }
       }
+    }, (err) => {
+      setIsCheckingAccess(false);
     });
 
     fetchChatHistory();
@@ -93,7 +99,7 @@ export default function Dashboard({ user }) {
     return () => unsubscribe();
   }, [user]);
 
-  // --- TUS FUNCIONES ORIGINALES (SIN MODIFICAR UNA SOLA LETRA) ---
+  // --- TUS FUNCIONES ORIGINALES (SIN MODIFICAR NI UNA LETRA) ---
   const fetchChatHistory = async () => {
     try {
       const token = await user.getIdToken();
@@ -143,7 +149,7 @@ export default function Dashboard({ user }) {
     } catch (err) {}
   };
 
-  // --- VISTAS DE BLOQUEO (PARA QUE LOS BOTONES FUNCIONEN) ---
+  // --- PANTALLAS DE CARGA Y BLOQUEO (SIN SIMPLIFICAR) ---
   if (isCheckingAccess) {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: '#f9fafb' }}>
@@ -159,6 +165,8 @@ export default function Dashboard({ user }) {
         <div style={{ maxWidth: '500px', background: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', textAlign: 'center' }}>
           <h2 style={{ color: '#1D3557', marginBottom: '15px' }}>Suscripción requerida ⚖️</h2>
           <p style={{ color: '#4B5563', lineHeight: '1.6' }}>No hemos detectado una suscripción activa vinculada a tu cuenta. Para acceder a las herramientas de PIDA, debes completar el registro de pago.</p>
+          
+          {/* Botón de Redirección Directa al Sitio Principal */}
           <button 
             className="pida-button-primary" 
             style={{ marginTop: '25px', width: '100%' }}
@@ -166,9 +174,18 @@ export default function Dashboard({ user }) {
           >
             Ir a Planes de Suscripción
           </button>
+          
+          {/* Botón de Cierre de Sesión con salida forzosa */}
           <button 
             style={{ marginTop: '15px', background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', textDecoration: 'underline', width: '100%' }}
-            onClick={() => auth.signOut().then(() => window.location.href = '/')}
+            onClick={async () => {
+              try {
+                await auth.signOut();
+                window.location.replace("https://pida-ai.com"); 
+              } catch (err) {
+                window.location.replace("https://pida-ai.com");
+              }
+            }}
           >
             Cerrar sesión
           </button>
@@ -177,7 +194,7 @@ export default function Dashboard({ user }) {
     );
   }
 
-  // --- RENDERIZADO ORIGINAL (SIN MODIFICAR NADA) ---
+  // --- RENDERIZADO DEL DASHBOARD ORIGINAL (MANTENIDO ÍNTEGRO) ---
   let displayPlan = isVip ? 'VIP 🌟' : userPlan.charAt(0).toUpperCase() + userPlan.slice(1);
   if (displayPlan === 'Basico' || displayPlan === 'Basic') displayPlan = 'Básico';
   if (isTrial && !isVip) displayPlan += ' (Prueba)';
