@@ -11,22 +11,21 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [resultText, setResultText] = useState('');
   const [error, setError] = useState('');
   
-  // Referencia para ocultar el input real de archivos
   const fileInputRef = useRef(null);
+  const resultEndRef = useRef(null); // Para hacer auto-scroll como en el chat
 
-  // 1. Escuchar la señal desde la barra superior para limpiar pantalla
   useEffect(() => {
     if (resetSignal > 0) {
       handleClear();
     }
   }, [resetSignal]);
 
-  // 2. Escuchar cuando el usuario hace clic en el historial del Dashboard
   useEffect(() => {
     if (loadAnaId) {
       const loadPastAna = async () => {
         setIsAnalyzing(true);
         setError('');
+        setResultText('');
         try {
           const token = await user.getIdToken();
           const res = await fetch(`${API_ANA}/analysis-history/${loadAnaId}`, {
@@ -36,7 +35,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           
           const data = await res.json();
           setResultText(data.analysis);
-          setFiles([]); // Vaciamos los chips de archivos locales
+          setFiles([]); 
         } catch (err) {
           setError("❌ Error cargando el análisis guardado.");
         } finally {
@@ -47,7 +46,11 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
   }, [loadAnaId, user]);
 
-  // Manejar selección de archivos
+  // Auto-scroll para que siga el texto mientras se genera
+  useEffect(() => {
+    resultEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [resultText, isAnalyzing]);
+
   const handleFileChange = (e) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
@@ -55,12 +58,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
   };
 
-  // Quitar un archivo de la lista
   const removeFile = (indexToRemove) => {
     setFiles(files.filter((_, index) => index !== indexToRemove));
   };
 
-  // Limpiar todo
   const handleClear = () => {
     setFiles([]);
     setInstructions('');
@@ -68,7 +69,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     setError('');
   };
 
-  // Enviar a analizar
   const handleAnalyze = async () => {
     if (files.length === 0) {
       alert("Sube al menos un documento.");
@@ -115,8 +115,16 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               const d = JSON.parse(line.substring(6));
               if (d.error) throw new Error(d.error);
               if (d.text) {
-                fullText += d.text;
-                setResultText(fullText);
+                
+                // MÁQUINA DE ESCRIBIR IDÉNTICA AL CHAT: 10 letras cada 2ms
+                const chars = d.text;
+                const step = 10; 
+                for (let i = 0; i < chars.length; i += step) {
+                  fullText += chars.substring(i, i + step);
+                  setResultText(fullText);
+                  await new Promise(resolve => setTimeout(resolve, 2));
+                }
+
               }
             } catch (e) {}
           }
@@ -133,53 +141,60 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   return (
     <div className="pida-view">
       <div className="pida-view-content">
-        
-        {/* Pantalla de Bienvenida */}
-        {!isAnalyzing && !resultText && !error && (
-          <div className="pida-bubble pida-message-bubble" style={{ margin: '0 auto' }}>
-            <div className="pida-welcome-content">
-              <div className="pida-welcome-text" style={{ paddingLeft: 0 }}>
-                <h3>Analizador de Documentos</h3>
-                <p>Sube tus archivos (PDF, DOCX) y escribe una instrucción clara. PIDA leerá, resumirá y sistematizará el documento por ti.</p>
-                <p style={{ marginTop: '15px', fontWeight: 'bold', color: '#1D3557' }}>Ejemplos de lo que puedes pedir:</p>
-                <ul style={{ margin: '8px 0 0 20px', padding: 0, listStyleType: 'disc', color: '#374151' }}>
-                  <li style={{ marginBottom: '6px' }}>"Haz un resumen ejecutivo de este documento."</li>
-                  <li style={{ marginBottom: '6px' }}>"Identifica las cláusulas de rescisión y sus penalizaciones."</li>
-                  <li style={{ marginBottom: '6px' }}>"Extrae una lista cronológica de los hechos."</li>
-                </ul>
+        <div id="pida-chat-box"> {/* Añadido para mantener los márgenes del chat */}
+          
+          {/* Pantalla de Bienvenida */}
+          {!isAnalyzing && !resultText && !error && (
+            <div className="pida-bubble pida-message-bubble" style={{ margin: '0 auto' }}>
+              <div className="pida-welcome-content">
+                <div className="pida-welcome-text" style={{ paddingLeft: 0 }}>
+                  <h3>Analizador de Documentos</h3>
+                  <p>Sube tus archivos (PDF, DOCX) y escribe una instrucción clara. PIDA leerá, resumirá y sistematizará el documento por ti.</p>
+                  <p style={{ marginTop: '15px', fontWeight: 'bold', color: '#1D3557' }}>Ejemplos de lo que puedes pedir:</p>
+                  <ul style={{ margin: '8px 0 0 20px', padding: 0, listStyleType: 'disc', color: '#374151' }}>
+                    <li style={{ marginBottom: '6px' }}>"Haz un resumen ejecutivo de este documento."</li>
+                    <li style={{ marginBottom: '6px' }}>"Identifica las cláusulas de rescisión y sus penalizaciones."</li>
+                    <li style={{ marginBottom: '6px' }}>"Extrae una lista cronológica de los hechos."</li>
+                  </ul>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Loader Animado */}
-        {isAnalyzing && (
-          <div style={{ textAlign: 'center', marginTop: '40px' }}>
-            <div className="loader"></div>
-            <p style={{ color: 'var(--pida-text-muted)' }}>Analizando documentos...</p>
-          </div>
-        )}
+          {/* Resultados del Análisis en formato Burbuja de PIDA */}
+          {resultText && (
+            <div className="pida-bubble pida-message-bubble" style={{ marginTop: '20px', maxWidth: '100%' }}>
+              <div className="markdown-content">
+                <ReactMarkdown>{resultText}</ReactMarkdown>
+              </div>
+            </div>
+          )}
 
-        {/* Resultados del Análisis */}
-        {resultText && (
-          <div id="analyzer-analysis-result">
-            <ReactMarkdown>{resultText}</ReactMarkdown>
-          </div>
-        )}
+          {/* Tres Puntos Pensando idénticos al chat (desaparecen si ya hay texto) */}
+          {isAnalyzing && !resultText && (
+            <div className="pida-bubble pida-message-bubble" style={{ marginTop: '20px' }}>
+              <div className="typing-indicator">
+                <div className="typing-dot"></div>
+                <div className="typing-dot"></div>
+                <div className="typing-dot"></div>
+              </div>
+            </div>
+          )}
 
-        {/* Mensaje de Error */}
-        {error && (
-          <div id="analyzer-analysis-result">
-            <div style={{ color: '#EF4444', padding: '20px', fontWeight: 'bold' }}>{error}</div>
-          </div>
-        )}
+          {/* Mensaje de Error */}
+          {error && (
+            <div className="pida-bubble pida-message-bubble" style={{ marginTop: '20px' }}>
+              <div style={{ color: '#EF4444', fontWeight: 'bold' }}>{error}</div>
+            </div>
+          )}
 
+          <div ref={resultEndRef} />
+        </div>
       </div>
 
       {/* Formulario Inferior */}
       <div className="pida-view-form">
         
-        {/* Botones de Descarga (Solo si hay resultados) */}
         {resultText && (
           <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '8px' }}>
             <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", resultText)}>TXT</button>
@@ -188,7 +203,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           </div>
         )}
 
-        {/* Botón oculto para subir archivos */}
         <input 
           type="file" 
           multiple 
@@ -198,24 +212,23 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           onChange={handleFileChange}
         />
 
-        {/* Fila de botón de subir */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
           <button 
             className="pida-header-btn primary" 
             style={{ width: 'auto' }}
             onClick={() => fileInputRef.current.click()}
+            disabled={isAnalyzing}
           >
             + Seleccionar Archivos
           </button>
         </div>
 
-        {/* Chips de Archivos Seleccionados */}
         {files.length > 0 && (
           <div id="active-files-area" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '10px' }}>
             {files.map((file, idx) => (
               <div key={idx} className="active-file-chip">
                 <span>{file.name}</span> 
-                <button onClick={() => removeFile(idx)}>×</button>
+                <button onClick={() => removeFile(idx)} disabled={isAnalyzing}>×</button>
               </div>
             ))}
           </div>
@@ -228,10 +241,11 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           placeholder="Instrucciones para el análisis..."
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
+          disabled={isAnalyzing}
         />
         
         <div className="pida-form-actions">
-          <button type="button" className="pida-button-secondary" onClick={handleClear}>Limpiar</button>
+          <button type="button" className="pida-button-secondary" onClick={handleClear} disabled={isAnalyzing}>Limpiar</button>
           <button type="button" className="pida-button-primary" onClick={handleAnalyze} disabled={isAnalyzing}>
             Analizar
           </button>

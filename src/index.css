@@ -1077,9 +1077,10 @@ input:checked + .slider:before { transform: translateX(24px); }
 
 /* Color Plan Premium (Degradado Morado/Premium) */
 .plan-badge.plan-premium {
-    background: linear-gradient(to right, #FAF5FF, #F3E8FF) !important;
-    border: 1px solid #D8B4FE !important;
-    color: #7E22CE !important;
+    background-color: #FFFBEB !important;
+    border: 1px solid #FCD34D !important;
+    color: #92400E !important;
+    box-shadow: 0 2px 5px rgba(245, 158, 11, 0.2) !important;
 }
 
 /* Color VIP */
@@ -1577,4 +1578,93 @@ input:checked + .slider:before { transform: translateX(24px); }
 
 .follow-up-btn:active {
     transform: scale(0.98);
+}
+
+/* =========================================
+   DISEÑO DE FUENTES Y JURISPRUDENCIA (BLOCKQUOTES)
+   ========================================= */
+
+.markdown-content blockquote {
+    border-left: 4px solid var(--pida-primary) !important;
+    background-color: #F8FAFC !important;
+    padding: 12px 16px !important;
+    margin: 12px 0 20px 0 !important;
+    border-radius: 0 8px 8px 0 !important;
+    color: #334155 !important;
+    font-style: italic !important;
+    line-height: 1.6 !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+
+.markdown-content blockquote p {
+    margin: 0 !important; /* Quita el margen extra dentro de la cita */
+}
+
+/* Títulos dentro de la respuesta de PIDA (## Análisis, ## Fuentes) */
+.markdown-content h2 {
+    color: var(--pida-primary);
+    font-size: 1.3rem;
+    margin-top: 25px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #E2E8F0;
+    padding-bottom: 5px;
+}
+
+.markdown-content h3 {
+    color: #0369A1;
+    font-size: 1.1rem;
+    margin-top: 20px;
+}
+
+/* =========================================
+   ESTABILIZACIÓN MÓVIL (IPHONE VS ANDROID)
+   ========================================= */
+
+/* 1. Usar el alto dinámico real (dvh) y evitar rebotes de pantalla en iOS */
+html, body {
+    height: 100dvh !important;
+    width: 100vw !important;
+    overflow: hidden !important; /* Evita que la página entera haga scroll, solo el chat debe hacerlo */
+    overscroll-behavior-y: none !important; /* Quita el efecto "goma" del iPhone al hacer scroll */
+}
+
+/* 2. El contenedor maestro toma exactamente el alto de la pantalla visible */
+#pida-app-layout {
+    height: 100dvh !important;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden !important;
+}
+
+#pida-main-content {
+    height: 100dvh !important;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden !important;
+}
+
+/* 3. Estructura Flexbox estricta para el Chat */
+.pida-view {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    overflow: hidden !important;
+}
+
+/* El área de los mensajes crece y hace scroll */
+.pida-view-content {
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important; /* Scroll suave y nativo en iOS */
+}
+
+/* 4. Anclaje estricto del formulario inferior */
+.pida-view-form {
+    flex: 0 0 auto !important; /* Evita que se encoja o expanda mágicamente */
+    position: relative !important;
+    z-index: 100 !important;
+    /* MAGIA PARA iPHONE: env(safe-area-inset-bottom) detecta si el cel tiene la raya negra abajo y le da espacio extra para que no tape los botones */
+    padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px)) !important;
+    background-color: var(--pida-bg, #ffffff) !important; 
 }
