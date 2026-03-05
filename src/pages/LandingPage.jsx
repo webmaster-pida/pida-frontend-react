@@ -47,6 +47,7 @@ export default function LandingPage({ onOpenAuth }) {
         <div className="wrapper nav-inner">
           <nav className="nav-menu">
             <a href="#diferencia" className="nav-link">Diferencia PIDA</a>
+            <a href="#ecosistema" className="nav-link">Ecosistema</a>
             <a href="#planes" className="nav-link">Planes</a>
           </nav>
         </div>
@@ -84,13 +85,6 @@ export default function LandingPage({ onOpenAuth }) {
                     <p>PIDA no improvisa buscando en el caos de internet. Su punto de partida es la biblioteca del <strong>IIRESODH</strong>, una institución referente con más de 30 años de experiencia en Litigio Estratégico Internacional.</p>
                     <p>Primero, PIDA consulta este acervo validado por personas expertas en Derechos Humanos para obtener el fundamento correcto. Luego, usa la IA para construir tu respuesta. Así obtienes la velocidad de la tecnología, pero con la <strong>autoridad y el rigor técnico</strong> que solo el IIRESODH puede garantizar.</p>
                 </div>
-                {/*
-                <div className="bento-grid">
-                    <div className="bento-card"><div><img src="img/icono_01.png" alt="Económico" /></div><div><h3 className="bento-title">Económico</h3><p>PIDA cuesta menos que la competencia</p></div></div>
-                    <div className="bento-card"><div><img src="img/icono_03.png" alt="Seguro" /></div><h3 className="bento-title">Seguro</h3><p>Tus datos viajan encriptados y no se comparten</p></div>
-                    <div className="bento-card"><div><img src="img/Icon_App-Mobile.png" alt="Móvil" /></div><h3 className="bento-title">Móvil</h3><p>Funciona en cualquier dispositivo móvil</p></div>
-                </div>
-                */}
             </div>
         </section>
 
@@ -111,6 +105,64 @@ export default function LandingPage({ onOpenAuth }) {
                         <h3 className="bento-title">Eficiencia Acelerada</h3>
                         <p>El “Analizador de Documentos” sigue siendo tu experto incansable, capaz de procesar tus archivos y extraer información clave en minutos, liberándote para la estrategia y la acción.</p>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        {/* SECCIÓN ECOSISTEMA (TRADUCIDA A JSX) */}
+        <section id="ecosistema" style={{ backgroundColor: '#FFFFFF', padding: '80px 0' }}>
+            <div className="wrapper">
+                <div className="section-intro" style={{ marginBottom: '60px' }}>
+                    <h2 style={{ color: 'var(--navy)', fontSize: '2.5rem', marginBottom: '15px' }}>El Ecosistema PIDA</h2>
+                    <p style={{ fontSize: '1.2rem', color: '#4B5563', maxWidth: '800px', margin: '0 auto' }}>
+                        PIDA integra tres motores especializados que trabajan en conjunto para cubrir el ciclo completo de la defensa legal: investigación, análisis documental y diagnóstico de casos.
+                    </p>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '50px', maxWidth: '900px', margin: '0 auto' }}>
+                    
+                    {/* Herramienta 1 */}
+                    <div style={{ borderLeft: '4px solid #0284C7', paddingLeft: '30px' }}>
+                        <h3 style={{ color: 'var(--navy)', fontSize: '1.5rem', marginBottom: '10px' }}>
+                            1. Experto en Derechos Humanos
+                            <span style={{ display: 'block', fontSize: '1rem', color: '#0284C7', fontWeight: '600', marginTop: '5px' }}>TU CONSULTOR FUNDAMENTADO</span>
+                        </h3>
+                        <p style={{ fontSize: '1.05rem', color: '#374151', lineHeight: '1.7', marginBottom: '15px' }}>
+                            Este motor redefine la investigación jurídica. A diferencia de los chats genéricos que improvisan respuestas, PIDA actúa como un consultor senior conectado directamente a la <strong>biblioteca privada y curada del IIRESODH</strong>.
+                        </p>
+                        <p style={{ fontSize: '1rem', color: '#4B5563', lineHeight: '1.6' }}>
+                            <strong>Aplicación Práctica:</strong> Utilízalo para resolver dudas complejas sobre control de convencionalidad, buscar jurisprudencia específica de la Corte IDH o redactar argumentos sólidos para tus demandas. Cada respuesta está respaldada por una base de conocimiento autorizada, garantizando rigor técnico y reduciendo el riesgo de imprecisiones.
+                        </p>
+                    </div>
+
+                    {/* Herramienta 2 */}
+                    <div style={{ borderLeft: '4px solid #0284C7', paddingLeft: '30px' }}>
+                        <h3 style={{ color: 'var(--navy)', fontSize: '1.5rem', marginBottom: '10px' }}>
+                            2. Analizador de Documentos
+                            <span style={{ display: 'block', fontSize: '1rem', color: '#0284C7', fontWeight: '600', marginTop: '5px' }}>TU ESTRATEGA PROCESAL</span>
+                        </h3>
+                        <p style={{ fontSize: '1.05rem', color: '#374151', lineHeight: '1.7', marginBottom: '15px' }}>
+                            Capacidad de procesamiento masivo para el abogado moderno. Esta herramienta lee, comprende y procesa archivos voluminosos (PDF, Word) en segundos, actuando como un asistente analítico incansable.
+                        </p>
+                        <p style={{ fontSize: '1rem', color: '#4B5563', lineHeight: '1.6' }}>
+                            <strong>Aplicación Práctica:</strong> Carga una sentencia extensa y pídele que encuentre contradicciones lógicas, extraiga los hechos probados para armar tu apelación o elabore una <strong>Teoría del Caso</strong> basada en las pruebas del expediente. Además, puedes instruirle para que redacte borradores de escritos legales (amparos, memorandos) utilizando estrictamente la información del documento subido.
+                        </p>
+                    </div>
+
+                    {/* Herramienta 3 */}
+                    <div style={{ borderLeft: '4px solid #0284C7', paddingLeft: '30px' }}>
+                        <h3 style={{ color: 'var(--navy)', fontSize: '1.5rem', marginBottom: '10px' }}>
+                            3. Precalificador de Conductas
+                            <span style={{ display: 'block', fontSize: '1rem', color: '#0284C7', fontWeight: '600', marginTop: '5px' }}>TU DIAGNÓSTICO INMEDIATO</span>
+                        </h3>
+                        <p style={{ fontSize: '1.05rem', color: '#374151', lineHeight: '1.7', marginBottom: '15px' }}>
+                            Una herramienta de encuadre jurídico diseñada para la etapa inicial de cualquier caso. Funciona como un puente inteligente entre los hechos fácticos y la tipificación legal.
+                        </p>
+                        <p style={{ fontSize: '1rem', color: '#4B5563', lineHeight: '1.6' }}>
+                            <strong>Aplicación Práctica:</strong> Ideal para la primera entrevista con el cliente. Simplemente narra los hechos del caso y el sistema realizará un análisis preliminar instantáneo para identificar posibles <strong>delitos penales</strong> y <strong>violaciones a Derechos Humanos</strong> conforme a estándares internacionales. Esto te permite trazar una ruta de defensa clara desde el primer minuto.
+                        </p>
+                    </div>
+
                 </div>
             </div>
         </section>
