@@ -12,7 +12,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [error, setError] = useState('');
   
   const fileInputRef = useRef(null);
-  const resultEndRef = useRef(null); // Para hacer auto-scroll como en el chat
+  const resultEndRef = useRef(null);
 
   useEffect(() => {
     if (resetSignal > 0) {
@@ -46,7 +46,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
   }, [loadAnaId, user]);
 
-  // Auto-scroll para que siga el texto mientras se genera
   useEffect(() => {
     resultEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [resultText, isAnalyzing]);
@@ -116,7 +115,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               if (d.error) throw new Error(d.error);
               if (d.text) {
                 
-                // MÁQUINA DE ESCRIBIR IDÉNTICA AL CHAT: 10 letras cada 2ms
                 const chars = d.text;
                 const step = 10; 
                 for (let i = 0; i < chars.length; i += step) {
@@ -138,16 +136,38 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
   };
 
+  const formatMarkdown = (text) => {
+    if (!text) return "";
+    let clean = text;
+
+    clean = clean.replace(/([^\n])\s*\n*(#{1,6}\s+)/g, '$1\n\n$2');
+    clean = clean.replace(/^\s*\*\*\s*$/gm, '');
+
+    const lines = clean.split('\n');
+    const fixedLines = lines.map(line => {
+      const count = (line.match(/\*\*/g) || []).length;
+      if (count % 2 !== 0) {
+        if (line.trim().startsWith('**')) return line.replace(/^\s*\*\*/, '');
+        if (line.trim().endsWith('**')) return line.replace(/\*\*\s*$/, '');
+      }
+      return line;
+    });
+    
+    clean = fixedLines.join('\n');
+    return clean;
+  };
+
   return (
     <div className="pida-view">
       <div className="pida-view-content">
-        <div id="pida-chat-box"> {/* Añadido para mantener los márgenes del chat */}
+        <div id="pida-chat-box"> 
           
-          {/* Pantalla de Bienvenida */}
+          {/* Bienvenida Uniforme con el Robot */}
           {!isAnalyzing && !resultText && !error && (
-            <div className="pida-bubble pida-message-bubble" style={{ margin: '0 auto' }}>
+            <div className="pida-bubble pida-message-bubble">
               <div className="pida-welcome-content">
-                <div className="pida-welcome-text" style={{ paddingLeft: 0 }}>
+                <img src="/img/PIDA-Productos_Stripe.png" alt="PIDA Robot" className="pida-welcome-robot" />
+                <div className="pida-welcome-text">
                   <h3>Analizador de Documentos</h3>
                   <p>Sube tus archivos (PDF, DOCX) y escribe una instrucción clara. PIDA leerá, resumirá y sistematizará el documento por ti.</p>
                   <p style={{ marginTop: '15px', fontWeight: 'bold', color: '#1D3557' }}>Ejemplos de lo que puedes pedir:</p>
@@ -161,27 +181,19 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             </div>
           )}
 
-          {/* Resultados del Análisis en formato Burbuja de PIDA */}
-          {resultText && (
-            <div className="pida-bubble pida-message-bubble" style={{ marginTop: '20px', maxWidth: '100%' }}>
-              <div className="markdown-content">
-                <ReactMarkdown>{resultText}</ReactMarkdown>
-              </div>
-            </div>
-          )}
-
-          {/* Tres Puntos Pensando idénticos al chat (desaparecen si ya hay texto) */}
           {isAnalyzing && !resultText && (
-            <div className="pida-bubble pida-message-bubble" style={{ marginTop: '20px' }}>
-              <div className="typing-indicator">
-                <div className="typing-dot"></div>
-                <div className="typing-dot"></div>
-                <div className="typing-dot"></div>
-              </div>
+            <div style={{ textAlign: 'center', marginTop: '40px' }}>
+              <div className="loader"></div>
+              <p style={{ color: 'var(--pida-text-muted)', marginTop: '15px' }}>Analizando documentos...</p>
             </div>
           )}
 
-          {/* Mensaje de Error */}
+          {resultText && (
+            <div id="analyzer-analysis-result" className="pida-bubble pida-message-bubble markdown-content" style={{ marginTop: '20px', maxWidth: '100%', padding: '20px' }}>
+              <ReactMarkdown>{formatMarkdown(resultText)}</ReactMarkdown>
+            </div>
+          )}
+
           {error && (
             <div className="pida-bubble pida-message-bubble" style={{ marginTop: '20px' }}>
               <div style={{ color: '#EF4444', fontWeight: 'bold' }}>{error}</div>
@@ -192,7 +204,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         </div>
       </div>
 
-      {/* Formulario Inferior */}
       <div className="pida-view-form">
         
         {resultText && (
@@ -234,6 +245,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           </div>
         )}
 
+        {/* Añadimos soporte para Enter en el analizador por si acaso también lo querías aquí */}
         <textarea 
           id="user-instructions" 
           rows="2" 
@@ -241,6 +253,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           placeholder="Instrucciones para el análisis..."
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAnalyze(); } }}
           disabled={isAnalyzing}
         />
         

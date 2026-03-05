@@ -1,22 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
 const API_PRE = "https://precalifier-v20-stripe-elements-465781488910.us-central1.run.app";
 
 export default function PrequalifierInterface({ user, resetSignal, loadPreData }) {
-  // Estados para los inputs del usuario
   const [title, setTitle] = useState('');
   const [country, setCountry] = useState('');
   const [facts, setFacts] = useState('');
   
-  // Estados para controlar la interfaz
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [statusMsg, setStatusMsg] = useState('Analizando delitos y violaciones a DDHH...');
   const [resultText, setResultText] = useState('');
   const [error, setError] = useState('');
 
-  // Limpiar el formulario
+  const resultEndRef = useRef(null);
+
+  useEffect(() => {
+    resultEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [resultText, isAnalyzing]);
+
   const handleClear = () => {
     setTitle('');
     setCountry('');
@@ -26,7 +29,6 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
     setStatusMsg('Analizando delitos y violaciones a DDHH...');
   };
 
-  // Escuchar la señal desde la barra superior (Dashboard) para limpiar
   useEffect(() => {
     if (resetSignal > 0) {
       handleClear();
@@ -43,7 +45,6 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
     }
   }, [loadPreData]);
 
-  // Enviar a analizar
   const handleAnalyze = async () => {
     const trimmedFacts = facts.trim();
     if (!trimmedFacts) {
@@ -56,7 +57,6 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
     setError('');
     setStatusMsg('Conectando con PIDA...');
 
-    // Si el usuario no pone título, generamos uno por defecto
     const finalTitle = title.trim() || `Caso ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
 
     try {
@@ -92,15 +92,18 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             try {
-              // Limpiamos el texto para poder parsear el JSON
               const data = JSON.parse(line.replace("data: ", "").trim());
               
-              // El backend de Precalificador tiene eventos especiales
               if (data.event === "status") { 
                   setStatusMsg(data.message); 
               } else if (data.text) {
-                  fullText += data.text;
-                  setResultText(fullText);
+                  const chars = data.text;
+                  const step = 10; 
+                  for (let i = 0; i < chars.length; i += step) {
+                    fullText += chars.substring(i, i + step);
+                    setResultText(fullText);
+                    await new Promise(resolve => setTimeout(resolve, 2));
+                  }
               }
             } catch (e) {}
           }
@@ -114,52 +117,73 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
     }
   };
 
+  const formatMarkdown = (text) => {
+    if (!text) return "";
+    let clean = text;
+
+    clean = clean.replace(/([^\n])\s*\n*(#{1,6}\s+)/g, '$1\n\n$2');
+    clean = clean.replace(/^\s*\*\*\s*$/gm, '');
+
+    const lines = clean.split('\n');
+    const fixedLines = lines.map(line => {
+      const count = (line.match(/\*\*/g) || []).length;
+      if (count % 2 !== 0) {
+        if (line.trim().startsWith('**')) return line.replace(/^\s*\*\*/, '');
+        if (line.trim().endsWith('**')) return line.replace(/\*\*\s*$/, '');
+      }
+      return line;
+    });
+    
+    clean = fixedLines.join('\n');
+    return clean;
+  };
+
   return (
     <div className="pida-view">
       <div className="pida-view-content">
-        
-        {/* Bienvenida */}
-        {!isAnalyzing && !resultText && !error && (
-          <div id="pre-welcome" style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '20px' }}>
-            <div className="pida-bubble pida-message-bubble pre-welcome-card" style={{ maxWidth: '650px' }}>
-              <h3 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                ⚖️ Precalificador Penal y de Derechos Humanos
-              </h3>
-              <p style={{ marginBottom: 0 }}>
-                Ingresa los hechos de tu caso. PIDA realizará un análisis preliminar para identificar <strong>posibles delitos penales</strong> y <strong>violaciones a derechos humanos</strong> conforme a estándares nacionales e internacionales.
-              </p>
+        <div id="pida-chat-box">
+          
+          {/* Bienvenida Uniforme con el Robot */}
+          {!isAnalyzing && !resultText && !error && (
+            <div className="pida-bubble pida-message-bubble">
+              <div className="pida-welcome-content">
+                <img src="/img/PIDA-Productos_Stripe.png" alt="PIDA Robot" className="pida-welcome-robot" />
+                <div className="pida-welcome-text">
+                  <h3>⚖️ Precalificador Penal y de Derechos Humanos</h3>
+                  <p>
+                    Ingresa los hechos de tu caso. PIDA realizará un análisis preliminar para identificar <strong>posibles delitos penales</strong> y <strong>violaciones a derechos humanos</strong> conforme a estándares nacionales e internacionales.
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Loader con mensajes dinámicos */}
-        {isAnalyzing && !resultText && (
-          <div style={{ textAlign: 'center', marginTop: '40px' }}>
-            <div className="loader"></div>
-            <p style={{ color: 'var(--pida-text-muted)' }}>{statusMsg}</p>
-          </div>
-        )}
+          {isAnalyzing && !resultText && (
+            <div style={{ textAlign: 'center', marginTop: '40px' }}>
+              <div className="loader"></div>
+              <p style={{ color: 'var(--pida-text-muted)', marginTop: '15px' }}>{statusMsg}</p>
+            </div>
+          )}
 
-        {/* Resultados */}
-        {resultText && (
-          <div id="pre-analysis-result">
-            <ReactMarkdown>{resultText}</ReactMarkdown>
-          </div>
-        )}
+          {resultText && (
+            <div className="pida-bubble pida-message-bubble markdown-content" style={{ marginTop: '20px', maxWidth: '100%', padding: '20px' }}>
+              <ReactMarkdown>{formatMarkdown(resultText)}</ReactMarkdown>
+            </div>
+          )}
 
-        {/* Errores */}
-        {error && (
-          <div id="pre-analysis-result">
-            <div style={{ color: '#EF4444', padding: '20px', fontWeight: 'bold' }}>{error}</div>
-          </div>
-        )}
+          {error && (
+            <div className="pida-bubble pida-message-bubble" style={{ marginTop: '20px' }}>
+              <div style={{ color: '#EF4444', fontWeight: 'bold' }}>{error}</div>
+            </div>
+          )}
 
+          <div ref={resultEndRef} />
+
+        </div>
       </div>
 
-      {/* Formulario e inputs */}
       <div className="pida-view-form">
         
-        {/* Botones de Descarga (Solo se muestran si hay un análisis completado) */}
         {resultText && (
           <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '10px' }}>
             <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Precalificador-PIDA"), "Precalificación de Caso", resultText)}>TXT</button>
@@ -176,6 +200,7 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
             style={{ flex: 1, height: '45px', marginBottom: 0, padding: '0 10px' }}
             value={title}
             onChange={e => setTitle(e.target.value)}
+            disabled={isAnalyzing}
           />
           
           <select 
@@ -183,6 +208,7 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
             style={{ flex: 1, height: '45px', padding: '0 10px', width: 'auto' }}
             value={country}
             onChange={e => setCountry(e.target.value)}
+            disabled={isAnalyzing}
           >
             <option value="" disabled>País (Código Penal)</option>
             <option value="AR">Argentina</option>
@@ -207,16 +233,24 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
           </select>
         </div>
 
+        {/* Soporte de Enter añadido aquí (con shift+enter para saltos de línea) */}
         <textarea 
           rows="4" 
           className="pida-textarea" 
           placeholder="Narra los hechos detalladamente para identificar posibles delitos y violaciones..."
           value={facts}
           onChange={e => setFacts(e.target.value)}
+          onKeyDown={(e) => { 
+            if (e.key === 'Enter' && !e.shiftKey) { 
+              e.preventDefault(); 
+              handleAnalyze(); 
+            } 
+          }}
+          disabled={isAnalyzing}
         />
 
         <div className="pida-form-actions">
-          <button type="button" className="pida-button-secondary" onClick={handleClear}>Limpiar</button>
+          <button type="button" className="pida-button-secondary" onClick={handleClear} disabled={isAnalyzing}>Limpiar</button>
           <button type="button" className="pida-button-primary" onClick={handleAnalyze} disabled={isAnalyzing}>
             Precalificar Caso
           </button>

@@ -1668,3 +1668,19 @@ html, body {
     padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px)) !important;
     background-color: var(--pida-bg, #ffffff) !important; 
 }
+
+/* =========================================
+   UNIFORMIDAD DE CAJAS DE BIENVENIDA (CHAT, ANA, PRE)
+   ========================================= */
+
+.pida-welcome-content {
+    min-width: 750px !important; /* Obliga a las 3 cajas a tener el mismo ancho en computadora */
+}
+
+/* Ajuste de seguridad para que no se rompan en celulares */
+@media (max-width: 768px) {
+    .pida-welcome-content {
+        min-width: 100% !important;
+        width: 100% !important;
+    }
+}
