@@ -39,7 +39,8 @@
         }
 
 		img { max-width: 100%; height: auto; display: block; }
-		.hero-content img { margin: 0 auto 40px auto; display: block; }
+        /* CORRECCIÓN: Margen inferior del logo reducido de 40px a 15px para eliminar espacio en blanco */
+		.hero-content img { margin: 0 auto 15px auto; display: block; }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; font-size: 16px; }
@@ -65,10 +66,13 @@
         .nav-menu .nav-link:visited { font-size: 0.9rem; font-weight: 500; color: #64748B !important; text-decoration: none !important; position: relative; transition: color 0.3s; }
         .nav-link:hover { color: var(--navy); }
 
-        .hero { padding: 120px 0 40px; position: relative; overflow: hidden; }
+        /* CORRECCIÓN: Padding superior del hero reducido de 120px a 90px */
+        .hero { padding: 90px 0 40px; position: relative; overflow: hidden; }
         .bg-gradient-mesh { position: absolute; top: -20%; right: -10%; width: 800px; height: 800px; background: radial-gradient(circle, rgba(0, 195, 255, 0.05) 0%, rgba(255,255,255,0) 60%); z-index: -1; animation: breathe 10s infinite alternate; }
         .hero-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 60px; align-items: center; }
-        .hero h1 { font-size: 3.5rem; margin-bottom: 24px; line-height: 1.1; }
+        
+        /* CORRECCIÓN: Margen inferior del h1 reducido de 24px a 16px */
+        .hero h1 { font-size: 3.5rem; margin-bottom: 16px; line-height: 1.1; }
         .hero-desc { font-size: 1.15rem; color: #4B5563; margin-bottom: 32px; max-width: 90%; }
         .badge-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; background: #EFF6FF; color: var(--navy); border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-bottom: 20px; }
         .dot { width: 8px; height: 8px; background: var(--pidared); border-radius: 50%; box-shadow: 0 0 8px var(--cyan); }
@@ -115,7 +119,17 @@
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         @keyframes breathe { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.1); opacity: 1; } }
-        @media (max-width: 900px) { .hero-grid, .pricing-compact, .bento-grid, .footer-cols { grid-template-columns: 1fr; gap: 40px; } .hero { padding-top: 100px; text-align: center; } .hero h1 { font-size: 2.2rem; margin-bottom: 20px; } .hero-content img { margin: 0 auto 20px auto; width: 80%; max-width: 300px; } .hero-desc { font-size: 1rem; } .hero-visual { height: 300px; margin-top: 40px; } .bento-wide { grid-column: span 1; } }
+        
+        /* CORRECCIÓN MÓVIL: Reducción de espaciado superior en pantallas pequeñas */
+        @media (max-width: 900px) { 
+            .hero-grid, .pricing-compact, .bento-grid, .footer-cols { grid-template-columns: 1fr; gap: 40px; } 
+            .hero { padding-top: 80px; text-align: center; } 
+            .hero h1 { font-size: 2.2rem; margin-bottom: 20px; } 
+            .hero-content img { margin: 0 auto 10px auto; width: 80%; max-width: 300px; } 
+            .hero-desc { font-size: 1rem; } 
+            .hero-visual { height: 300px; margin-top: 40px; } 
+            .bento-wide { grid-column: span 1; } 
+        }
 
         /* =========================================
            2. ESTILOS DE LA APP Y DASHBOARD
