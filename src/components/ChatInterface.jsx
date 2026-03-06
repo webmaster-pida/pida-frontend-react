@@ -229,6 +229,26 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
   return (
     <div className="pida-view">
+      {/* ESTA ES LA BOMBA CSS: Fuerzas la aniquilación de cualquier padding inferior 
+        en la vista del chat SOLAMENTE cuando está en celular, para que el formulario 
+        baje y se pegue a la barra azul.
+      */}
+      <style>{`
+        @media (max-width: 768px) {
+          .pida-view {
+            padding-bottom: 0 !important;
+          }
+          .pida-view-form {
+            margin-bottom: 0 !important;
+            padding-bottom: 10px !important;
+            border-bottom: none !important;
+          }
+          .pida-form-actions {
+            margin-bottom: 0 !important;
+          }
+        }
+      `}</style>
+
       <div className="pida-view-content">
         <div id="pida-chat-box">
           
@@ -265,14 +285,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
         </div>
       </div>
 
-      {/* --- CORRECCIÓN DEL ESPACIO FANTASMA --- 
-          Forzamos márgenes y padding a 0 en la base del formulario 
-      */}
-      <form 
-        className="pida-view-form" 
-        onSubmit={(e) => handleSend(e)}
-        style={{ margin: 0, marginBottom: 0, paddingBottom: 0 }}
-      >
+      <form className="pida-view-form" onSubmit={(e) => handleSend(e)}>
         {messages.length > 0 && (
           <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '8px' }}>
             <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>TXT</button>
