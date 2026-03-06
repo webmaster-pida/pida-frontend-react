@@ -5,14 +5,171 @@ import AnalyzerInterface from '../components/AnalyzerInterface';
 import PrequalifierInterface from '../components/PrequalifierInterface';
 import AccountInterface from '../components/AccountInterface';
 import { db, auth } from '../config/firebase'; 
-import { PIDA_CONFIG } from '../config/constants';
+import { PIDA_CONFIG, STRIPE_PRICES } from '../config/constants';
+
+// 1. IMPORTACIONES DE STRIPE AÑADIDAS
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+
+const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3kjrZGFGln3bhwEQKnpoNXf2MnLXGHylM1OQ6SvWJmNVCNqhCxg6x000l605E1B');
+
+// ============================================================================
+// NUEVO COMPONENTE: PORTAL DE PAGO IN-APP (Resuelve el bucle de expulsión)
+// ============================================================================
+const InAppCheckout = ({ user }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  
+  const [plan, setPlan] = useState('avanzado');
+  const [interval, setInterval] = useState('monthly');
+  const [currency] = useState(localStorage.getItem('pida_currency') || 'USD');
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
+  const [promoCode, setPromoCode] = useState('');
+  const [discountData, setDiscountData] = useState(null);
+  const [promoMsg, setPromoMsg] = useState({ text: '', type: '' });
+
+  const planDetails = STRIPE_PRICES[plan][interval][currency];
+
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    setPromoMsg({ text: 'Validando...', type: 'info' });
+    try {
+      const res = await fetch(`${PIDA_CONFIG.API_CHAT}/validate-promo-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: promoCode.trim(), priceId: planDetails.id })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Código inválido');
+      setDiscountData(data);
+      setPromoMsg({ text: `✅ Cupón aplicado: ${data.description}`, type: 'success' });
+    } catch (err) {
+      setDiscountData(null);
+      setPromoMsg({ text: `❌ ${err.message}`, type: 'error' });
+    }
+  };
+
+  const handlePay = async (e) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setLoading(true); setError('');
+
+    try {
+      const token = await user.getIdToken();
+      const intentRes = await fetch(`${PIDA_CONFIG.API_CHAT}/create-payment-intent`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priceId: planDetails.id,
+          currency: currency.toLowerCase(),
+          plan_key: plan,
+          trial_period_days: 5,
+          name: user.displayName || user.email,
+          promotion_code: discountData ? promoCode : ""
+        })
+      });
+      
+      const data = await intentRes.json();
+      if (!intentRes.ok) throw new Error(data.detail || "Error al procesar pago");
+
+      const cardElement = elements.getElement(CardElement);
+      let result;
+      
+      if (data.clientSecret.startsWith('seti_')) {
+        result = await stripe.confirmCardSetup(data.clientSecret, { payment_method: { card: cardElement, billing_details: { name: user.displayName || 'Usuario PIDA' } } });
+      } else {
+        result = await stripe.confirmCardPayment(data.clientSecret, { payment_method: { card: cardElement, billing_details: { name: user.displayName || 'Usuario PIDA' } } });
+      }
+
+      if (result.error) throw new Error(result.error.message);
+
+      sessionStorage.setItem('pida_is_onboarding', 'true');
+      window.location.reload(); // Recarga y activa la app automáticamente
+    } catch(err) {
+      setError(`❌ ${err.message}`);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: '550px', background: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)', textAlign: 'center', margin: '0 auto', width: '95%' }}>
+      <h2 style={{ color: 'var(--pida-primary)', marginBottom: '10px' }}>Completa tu Suscripción ⚖️</h2>
+      <p style={{ color: '#4B5563', marginBottom: '25px', fontSize: '0.95rem', lineHeight: '1.5' }}>
+        Has iniciado sesión como <strong>{user.email}</strong>, pero necesitas activar un plan para acceder a las herramientas.
+      </p>
+
+      <form onSubmit={handlePay} style={{ textAlign: 'left' }}>
+        
+        {/* Selector Dinámico de Planes */}
+        <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Elige tu Plan</label>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+          <select className="pida-textarea" style={{ flex: 1, padding: '12px', marginBottom: 0, fontWeight: 'bold' }} value={plan} onChange={e => {setPlan(e.target.value); setDiscountData(null); setPromoCode(''); setPromoMsg({text:'', type:''});}}>
+            <option value="basico">Plan Básico</option>
+            <option value="avanzado">Plan Avanzado (Recomendado)</option>
+            <option value="premium">Plan Premium</option>
+          </select>
+          <select className="pida-textarea" style={{ width: '130px', padding: '12px', marginBottom: 0 }} value={interval} onChange={e => {setInterval(e.target.value); setDiscountData(null); setPromoCode(''); setPromoMsg({text:'', type:''});}}>
+            <option value="monthly">Mensual</option>
+            <option value="annual">Anual</option>
+          </select>
+        </div>
+
+        {/* Resumen de Costo */}
+        <div style={{ padding: '15px', background: '#F8FAFC', borderRadius: '8px', marginBottom: '20px', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontWeight: '600', color: 'var(--pida-text-muted)' }}>Total a pagar:</span>
+          <div style={{ textAlign: 'right' }}>
+            <span style={{ fontSize: '1.3rem', fontWeight: '800', color: 'var(--pida-primary)', textDecoration: discountData ? 'line-through' : 'none', opacity: discountData ? 0.5 : 1 }}>
+              {planDetails.text}
+            </span>
+            {discountData && (
+              <div style={{ color: '#10B981', fontWeight: '800', fontSize: '1.2rem' }}>
+                {new Intl.NumberFormat(currency === 'MXN' ? 'es-MX' : 'en-US', { style: 'currency', currency }).format(discountData.final_amount / 100)}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Tarjeta Stripe */}
+        <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Datos de la tarjeta</label>
+        <div style={{ padding: '15px', border: '1px solid #CBD5E1', borderRadius: '8px', background: 'white', marginBottom: '15px' }}>
+          <CardElement options={{ style: { base: { fontSize: '16px', fontFamily: '"Inter", sans-serif', color: '#1D3557', '::placeholder': { color: '#aab7c4' } }, invalid: { color: '#EF4444' } }, hidePostalCode: true }} />
+        </div>
+
+        {/* Código Promocional */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '5px' }}>
+          <input type="text" className="pida-textarea" style={{ padding: '10px 12px', flex: 1, marginBottom: 0, textTransform: 'uppercase', fontSize: '0.9rem' }} placeholder="CÓDIGO DE DESCUENTO" value={promoCode} onChange={e => setPromoCode(e.target.value)} disabled={!!discountData || loading} />
+          <button type="button" className="pida-button-secondary" style={{ border: '1px solid #CBD5E1', padding: '0 15px', borderRadius: '6px', fontWeight: '600' }} onClick={handleApplyPromo} disabled={!!discountData || !promoCode || loading}>
+            {discountData ? '✓ Aplicado' : 'Aplicar'}
+          </button>
+        </div>
+        {promoMsg.text && <div style={{ fontSize: '0.8rem', color: promoMsg.type === 'error' ? '#EF4444' : '#10B981', marginBottom: '15px' }}>{promoMsg.text}</div>}
+
+        {error && <div style={{ color: '#EF4444', fontSize: '0.9rem', marginTop: '15px', padding: '12px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', fontWeight: '500' }}>{error}</div>}
+
+        <button type="submit" className="pida-button-primary" style={{ width: '100%', padding: '16px', fontSize: '1.05rem', marginTop: '20px' }} disabled={loading}>
+          {loading ? 'Procesando pago...' : 'Activar mi cuenta y probar 5 días'}
+        </button>
+      </form>
+
+      <button
+        style={{ marginTop: '25px', background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', textDecoration: 'underline', fontSize: '0.9rem' }}
+        onClick={() => auth.signOut()}
+      >
+        Cerrar sesión
+      </button>
+    </div>
+  );
+};
+// ============================================================================
+
 
 export default function Dashboard({ user }) {
   const [currentView, setCurrentView] = useState('investigador'); 
-  
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
   const [hasValidAccess, setHasValidAccess] = useState(false);
-
   const [userPlan, setUserPlan] = useState('basico'); 
   const [isVip, setIsVip] = useState(false);
   const [isTrial, setIsTrial] = useState(false);
@@ -26,7 +183,6 @@ export default function Dashboard({ user }) {
   const [preHistory, setPreHistory] = useState([]);
 
   const [showMenu, setShowMenu] = useState({ chat: false, ana: false, pre: false });
-
   const [loadChatId, setLoadChatId] = useState(null);
   const [loadAnaId, setLoadAnaId] = useState(null);
   const [loadPreData, setLoadPreData] = useState(null);
@@ -35,7 +191,6 @@ export default function Dashboard({ user }) {
     if (!user) return;
 
     let vipConfirmed = false;
-    let stripeConfirmed = false;
 
     const validateFinalAccess = (vip, stripeStatus) => {
       if (vip === true || stripeStatus === 'active' || stripeStatus === 'trialing') {
@@ -69,7 +224,6 @@ export default function Dashboard({ user }) {
         if (data.status === 'active' || data.status === 'trialing') {
           setUserPlan(data.plan || 'basico');
           setIsTrial(data.has_trial || false);
-          stripeConfirmed = true;
         }
         validateFinalAccess(vipConfirmed, data.status);
       } else {
@@ -78,7 +232,7 @@ export default function Dashboard({ user }) {
           setIsCheckingAccess(false);
         }
       }
-    }, (err) => {
+    }, () => {
       setIsCheckingAccess(false);
     });
 
@@ -147,43 +301,13 @@ export default function Dashboard({ user }) {
     );
   }
 
+  // --- SE REEMPLAZA LA PANTALLA DE BLOQUEO VIEJA POR EL NUEVO PORTAL DE PAGO IN-APP ---
   if (!hasValidAccess) {
     return (
-      <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f3f4f6', padding: '20px' }}>
-        <div style={{ maxWidth: '500px', background: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-          <h2 style={{ color: '#1D3557', marginBottom: '15px' }}>Suscripción requerida ⚖️</h2>
-          <p style={{ color: '#4B5563', lineHeight: '1.6' }}>No hemos detectado una suscripción activa vinculada a tu cuenta. Para acceder a las herramientas de PIDA, debes completar el registro de pago.</p>
-          
-          {/* BOTÓN CORREGIDO: Cierra la sesión fantasma ANTES de enviarte a los planes */}
-          <button 
-            className="pida-button-primary" 
-            style={{ marginTop: '25px', width: '100%' }}
-            onClick={async () => {
-              try {
-                await auth.signOut(); // <- EL CANDADO QUE FALTABA
-                window.location.href = '/#planes';
-              } catch (err) {
-                window.location.href = '/#planes';
-              }
-            }}
-          >
-            Ir a Planes de Suscripción
-          </button>
-          
-          <button 
-            style={{ marginTop: '15px', background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', textDecoration: 'underline', width: '100%' }}
-            onClick={async () => {
-              try {
-                await auth.signOut();
-                window.location.href = '/'; 
-              } catch (err) {
-                window.location.href = '/';
-              }
-            }}
-          >
-            Cerrar sesión
-          </button>
-        </div>
+      <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f3f4f6', padding: '20px', overflowY: 'auto' }}>
+        <Elements stripe={stripePromise}>
+          <BlockedCheckout user={user} />
+        </Elements>
       </div>
     );
   }

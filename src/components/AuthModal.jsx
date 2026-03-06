@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { auth, googleProvider, db } from '../config/firebase';
+import React, { useState } from 'react';
+import { auth, googleProvider } from '../config/firebase';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { STRIPE_PRICES, PIDA_CONFIG } from '../config/constants';
 
-// Inicializamos Stripe con tu llave pública
 const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3kjrZGFGln3bhwEQKnpoNXf2MnLXGHylM1OQ6SvWJmNVCNqhCxg6x000l605E1B');
 
-// Estilos para el campo de la tarjeta
 const cardStyle = {
   style: {
     base: { fontSize: '16px', fontFamily: '"Inter", sans-serif', color: '#1D3557', '::placeholder': { color: '#aab7c4' } },
@@ -16,7 +14,6 @@ const cardStyle = {
   hidePostalCode: true
 };
 
-// Subcomponente que contiene el formulario (Necesario para usar los Hooks de Stripe)
 function AuthFormContent({ onClose, initialMode }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -28,23 +25,19 @@ function AuthFormContent({ onClose, initialMode }) {
   const [lastName, setLastName] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   
-  // Estados de carga y errores
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState('');
 
-  // Estados de Pago / Promo
   const [promoCode, setPromoCode] = useState('');
   const [promoMessage, setPromoMessage] = useState({ text: '', type: '' });
   const [discountData, setDiscountData] = useState(null);
 
-  // Leer la configuración del plan seleccionado desde Storage
   const planKey = sessionStorage.getItem('pida_pending_plan') || 'basico';
   const intervalKey = sessionStorage.getItem('pida_pending_interval') || 'monthly';
   const currency = localStorage.getItem('pida_currency') || 'USD';
   const planDetails = STRIPE_PRICES[planKey]?.[intervalKey]?.[currency] || { text: 'N/A', id: '' };
 
-  // Manejar Login con Google
   const handleGoogleLogin = async () => {
     setError('');
     setIsLoading(true);
@@ -54,12 +47,10 @@ function AuthFormContent({ onClose, initialMode }) {
       onClose();
     } catch (err) {
       setError('No se pudo iniciar sesión con Google.');
-    } finally {
       setIsLoading(false);
-    }
+    } 
   };
 
-  // Validar Cupón de Descuento
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) return;
     setPromoMessage({ text: 'Validando...', type: 'info' });
@@ -80,7 +71,6 @@ function AuthFormContent({ onClose, initialMode }) {
     }
   };
 
-  // Manejar el envío del formulario (Login, Registro o Reset)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -102,7 +92,6 @@ function AuthFormContent({ onClose, initialMode }) {
         return;
       }
 
-      // --- FLUJO DE REGISTRO Y PAGO ---
       if (mode === 'register') {
         if (!termsAccepted) throw new Error("Debes aceptar los términos y condiciones.");
         if (!stripe || !elements) throw new Error("Stripe no ha cargado aún.");
@@ -110,7 +99,6 @@ function AuthFormContent({ onClose, initialMode }) {
         const fullName = `${firstName} ${lastName}`.trim();
         let user = auth.currentUser;
 
-        // 1. Crear usuario si no existe
         if (!user) {
           setLoadingText('Creando cuenta...');
           const cred = await auth.createUserWithEmailAndPassword(email, password);
@@ -118,7 +106,6 @@ function AuthFormContent({ onClose, initialMode }) {
           await user.updateProfile({ displayName: fullName });
         }
 
-        // 2. Crear Payment Intent en tu Backend
         setLoadingText('Iniciando prueba gratis...');
         const token = await user.getIdToken();
         const intentRes = await fetch(`${PIDA_CONFIG.API_CHAT}/create-payment-intent`, {
@@ -137,7 +124,6 @@ function AuthFormContent({ onClose, initialMode }) {
         const data = await intentRes.json();
         if (!intentRes.ok) throw new Error(data.detail || "Error al procesar el pago");
 
-        // 3. Confirmar la tarjeta con Stripe
         const cardElement = elements.getElement(CardElement);
         let result;
         
@@ -155,11 +141,9 @@ function AuthFormContent({ onClose, initialMode }) {
           throw new Error(result.error.message);
         }
 
-        // 4. Pago exitoso
         setLoadingText('¡Suscripción activada!');
         sessionStorage.setItem('pida_is_onboarding', 'true');
         
-        // Esperamos un segundo para que el backend de Stripe actualice Firebase
         setTimeout(() => {
           window.location.href = window.location.pathname + "?payment_status=success";
         }, 1500);
@@ -168,15 +152,20 @@ function AuthFormContent({ onClose, initialMode }) {
     } catch (err) {
       console.error(err);
       
-      // CANDADO DE SEGURIDAD CRÍTICO: 
-      // Si estamos en registro, se creó el usuario en Firebase pero falló el pago, cerramos la sesión inmediatamente.
       if (mode === 'register' && auth.currentUser) {
         await auth.signOut();
       }
 
       let msg = err.message || "Ocurrió un error.";
-      if (err.code === 'auth/email-already-in-use') msg = "Este correo ya está registrado. Por favor, inicia sesión.";
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') msg = "Datos incorrectos.";
+      
+      // SOLUCIÓN CLAVE: Mensaje amigable si la cuenta se creó pero el pago falló antes
+      if (err.code === 'auth/email-already-in-use') {
+          msg = "Esta cuenta ya existe. Haz clic en 'Volver al login' abajo, ingresa con tu contraseña y podrás pagar de forma segura desde tu panel de usuario.";
+      }
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+          msg = "Datos incorrectos.";
+      }
+      
       setError(msg);
       setIsLoading(false);
     }
@@ -184,8 +173,6 @@ function AuthFormContent({ onClose, initialMode }) {
 
   return (
     <>
-      {/* SE ELIMINARON LAS PESTAÑAS (TABS) SUPERIORES PARA GARANTIZAR LA SEPARACIÓN DE FLUJOS */}
-
       <h2 id="auth-title" style={{ color: 'var(--pida-primary)', marginTop: 0, fontSize: '1.2rem' }}>
         {mode === 'login' && 'Bienvenido de nuevo'}
         {mode === 'register' && 'Completar Suscripción'}
@@ -226,7 +213,6 @@ function AuthFormContent({ onClose, initialMode }) {
           </div>
         )}
 
-        {/* --- SECCIÓN DE PAGO DE STRIPE (SOLO EN REGISTRO) --- */}
         {mode === 'register' && (
           <div className="payment-summary-container">
             <div className="order-summary-box">
@@ -252,7 +238,6 @@ function AuthFormContent({ onClose, initialMode }) {
               <CardElement options={cardStyle} />
             </div>
 
-            {/* Promo Code */}
             <div className="promo-section">
               <div className="promo-input-group">
                 <input type="text" placeholder="CÓDIGO DE DESCUENTO" value={promoCode} onChange={e => setPromoCode(e.target.value)} disabled={!!discountData} />
@@ -263,7 +248,6 @@ function AuthFormContent({ onClose, initialMode }) {
               {promoMessage.text && <div className={`promo-msg ${promoMessage.type}`} style={{ display: 'block' }}>{promoMessage.text}</div>}
             </div>
 
-            {/* Términos y Condiciones */}
             <div className="terms-box">
               <input type="checkbox" id="terms" required checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} />
               <label htmlFor="terms">Acepto los <a href="/terminos.html" target="_blank" rel="noreferrer">términos de uso</a> y la <a href="/privacidad.html" target="_blank" rel="noreferrer">política de privacidad</a>.</label>
@@ -279,28 +263,23 @@ function AuthFormContent({ onClose, initialMode }) {
       </form>
 
       <div style={{ marginTop: '20px', fontSize: '0.85rem', color: '#666', textAlign: 'center' }}>
-        {/* SE ELIMINARON LOS ENLACES DE "REGÍSTRATE AQUÍ" E "INICIA SESIÓN AQUÍ" PARA BLOQUEAR EL SALTO ENTRE FLUJOS */}
         {mode === 'reset' && <span onClick={() => { setMode('login'); setError(''); }} style={{ color: 'var(--pida-accent)', textDecoration: 'underline', cursor: 'pointer' }}>← Volver al login</span>}
+        {mode === 'register' && <span onClick={() => { setMode('login'); setError(''); }} style={{ color: 'var(--pida-accent)', textDecoration: 'underline', cursor: 'pointer' }}>← Volver al login</span>}
       </div>
     </>
   );
 }
 
-// El Modal Principal que envuelve todo en el "Provider" de Stripe
 export default function AuthModal({ isOpen, initialMode = 'login', onClose }) {
   if (!isOpen) return null;
-
   return (
     <div id="pida-login-screen" style={{ display: 'flex' }}>
       <div className="login-card">
         <button className="close-login-btn" onClick={onClose} style={{ zIndex: 10 }}>×</button>
         <img src="/img/PIDA_logo-576.png" alt="PIDA Logo" className="login-logo" />
-        
-        {/* Aquí envolvemos el formulario con los Elementos de Stripe */}
         <Elements stripe={stripePromise}>
           <AuthFormContent onClose={onClose} initialMode={initialMode} />
         </Elements>
-
       </div>
     </div>
   );
