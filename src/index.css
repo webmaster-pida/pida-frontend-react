@@ -292,7 +292,7 @@
             .account-container { padding: 20px; border: none; box-shadow: none; }
             .pida-view-content { padding: 15px; }
 
-            /* --- SOLUCIÓN: Cajas de menú dinámicas que evitan el scroll horizontal --- */
+            /* --- SOLUCIÓN: Cajas de menú dinámicas que evitan el scroll horizontal en móviles --- */
             .pida-dropdown-content {
                 position: fixed !important;
                 top: 70px !important;
@@ -302,7 +302,16 @@
                 box-shadow: 0 15px 40px rgba(0,0,0,0.2) !important;
             }
 
-            /* --- OCULTAR TEXTO EN MÓVILES (RESTAURADO) --- */
+            /* --- UNIFICACIÓN DE CAJAS DE BIENVENIDA EN MÓVILES --- */
+            #pre-welcome > div, 
+            .pre-welcome-card {
+                max-width: 95% !important;
+                padding: 12px 16px !important;
+            }
+            .pida-bubble:has(.pida-welcome-content) {
+                max-width: 95% !important;
+            }
+            
             .pida-welcome-text > *:not(h3) {
                 display: none !important;
             }
@@ -328,11 +337,40 @@
         #nav-mobile-menu-btn { display: none; }
 
         /* =========================================
-           ESTILOS PRECALIFICADOR Y CAJAS UNIFICADAS
+           ESTILOS PRECALIFICADOR Y CAJAS UNIFICADAS (TAMAÑOS EXACTOS)
            ========================================= */
-        #pre-welcome { display: flex; justify-content: flex-start; margin-top: 20px; }
         
-        /* UNIFICACIÓN DE ANCHO Y CENTRADO DE TÍTULOS PARA LAS 3 CAJAS (Adiós robot) */
+        /* Contenedor principal del precalificador */
+        #pre-welcome { 
+            display: flex; 
+            justify-content: center; /* FORZAR CENTRADO */
+            width: 100%;
+            margin-top: 20px; 
+        }
+        
+        /* Igualar la caja del precalificador a la burbuja del chat */
+        #pre-welcome > div, 
+        .pre-welcome-card {
+            width: 100% !important;
+            max-width: 85% !important; /* Mismo ancho que pida-bubble en PC */
+            margin: 0 auto !important;
+            background-color: var(--pida-bg-white) !important;
+            border: 1px solid var(--pida-border) !important;
+            border-radius: 12px !important;
+            padding: 20px 28px !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Hacer que las burbujas de bienvenida en Chat y Analizador se centren y midan lo mismo */
+        .pida-bubble:has(.pida-welcome-content) {
+            align-self: center !important; /* Centra la burbuja en la pantalla */
+            width: 100% !important;
+            max-width: 85% !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Contenido interno unificado (sin robot) */
         .pida-welcome-content { 
             display: flex; 
             flex-direction: column; 
@@ -340,16 +378,18 @@
             align-items: center; 
             justify-content: center;
             width: 100%; 
-            max-width: 800px; 
             margin: 0 auto; 
         }
+        
         .pida-welcome-robot { 
             display: none !important; /* ELIMINADO TOTALMENTE EN TODAS LAS PANTALLAS */
         }
+        
         .pida-welcome-text { 
             width: 100%; 
             text-align: center; 
         }
+        
         .pida-welcome-text h3 { 
             margin-top: 0; 
             font-size: 1.25rem; 
@@ -361,13 +401,15 @@
             margin-bottom: 10px;
             text-align: center !important; /* Siempre centrado */
         }
+        
         .pida-welcome-text p { 
             margin: 10px 0; 
             line-height: 1.6; 
             color: var(--pida-text-main); 
             font-size: 0.95rem;
-            text-align: center; /* Centrado */
+            text-align: center;
         }
+        
         .pida-welcome-text strong { 
             color: var(--pida-accent); 
             font-weight: 700; 
