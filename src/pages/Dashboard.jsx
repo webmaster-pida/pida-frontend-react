@@ -188,7 +188,7 @@ export default function Dashboard({ user }) {
     );
   }
 
-  let displayPlan = isVip ? 'VIP 🌟' : userPlan.charAt(0).toUpperCase() + userPlan.slice(1);
+  let displayPlan = isVip ? 'VIP' : userPlan.charAt(0).toUpperCase() + userPlan.slice(1);
   if (displayPlan === 'Basico' || displayPlan === 'Basic') displayPlan = 'Básico';
   if (isTrial && !isVip) displayPlan += ' (Prueba)';
 
