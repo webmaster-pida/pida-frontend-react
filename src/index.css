@@ -1,10 +1,10 @@
 /* =========================================
-           LOADER DE TRANSICIÓN GLOBAL (Wealblanco)
+           LOADER DE TRANSICIÓN GLOBAL
            ========================================= */
         #pida-global-loader {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: #FFFFFF; /* Fondo Blanco */
-            z-index: 9999999999; /* Máxima prioridad */
+            background-color: #FFFFFF;
+            z-index: 9999999999;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             transition: opacity 0.6s ease, visibility 0.6s;
         }
@@ -217,6 +217,10 @@
         .pida-download-controls { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 8px; }
         .pida-download-controls button { background: white; border: 1px solid var(--pida-border); color: var(--pida-text-muted); padding: 5px 12px; font-size: 0.75rem; cursor: pointer; border-radius: 4px; font-weight: 600; }
         .pida-download-controls button:hover { border-color: var(--pida-accent); color: var(--pida-accent); }
+        
+        /* =========================================
+           CORRECCIÓN DEL MENÚ DESPLEGABLE (SCROLL FANTASMA)
+           ========================================= */
         .pida-dropdown { position: relative; }
         .pida-dropdown-content { position: absolute; top: 110%; left: 0; width: 320px; background: white; border: 1px solid var(--pida-border); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 100; display: none; flex-direction: column; max-height: 400px; overflow-y: auto; padding: 5px; }
         .pida-dropdown-content.show { display: flex; }
@@ -265,7 +269,7 @@
         .close-login-btn { position: absolute; top: 15px; right: 15px; border: none; background: none; font-size: 24px; cursor: pointer; color: #999; }
 
         /* ========================================================================= */
-        /* RESPONSIVIDAD MÓVIL (LIMPIEZA DE ESPACIOS Y CAJAS DE BIENVENIDA) */
+        /* RESPONSIVIDAD MÓVIL (SIN ROBOT, SIN SCROLL) */
         /* ========================================================================= */
         @media (max-width: 768px) {
             #pida-sidebar { width: 100%; height: 65px; flex-direction: row; justify-content: space-around; align-items: center; padding: 0; position: fixed; bottom: 0; left: 0; top: auto; z-index: 10000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
@@ -275,61 +279,62 @@
             .app-nav-link span { display: block; font-size: 0.7rem; line-height: 1; }
             .app-nav-link svg { width: 24px; height: 24px; margin: 0; }
             
-            /* --- CORRECCIÓN FANTASMA/SCROLL --- */
-            /* Eliminamos calc() globales de padding que daban scroll fantasma */
             #pida-main-content { padding-bottom: 65px; height: 100%; }
-            
             .pida-top-header { padding: 0 15px; height: 60px; }
             .pida-header-mascot { height: 40px; }
-            
             .pida-view { padding-bottom: 0 !important; }
-            
-            /* Ajuste del padding-bottom para que el teclado no tape el formulario y no de scroll fantasma */
             .pida-view-form { padding: 15px; padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px)) !important; margin-bottom: 0 !important; position: relative; z-index: 20; background: var(--pida-bg-white); border-bottom: none !important; }
             .pida-form-actions { flex-wrap: wrap; gap: 10px; margin-top: 10px; margin-bottom: 0 !important; }
-            
             .pida-button-primary { width: 100%; padding: 12px; order: 1; }
             .pida-button-secondary { width: 100%; text-align: center; margin-top: 0; order: 2; padding: 10px; }
             .pida-download-controls { justify-content: center; margin-bottom: 12px; }
             .pida-bubble { max-width: 95%; padding: 12px 16px; }
             .account-container { padding: 20px; border: none; box-shadow: none; }
             .pida-view-content { padding: 15px; }
-            #nav-mobile-menu-btn { display: flex; margin-top: auto; }
 
-            /* --- ELIMINAR ROBOT Y CONDENSAR EN MÓVILES --- */
-            .pida-welcome-content { flex-direction: column; align-items: center; text-align: center; min-width: 100% !important; width: 100% !important; }
-            
-            /* --- NUEVO: ELIMINAR EL ROBOT POR COMPLETO --- */
-            .pida-welcome-robot { display: none !important; }
-            
-            /* Ocultar todo el texto descriptivo extra en móviles */
-            .pida-welcome-text > *:not(h3) {
-                display: none !important;
+            /* --- CORRECCIÓN DEL SCROLL EN EL MENÚ DESPLEGABLE MÓVIL --- */
+            .pida-dropdown-content {
+                position: fixed !important;
+                top: 115px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                width: 90vw !important;
+                max-width: 350px !important;
+                box-shadow: 0 15px 40px rgba(0,0,0,0.2) !important;
             }
-            
-            /* Asegurar que el título quede centrado y compacto */
-            .pida-welcome-text h3 {
-                font-size: 1.1rem !important;
-                margin-bottom: 0 !important;
-                padding-bottom: 0 !important;
-                text-align: center;
-            }
+
+            /* --- ELIMINAR ROBOT Y CONDENSAR TEXTO EN MÓVILES --- */
+            .pida-welcome-content { flex-direction: column; align-items: center; min-width: 100% !important; }
+            .pida-welcome-robot { display: none !important; } /* Adiós robot en celular */
+            .pida-welcome-text > *:not(h3) { display: none !important; }
+            .pida-welcome-text h3 { margin-bottom: 0 !important; font-size: 1.1rem !important; }
         }
 
 		/* --- Estilos para el Menú Flotante y Visibilidad --- */
+        .mobile-menu-wrapper { display: none !important; }
+        @media (max-width: 768px) {
+            .mobile-menu-wrapper { display: flex !important; flex: 1; justify-content: center; align-items: center; height: 100%; }
+        }
+        
         .hidden { display: none !important; }
         #mobile-menu-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); z-index: 9999; display: flex; justify-content: center; align-items: flex-end; }
         .mobile-menu-content { background-color: #ffffff; width: 100%; max-width: 400px; padding: 20px; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 20px rgba(0,0,0,0.1); animation: slideUp 0.3s ease-out; margin-bottom: 85px; padding-bottom: env(safe-area-inset-bottom, 20px); }
         .mobile-menu-item { display: flex; align-items: center; width: 100%; padding: 12px 16px; background: none; border: none; font-size: 16px; font-weight: 500; color: #374151; cursor: pointer; text-align: left; gap: 12px; transition: background-color 0.2s; }
         .mobile-menu-item:hover { background-color: #f3f4f6; border-radius: 8px; }
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        #nav-mobile-menu-btn { display: none; }
 
         /* =========================================
-           ESTILOS PRECALIFICADOR
+           ESTILOS PRECALIFICADOR Y CAJAS UNIFICADAS
            ========================================= */
         #pre-welcome { display: flex; justify-content: flex-start; margin-top: 20px; }
-        .pre-welcome-card { max-width: 650px; }
+        
+        /* UNIFICACIÓN DE ANCHO Y CENTRADO DE TÍTULOS PARA LAS 3 CAJAS */
+        .pida-welcome-content { display: flex; flex-direction: row; gap: 20px; align-items: center; width: 100%; max-width: 800px; margin: 0 auto; }
+        .pida-welcome-robot { width: 85px; height: auto; flex-shrink: 0; object-fit: contain; }
+        .pida-welcome-text { flex: 1; width: 100%; }
+        .pida-welcome-text h3 { text-align: center !important; display: block; width: 100%; margin-top: 0; font-size: 1.2rem; color: var(--pida-primary); font-weight: 700; margin-bottom: 15px; }
+        .pida-welcome-text p { text-align: center; }
+
         #pre-analysis-result { background: white; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); font-family: 'Inter', sans-serif; color: #334155; line-height: 1.7; user-select: text!important; -webkit-user-select: text!important; }
         #pre-analysis-result h1, #pre-analysis-result h2, #pre-analysis-result h3 { color: var(--pida-primary); margin-top: 1.5em; margin-bottom: 0.8em; font-weight: 700; line-height: 1.2; }
         #pre-analysis-result h1 { font-size: 1.8em; border-bottom: 2px solid var(--pida-accent); padding-bottom: 10px; }
@@ -427,23 +432,6 @@
         .pida-modal-btn:hover { background-color: #0056B3 !important; transform: translateY(-2px) !important; }
 
         /* =========================================
-           ESTILOS BURBUJA DE BIENVENIDA (ROBOT)
-           ========================================= */
-        .pida-welcome-content { display: flex; flex-direction: row; gap: 20px; align-items: flex-start; min-width: 750px !important; }
-        .pida-welcome-robot { width: 85px; height: auto; flex-shrink: 0; object-fit: contain; }
-        .pida-welcome-text h3 { margin-top: 0; font-size: 1.1rem; color: var(--pida-primary); line-height: 1.3; border-bottom: none; padding-bottom: 0; font-weight: 700; }
-        .pida-welcome-text p { margin: 10px 0; line-height: 1.5; color: var(--pida-text-main); }
-        .pida-welcome-text strong { color: var(--pida-accent); font-weight: 700; }
-
-        @media (max-width: 768px) {
-            .pida-welcome-content { flex-direction: column; align-items: center; text-align: center; min-width: 100% !important; width: 100% !important; }
-            .pida-welcome-robot { width: 70px; margin-bottom: 10px; }
-            .pida-context-controls .context-group > .pida-header-btn.primary,
-            .pida-context-controls .pida-dropdown .pida-header-btn,
-            .pida-context-controls .plan-badge { width: auto !important; min-width: auto !important; padding: 0 12px !important; }
-        }
-
-        /* =========================================
            UNIFORMIDAD DE BOTONES SUPERIORES Y BADGE
            ========================================= */
         .pida-context-controls .pida-header-btn, .pida-context-controls .plan-badge { height: 42px !important; display: inline-flex !important; align-items: center !important; box-sizing: border-box !important; }
@@ -451,52 +439,11 @@
         .pida-context-controls .pida-dropdown .pida-header-btn { width: 280px !important; min-width: 280px !important; justify-content: space-between !important; padding: 0 15px !important; }
         .pida-context-controls .plan-badge { width: auto !important; min-width: 130px !important; justify-content: center !important; margin-right: 0 !important; }
 
-        /* =========================================
-           NUEVOS ESTILOS MODAL DE PAGO (MEJORADO)
-           ========================================= */
-        .payment-summary-container { margin-top: 15px; margin-bottom: 20px; animation: fadeIn 0.3s ease; }
-        .order-summary-box { background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
-        .summary-header { border-bottom: 1px solid #E2E8F0; padding-bottom: 10px; margin-bottom: 10px; font-weight: 600; color: var(--pida-primary); font-size: 0.95rem; }
-        .summary-price-row { display: flex; justify-content: space-between; align-items: center; font-size: 1rem; color: #334155; }
-        .price-display-wrapper { display: flex; flex-direction: column; align-items: flex-end; }
-        .current-price { font-weight: 700; color: var(--pida-primary); }
-        .current-price.crossed-out { text-decoration: line-through; color: #94A3B8; font-size: 0.85rem; font-weight: 400; }
-        .final-price { color: #10B981; font-weight: 800; font-size: 1.1rem; }
-        .discount-pill { background-color: #DCFCE7; color: #166534; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin-top: 5px; float: right; }
-        .input-label { font-weight: 600; font-size: 0.85rem; color: var(--pida-primary); margin-bottom: 8px; display: block; text-align: left; }
-        .stripe-input-box { padding: 12px; border: 1px solid #CBD5E1; border-radius: 6px; background: white; margin-bottom: 15px; }
-        .promo-section { margin-bottom: 15px; text-align: left; }
-        .promo-toggle { font-size: 0.85rem; color: var(--pida-accent); cursor: pointer; text-decoration: underline; font-weight: 500; }
-        .promo-input-group { display: flex; gap: 8px; margin-top: 8px; }
-        .promo-input-group input { flex: 1; padding: 8px 12px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 0 !important; }
-        .promo-input-group button { background: var(--pida-primary); color: white; border: none; border-radius: 6px; padding: 0 15px; font-size: 0.85rem; cursor: pointer; font-weight: 600; transition: background 0.2s; }
-        .promo-input-group button:hover { background: #0F172A; }
-        .promo-input-group button:disabled { background: #94A3B8; cursor: not-allowed; }
-        .promo-msg { font-size: 0.8rem; margin-top: 5px; display: none; }
-        .promo-msg.success { color: #10B981; }
-        .promo-msg.error { color: #EF4444; }
-        .terms-box { display: flex; align-items: flex-start; gap: 10px; margin-top: 15px; text-align: left; }
-        .terms-box input { margin-top: 3px; width: 16px; height: 16px; }
-        .terms-box label { font-size: 0.8rem; color: #4B5563; line-height: 1.4; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* =========================================
-           DISEÑO MEJORADO DEL CHAT Y FUENTES
-           ========================================= */
-        .markdown-content strong { color: var(--pida-primary); font-weight: 700; }
-        .markdown-content a { color: #0284C7; text-decoration: none; font-weight: 600; word-break: break-word; }
-        .markdown-content a:hover { text-decoration: underline; }
-        .markdown-content ul, .markdown-content ol { padding-left: 20px; margin-bottom: 15px; }
-        .markdown-content li { margin-bottom: 6px; }
-        .follow-up-section { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc; }
-        .follow-up-btn { background-color: #F8FAFC; border: 1px solid #CBD5E1; color: #334155; padding: 10px 15px; border-radius: 8px; font-size: 0.9rem; text-align: left; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; line-height: 1.4; }
-        .follow-up-btn::before { content: '💬'; margin-right: 10px; font-size: 1rem; }
-        .follow-up-btn:hover { background-color: #EEF2FF; border-color: #818CF8; color: var(--pida-primary); transform: translateX(3px); }
-        .follow-up-btn:active { transform: scale(0.98); }
-        .markdown-content blockquote { border-left: 4px solid var(--pida-primary) !important; background-color: #F8FAFC !important; padding: 12px 16px !important; margin: 12px 0 20px 0 !important; border-radius: 0 8px 8px 0 !important; color: #334155 !important; font-style: italic !important; line-height: 1.6 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important; }
-        .markdown-content blockquote p { margin: 0 !important; }
-        .markdown-content h2 { color: var(--pida-primary); font-size: 1.3rem; margin-top: 25px; margin-bottom: 15px; border-bottom: 1px solid #E2E8F0; padding-bottom: 5px; }
-        .markdown-content h3 { color: #0369A1; font-size: 1.1rem; margin-top: 20px; }
+        @media (max-width: 768px) {
+            .pida-context-controls .context-group > .pida-header-btn.primary,
+            .pida-context-controls .pida-dropdown .pida-header-btn,
+            .pida-context-controls .plan-badge { width: auto !important; min-width: auto !important; padding: 0 12px !important; }
+        }
 
         /* =========================================
            ESTABILIZACIÓN MÓVIL CORREGIDA (PRO)
