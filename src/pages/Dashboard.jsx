@@ -96,7 +96,7 @@ const InAppCheckout = ({ user }) => {
 
   return (
     <div style={{ maxWidth: '550px', background: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)', textAlign: 'center', margin: '0 auto', width: '95%' }}>
-      <h2 style={{ color: 'var(--pida-primary)', marginBottom: '10px' }}>Completa tu Suscripción ⚖️</h2>
+      <h2 style={{ color: 'var(--pida-primary)', marginBottom: '10px' }}>Completa tu Suscripción</h2>
       <p style={{ color: '#4B5563', marginBottom: '25px', fontSize: '0.95rem', lineHeight: '1.5' }}>
         Has iniciado sesión como <strong>{user.email}</strong>, pero necesitas activar un plan para acceder a las herramientas.
       </p>

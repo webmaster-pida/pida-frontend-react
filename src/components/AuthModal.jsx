@@ -179,7 +179,7 @@ function AuthFormContent({ onClose, initialMode }) {
     <>
       <h2 id="auth-title" style={{ color: 'var(--pida-primary)', marginTop: 0, fontSize: '1.4rem', fontWeight: '800' }}>
         {mode === 'login' && 'Bienvenido de nuevo'}
-        {mode === 'register' && 'Completar Suscripción'}
+        {mode === 'register' && 'Suscríbete'}
         {mode === 'reset' && 'Recuperar Contraseña'}
       </h2>
       <p style={{ color: '#64748B', marginBottom: '25px', fontSize: '0.95rem' }}>
