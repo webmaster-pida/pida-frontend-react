@@ -47,7 +47,7 @@ export default function LandingPage({ onOpenAuth }) {
     detectLocation();
   }, []);
 
-  // --- NUEVO: Efecto para hacer scroll automático si la URL trae un ancla (ej. #planes) ---
+  // Efecto para hacer scroll automático si la URL trae un ancla (ej. #planes)
   useEffect(() => {
     if (window.location.hash) {
       const targetId = window.location.hash.substring(1);
@@ -56,7 +56,7 @@ export default function LandingPage({ onOpenAuth }) {
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-      }, 300); // Retraso de 300ms para asegurar que React ya construyó el DOM
+      }, 300);
     }
   }, []);
 
@@ -149,9 +149,9 @@ export default function LandingPage({ onOpenAuth }) {
                   border: '1px solid #e5e7eb'
                 }}>
                   <div style={{ position: 'absolute', top: '-10px', left: 0, width: '100%', height: '15px' }}></div>
-                  <a href="/newsletter-001.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Enero 2026</a>
-                  <a href="/newsletter-002.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Febrero 2026</a>
-                  <a href="/newsletter-003.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Marzo 2026</a>
+                  <a href="/newsletter-001.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 001</a>
+                  <a href="/newsletter-002.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 002</a>
+                  <a href="/newsletter-003.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 003</a>
                 </div>
               )}
             </div>
@@ -476,37 +476,41 @@ export default function LandingPage({ onOpenAuth }) {
         </div>
       )}
 
-      {/* MODAL DE CONTACTO CORPORATIVO */}
+      {/* ========================================================================= */}
+      {/* MODAL DE CONTACTO CORPORATIVO (REDISEÑADO Y UNIFICADO CON EL DE LOGIN) */}
+      {/* ========================================================================= */}
       {isContactOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(29, 53, 87, 0.6)', zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-            <div style={{ background: 'white', padding: '30px', borderRadius: '16px', width: '90%', maxWidth: '550px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', position: 'relative' }}>
-                <button onClick={() => setIsContactOpen(false)} style={{ position: 'absolute', top: '15px', right: '20px', background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: '#666' }}>×</button>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(29, 53, 87, 0.95)', zIndex: 200000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}>
+            <div style={{ background: 'white', padding: '40px', borderRadius: '12px', width: '100%', maxWidth: '520px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)', position: 'relative', textAlign: 'center', maxHeight: '90vh', overflowY: 'auto' }}>
+                <button onClick={() => setIsContactOpen(false)} style={{ position: 'absolute', top: '15px', right: '15px', border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', color: '#999', zIndex: 10 }}>×</button>
                 
-                <h3 style={{ color: 'var(--pida-primary)', marginTop: 0, marginBottom: '5px', fontSize: '1.4rem' }}>Contacto Corporativo</h3>
-                <p style={{ color: '#666', fontSize: '0.95rem', marginBottom: '20px', lineHeight: '1.4' }}>Déjanos tus datos y un asesor se pondrá en contacto contigo para diseñar un plan a la medida de tu organización.</p>
+                <img src="/img/PIDA_logo-576.png" alt="PIDA Logo" style={{ width: '140px', marginBottom: '20px' }} />
+                
+                <h2 style={{ color: 'var(--pida-primary)', marginTop: 0, fontSize: '1.4rem', fontWeight: '800' }}>Contacto Corporativo</h2>
+                <p style={{ color: '#64748B', marginBottom: '25px', fontSize: '0.95rem' }}>Déjanos tus datos y un asesor se pondrá en contacto contigo para diseñar un plan a la medida de tu organización.</p>
 
-                <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <input type="text" className="login-input" placeholder="Nombre completo" required value={contactForm.name} onChange={e => setContactForm({...contactForm, name: e.target.value})} style={{ flex: 1, marginBottom: 0 }} />
-                        <input type="text" className="login-input" placeholder="Organización / Empresa" required value={contactForm.company} onChange={e => setContactForm({...contactForm, company: e.target.value})} style={{ flex: 1, marginBottom: 0 }} />
+                <form onSubmit={handleContactSubmit} style={{ textAlign: 'left' }}>
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                        <input type="text" placeholder="Nombre completo" required value={contactForm.name} onChange={e => setContactForm({...contactForm, name: e.target.value})} style={{ flex: 1, padding: '12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '1rem', outline: 'none' }} />
+                        <input type="text" placeholder="Organización / Empresa" required value={contactForm.company} onChange={e => setContactForm({...contactForm, company: e.target.value})} style={{ flex: 1, padding: '12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '1rem', outline: 'none' }} />
                     </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <input type="email" className="login-input" placeholder="Correo electrónico" required value={contactForm.email} onChange={e => setContactForm({...contactForm, email: e.target.value})} style={{ flex: 1, marginBottom: 0 }} />
-                        <input type="email" className="login-input" placeholder="Confirmar correo" required value={contactForm.confirmEmail} onChange={e => setContactForm({...contactForm, confirmEmail: e.target.value})} style={{ flex: 1, marginBottom: 0 }} />
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                        <input type="email" placeholder="Correo electrónico" required value={contactForm.email} onChange={e => setContactForm({...contactForm, email: e.target.value})} style={{ flex: 1, padding: '12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '1rem', outline: 'none' }} />
+                        <input type="email" placeholder="Confirmar correo" required value={contactForm.confirmEmail} onChange={e => setContactForm({...contactForm, confirmEmail: e.target.value})} style={{ flex: 1, padding: '12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '1rem', outline: 'none' }} />
                     </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <input type="text" className="login-input" placeholder="Cód. (Ej: +503)" required value={contactForm.countryCode} onChange={e => setContactForm({...contactForm, countryCode: e.target.value})} style={{ width: '120px', marginBottom: 0 }} />
-                        <input type="tel" className="login-input" placeholder="Número de teléfono" required value={contactForm.phone} onChange={e => setContactForm({...contactForm, phone: e.target.value})} style={{ flex: 1, marginBottom: 0 }} />
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                        <input type="text" placeholder="Cód. (Ej: +503)" required value={contactForm.countryCode} onChange={e => setContactForm({...contactForm, countryCode: e.target.value})} style={{ width: '120px', padding: '12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '1rem', outline: 'none' }} />
+                        <input type="tel" placeholder="Número de teléfono" required value={contactForm.phone} onChange={e => setContactForm({...contactForm, phone: e.target.value})} style={{ flex: 1, padding: '12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '1rem', outline: 'none' }} />
                     </div>
-                    <textarea className="login-input" placeholder="Cuéntanos un poco sobre las necesidades de tu equipo..." rows="3" required value={contactForm.message} onChange={e => setContactForm({...contactForm, message: e.target.value})} style={{ marginBottom: 0, resize: 'vertical' }}></textarea>
+                    <textarea placeholder="Cuéntanos un poco sobre las necesidades de tu equipo..." rows="3" required value={contactForm.message} onChange={e => setContactForm({...contactForm, message: e.target.value})} style={{ width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '1rem', outline: 'none', marginBottom: '15px', resize: 'vertical' }}></textarea>
 
                     {contactStatus.text && (
-                        <div style={{ padding: '10px', borderRadius: '6px', fontSize: '0.9rem', textAlign: 'center', background: contactStatus.type === 'error' ? '#FEE2E2' : '#D1FAE5', color: contactStatus.type === 'error' ? '#EF4444' : '#10B981' }}>
+                        <div style={{ padding: '12px 15px', borderRadius: '8px', fontSize: '0.9rem', marginBottom: '20px', lineHeight: '1.4', background: contactStatus.type === 'error' ? '#FEE2E2' : '#D1FAE5', color: contactStatus.type === 'error' ? '#B91C1C' : '#047857', border: `1px solid ${contactStatus.type === 'error' ? '#FCA5A5' : '#6EE7B7'}` }}>
                             {contactStatus.text}
                         </div>
                     )}
 
-                    <button type="submit" className="btn btn-primary" disabled={contactStatus.isSubmitting} style={{ padding: '15px', fontSize: '1.05rem', fontWeight: 'bold', width: '100%', marginTop: '5px' }}>
+                    <button type="submit" disabled={contactStatus.isSubmitting} style={{ width: '100%', padding: '16px', background: 'var(--pida-accent)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1.05rem', fontWeight: '600', cursor: contactStatus.isSubmitting ? 'not-allowed' : 'pointer', opacity: contactStatus.isSubmitting ? 0.7 : 1, transition: 'background 0.2s' }}>
                         {contactStatus.isSubmitting ? 'Enviando información...' : 'Enviar Solicitud'}
                     </button>
                 </form>
