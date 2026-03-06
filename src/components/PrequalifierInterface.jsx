@@ -149,7 +149,7 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
               <div className="pida-welcome-content">
                 <img src="/img/PIDA-Productos_Stripe.png" alt="PIDA Robot" className="pida-welcome-robot" />
                 <div className="pida-welcome-text">
-                  <h3>⚖️ Precalificador Penal y de Derechos Humanos</h3>
+                  <h3>Precalificador Penal y de Derechos Humanos</h3>
                   <p>
                     Ingresa los hechos de tu caso. PIDA realizará un análisis preliminar para identificar <strong>posibles delitos penales</strong> y <strong>violaciones a derechos humanos</strong> conforme a estándares nacionales e internacionales.
                   </p>
