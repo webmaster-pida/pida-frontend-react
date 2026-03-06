@@ -165,12 +165,12 @@ export default function LandingPage({ onOpenAuth }) {
         <section className="hero">
           <div className="wrapper hero-grid">
             <div className="hero-content">
-              {/* Logo eliminado según la instrucción */}
-              <h1 style={{ fontSize: '2.5rem', lineHeight: '1.2' }}>
+              <div><img src="/img/PIDA_logo-576.png" alt="Logo PIDA" /></div>
+              <h1>
                 Inteligencia Aumentada para la Defensa de los <br />
                 <span className="text-gradient">Derechos Humanos</span>
               </h1>
-              <p className="hero-desc" style={{ fontSize: '1.1rem', maxWidth: '95%' }}>
+              <p className="hero-desc">
                 Los asistentes de Inteligencia Artificial genéricos son un océano de información, pero sin un ancla, pueden llevarte a la deriva con datos imprecisos.
               </p>
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
@@ -180,17 +180,7 @@ export default function LandingPage({ onOpenAuth }) {
               </div>
             </div>
             <div className="hero-visual-column" style={{ textAlign: 'center' }}>
-              {/* Robot reemplazado por el video, con autoPlay y muted para evitar que el navegador lo bloquee */}
-              <video 
-                controls 
-                autoPlay 
-                muted 
-                loop 
-                style={{ width: '100%', borderRadius: '12px', marginBottom: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}
-              >
-                <source src="https://storage.googleapis.com/img-pida/PIDA.mp4" type="video/mp4" />
-                Tu navegador no soporta la reproducción de videos.
-              </video>
+              <img style={{ borderRadius: '8px', marginBottom: '20px' }} src="/img/PIDA-MASCOTA-576-trans.png" alt="Robot PIDA" />
               
               {/* BOTÓN DE VIDEO */}
               <button 
