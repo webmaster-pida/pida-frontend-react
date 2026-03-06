@@ -1,10 +1,10 @@
 /* =========================================
-           LOADER DE TRANSICIÓN GLOBAL
+           LOADER DE TRANSICIÓN GLOBAL (Wealblanco)
            ========================================= */
         #pida-global-loader {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: #FFFFFF;
-            z-index: 9999999999;
+            background-color: #FFFFFF; /* Fondo Blanco */
+            z-index: 9999999999; /* Máxima prioridad */
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             transition: opacity 0.6s ease, visibility 0.6s;
         }
@@ -275,13 +275,17 @@
             .app-nav-link span { display: block; font-size: 0.7rem; line-height: 1; }
             .app-nav-link svg { width: 24px; height: 24px; margin: 0; }
             
+            /* --- CORRECCIÓN FANTASMA/SCROLL --- */
+            /* Eliminamos calc() globales de padding que daban scroll fantasma */
             #pida-main-content { padding-bottom: 65px; height: 100%; }
             
             .pida-top-header { padding: 0 15px; height: 60px; }
             .pida-header-mascot { height: 40px; }
             
             .pida-view { padding-bottom: 0 !important; }
-            .pida-view-form { padding: 15px; padding-bottom: calc(15px + env(safe-area-inset-bottom)) !important; margin-bottom: 0 !important; position: relative; z-index: 20; background: var(--pida-bg-white); border-bottom: none !important; }
+            
+            /* Ajuste del padding-bottom para que el teclado no tape el formulario y no de scroll fantasma */
+            .pida-view-form { padding: 15px; padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px)) !important; margin-bottom: 0 !important; position: relative; z-index: 20; background: var(--pida-bg-white); border-bottom: none !important; }
             .pida-form-actions { flex-wrap: wrap; gap: 10px; margin-top: 10px; margin-bottom: 0 !important; }
             
             .pida-button-primary { width: 100%; padding: 12px; order: 1; }
@@ -292,9 +296,11 @@
             .pida-view-content { padding: 15px; }
             #nav-mobile-menu-btn { display: flex; margin-top: auto; }
 
-            /* --- NUEVO: CONDENSAR LAS CAJAS DE BIENVENIDA EN MÓVILES --- */
+            /* --- ELIMINAR ROBOT Y CONDENSAR EN MÓVILES --- */
             .pida-welcome-content { flex-direction: column; align-items: center; text-align: center; min-width: 100% !important; width: 100% !important; }
-            .pida-welcome-robot { width: 70px; margin-bottom: 5px; }
+            
+            /* --- NUEVO: ELIMINAR EL ROBOT POR COMPLETO --- */
+            .pida-welcome-robot { display: none !important; }
             
             /* Ocultar todo el texto descriptivo extra en móviles */
             .pida-welcome-text > *:not(h3) {
@@ -428,6 +434,14 @@
         .pida-welcome-text h3 { margin-top: 0; font-size: 1.1rem; color: var(--pida-primary); line-height: 1.3; border-bottom: none; padding-bottom: 0; font-weight: 700; }
         .pida-welcome-text p { margin: 10px 0; line-height: 1.5; color: var(--pida-text-main); }
         .pida-welcome-text strong { color: var(--pida-accent); font-weight: 700; }
+
+        @media (max-width: 768px) {
+            .pida-welcome-content { flex-direction: column; align-items: center; text-align: center; min-width: 100% !important; width: 100% !important; }
+            .pida-welcome-robot { width: 70px; margin-bottom: 10px; }
+            .pida-context-controls .context-group > .pida-header-btn.primary,
+            .pida-context-controls .pida-dropdown .pida-header-btn,
+            .pida-context-controls .plan-badge { width: auto !important; min-width: auto !important; padding: 0 12px !important; }
+        }
 
         /* =========================================
            UNIFORMIDAD DE BOTONES SUPERIORES Y BADGE
