@@ -47,6 +47,19 @@ export default function LandingPage({ onOpenAuth }) {
     detectLocation();
   }, []);
 
+  // --- NUEVO: Efecto para hacer scroll automático si la URL trae un ancla (ej. #planes) ---
+  useEffect(() => {
+    if (window.location.hash) {
+      const targetId = window.location.hash.substring(1);
+      setTimeout(() => {
+        const element = document.getElementById(targetId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300); // Retraso de 300ms para asegurar que React ya construyó el DOM
+    }
+  }, []);
+
   // Efecto para mover el carrusel automáticamente cada 5 segundos
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -433,9 +446,7 @@ export default function LandingPage({ onOpenAuth }) {
         </div>
       </main>
 
-      {/* ========================================================================= */}
-      {/* MODAL DE VIDEO (CON LA URL ACTUALIZADA DE GCP) */}
-      {/* ========================================================================= */}
+      {/* MODAL DE VIDEO */}
       {isVideoOpen && (
         <div 
           id="pida-video-modal"
@@ -458,7 +469,6 @@ export default function LandingPage({ onOpenAuth }) {
               autoPlay 
               style={{ width: '100%', display: 'block', maxHeight: '80vh' }}
             >
-              {/* LA NUEVA RUTA PROPORCIONADA */}
               <source src="https://storage.googleapis.com/img-pida/PIDA.mp4" type="video/mp4" />
               Tu navegador no soporta la reproducción de videos.
             </video>
@@ -466,9 +476,7 @@ export default function LandingPage({ onOpenAuth }) {
         </div>
       )}
 
-      {/* ========================================================================= */}
       {/* MODAL DE CONTACTO CORPORATIVO */}
-      {/* ========================================================================= */}
       {isContactOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(29, 53, 87, 0.6)', zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
             <div style={{ background: 'white', padding: '30px', borderRadius: '16px', width: '90%', maxWidth: '550px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', position: 'relative' }}>
