@@ -7,22 +7,21 @@ import AccountInterface from '../components/AccountInterface';
 import { db, auth } from '../config/firebase'; 
 import { PIDA_CONFIG, STRIPE_PRICES } from '../config/constants';
 
-// 1. IMPORTACIONES DE STRIPE AÑADIDAS
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3kjrZGFGln3bhwEQKnpoNXf2MnLXGHylM1OQ6SvWJmNVCNqhCxg6x000l605E1B');
 
-// ============================================================================
-// NUEVO COMPONENTE: PORTAL DE PAGO IN-APP (Resuelve el bucle de expulsión)
-// ============================================================================
 const InAppCheckout = ({ user }) => {
   const stripe = useStripe();
   const elements = useElements();
   
   const [plan, setPlan] = useState('avanzado');
   const [interval, setInterval] = useState('monthly');
-  const [currency] = useState(localStorage.getItem('pida_currency') || 'USD');
+  
+  // 🔐 PROTECCIÓN CONTRA CRASHES
+  const rawCurrency = localStorage.getItem('pida_currency');
+  const [currency] = useState(['USD', 'MXN'].includes(rawCurrency) ? rawCurrency : 'USD');
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -31,7 +30,8 @@ const InAppCheckout = ({ user }) => {
   const [discountData, setDiscountData] = useState(null);
   const [promoMsg, setPromoMsg] = useState({ text: '', type: '' });
 
-  const planDetails = STRIPE_PRICES[plan][interval][currency];
+  // Lectura segura
+  const planDetails = STRIPE_PRICES[plan]?.[interval]?.[currency] || STRIPE_PRICES['basico']['monthly']['USD'];
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) return;
@@ -87,7 +87,7 @@ const InAppCheckout = ({ user }) => {
       if (result.error) throw new Error(result.error.message);
 
       sessionStorage.setItem('pida_is_onboarding', 'true');
-      window.location.reload(); // Recarga y activa la app automáticamente
+      window.location.reload(); 
     } catch(err) {
       setError(`❌ ${err.message}`);
       setLoading(false);
@@ -102,8 +102,6 @@ const InAppCheckout = ({ user }) => {
       </p>
 
       <form onSubmit={handlePay} style={{ textAlign: 'left' }}>
-        
-        {/* Selector Dinámico de Planes */}
         <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Elige tu Plan</label>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
           <select className="pida-textarea" style={{ flex: 1, padding: '12px', marginBottom: 0, fontWeight: 'bold' }} value={plan} onChange={e => {setPlan(e.target.value); setDiscountData(null); setPromoCode(''); setPromoMsg({text:'', type:''});}}>
@@ -117,7 +115,6 @@ const InAppCheckout = ({ user }) => {
           </select>
         </div>
 
-        {/* Resumen de Costo */}
         <div style={{ padding: '15px', background: '#F8FAFC', borderRadius: '8px', marginBottom: '20px', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontWeight: '600', color: 'var(--pida-text-muted)' }}>Total a pagar:</span>
           <div style={{ textAlign: 'right' }}>
@@ -132,13 +129,11 @@ const InAppCheckout = ({ user }) => {
           </div>
         </div>
 
-        {/* Tarjeta Stripe */}
         <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Datos de la tarjeta</label>
         <div style={{ padding: '15px', border: '1px solid #CBD5E1', borderRadius: '8px', background: 'white', marginBottom: '15px' }}>
           <CardElement options={{ style: { base: { fontSize: '16px', fontFamily: '"Inter", sans-serif', color: '#1D3557', '::placeholder': { color: '#aab7c4' } }, invalid: { color: '#EF4444' } }, hidePostalCode: true }} />
         </div>
 
-        {/* Código Promocional */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '5px' }}>
           <input type="text" className="pida-textarea" style={{ padding: '10px 12px', flex: 1, marginBottom: 0, textTransform: 'uppercase', fontSize: '0.9rem' }} placeholder="CÓDIGO DE DESCUENTO" value={promoCode} onChange={e => setPromoCode(e.target.value)} disabled={!!discountData || loading} />
           <button type="button" className="pida-button-secondary" style={{ border: '1px solid #CBD5E1', padding: '0 15px', borderRadius: '6px', fontWeight: '600' }} onClick={handleApplyPromo} disabled={!!discountData || !promoCode || loading}>
@@ -163,7 +158,6 @@ const InAppCheckout = ({ user }) => {
     </div>
   );
 };
-// ============================================================================
 
 
 export default function Dashboard({ user }) {
@@ -190,50 +184,66 @@ export default function Dashboard({ user }) {
   useEffect(() => {
     if (!user) return;
 
-    let vipConfirmed = false;
+    // 🔐 SOLUCIÓN A LA CONDICIÓN DE CARRERA (Race Condition)
+    // Usamos variables de control para saber cuándo terminaron ambos procesos
+    let isVipResolved = false;
+    let isStripeResolved = false;
 
-    const validateFinalAccess = (vip, stripeStatus) => {
-      if (vip === true || stripeStatus === 'active' || stripeStatus === 'trialing') {
+    // Guardamos los resultados temporalmente
+    let resolvedIsVip = false;
+    let resolvedStripeStatus = null;
+    let resolvedPlan = 'basico';
+    let resolvedTrial = false;
+
+    // Función unificada que decide el acceso SOLO cuando ambos procesos han respondido
+    const evaluateFinalAccess = () => {
+      if (!isVipResolved || !isStripeResolved) return; // Si falta uno, esperamos.
+
+      if (resolvedIsVip === true || resolvedStripeStatus === 'active' || resolvedStripeStatus === 'trialing') {
+        setIsVip(resolvedIsVip);
+        setUserPlan(resolvedPlan);
+        setIsTrial(resolvedTrial);
         setHasValidAccess(true);
       } else {
         setHasValidAccess(false);
       }
-      setIsCheckingAccess(false);
+      setIsCheckingAccess(false); // Por fin ocultamos el loader de pantalla
     };
 
+    // PROCESO 1: Chequeo VIP a la API
     const checkVip = async () => {
       try {
         const token = await user.getIdToken();
         const res = await fetch(`${PIDA_CONFIG.API_CHAT}/check-vip-access`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }});
         if (res.ok) {
           const data = await res.json();
-          const vipVal = data.is_vip_user;
-          setIsVip(vipVal);
-          vipConfirmed = vipVal;
-          if (vipVal) validateFinalAccess(true, null);
+          resolvedIsVip = data.is_vip_user;
         }
       } catch (e) {
         console.error("Error VIP", e);
+      } finally {
+        isVipResolved = true;
+        evaluateFinalAccess();
       }
     };
     checkVip();
 
+    // PROCESO 2: Chequeo de Stripe a Firestore
     const unsubscribe = db.collection('customers').doc(user.uid).onSnapshot((doc) => {
+      isStripeResolved = true;
       if (doc.exists) {
         const data = doc.data();
-        if (data.status === 'active' || data.status === 'trialing') {
-          setUserPlan(data.plan || 'basico');
-          setIsTrial(data.has_trial || false);
-        }
-        validateFinalAccess(vipConfirmed, data.status);
+        resolvedStripeStatus = data.status;
+        resolvedPlan = data.plan || 'basico';
+        resolvedTrial = data.has_trial || false;
       } else {
-        if (!vipConfirmed) {
-          setHasValidAccess(false);
-          setIsCheckingAccess(false);
-        }
+        resolvedStripeStatus = null;
       }
-    }, () => {
-      setIsCheckingAccess(false);
+      evaluateFinalAccess();
+    }, (err) => {
+      console.error("Firestore error", err);
+      isStripeResolved = true;
+      evaluateFinalAccess();
     });
 
     fetchChatHistory();
@@ -301,12 +311,11 @@ export default function Dashboard({ user }) {
     );
   }
 
-  // --- SE REEMPLAZA LA PANTALLA DE BLOQUEO VIEJA POR EL NUEVO PORTAL DE PAGO IN-APP ---
   if (!hasValidAccess) {
     return (
       <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f3f4f6', padding: '20px', overflowY: 'auto' }}>
         <Elements stripe={stripePromise}>
-          <BlockedCheckout user={user} />
+          <InAppCheckout user={user} />
         </Elements>
       </div>
     );

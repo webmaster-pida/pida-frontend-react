@@ -35,8 +35,13 @@ function AuthFormContent({ onClose, initialMode }) {
 
   const planKey = sessionStorage.getItem('pida_pending_plan') || 'basico';
   const intervalKey = sessionStorage.getItem('pida_pending_interval') || 'monthly';
-  const currency = localStorage.getItem('pida_currency') || 'USD';
-  const planDetails = STRIPE_PRICES[planKey]?.[intervalKey]?.[currency] || { text: 'N/A', id: '' };
+  
+  // 🔐 PROTECCIÓN CONTRA CRASHES: Sanitización estricta de la moneda
+  const rawCurrency = localStorage.getItem('pida_currency');
+  const currency = ['USD', 'MXN'].includes(rawCurrency) ? rawCurrency : 'USD';
+  
+  // Lectura segura del plan
+  const planDetails = STRIPE_PRICES[planKey]?.[intervalKey]?.[currency] || STRIPE_PRICES['basico']['monthly']['USD'];
 
   const handleGoogleLogin = async () => {
     setError('');
@@ -193,7 +198,6 @@ function AuthFormContent({ onClose, initialMode }) {
 
       <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
         
-        {/* CAMPOS DE REGISTRO */}
         {mode === 'register' && (
           <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
             <input type="text" className="login-input" style={{ marginBottom: 0 }} placeholder="Nombre" required value={firstName} onChange={e => setFirstName(e.target.value)} />
@@ -214,11 +218,9 @@ function AuthFormContent({ onClose, initialMode }) {
           </div>
         )}
 
-        {/* --- NUEVA SECCIÓN DE PAGO (Diseño Mejorado y Forzado) --- */}
         {mode === 'register' && (
           <div style={{ marginTop: '10px', animation: 'fadeIn 0.3s ease' }}>
             
-            {/* Resumen de Costo */}
             <div style={{ padding: '15px', background: '#F8FAFC', borderRadius: '8px', marginBottom: '20px', border: '1px solid #E2E8F0' }}>
               <div style={{ borderBottom: '1px solid #E2E8F0', paddingBottom: '10px', marginBottom: '10px', fontWeight: '700', color: 'var(--pida-primary)', fontSize: '0.95rem' }}>
                 Plan {planKey.charAt(0).toUpperCase() + planKey.slice(1)} ({intervalKey === 'monthly' ? 'Mensual' : 'Anual'})
@@ -244,13 +246,11 @@ function AuthFormContent({ onClose, initialMode }) {
               <div style={{ clear: 'both' }}></div>
             </div>
 
-            {/* Tarjeta Stripe */}
             <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Datos de la tarjeta</label>
             <div style={{ padding: '15px', border: '1px solid #CBD5E1', borderRadius: '8px', background: 'white', marginBottom: '20px' }}>
               <CardElement options={cardStyle} />
             </div>
 
-            {/* Código Promocional */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
               <input 
                 type="text" 
@@ -281,7 +281,6 @@ function AuthFormContent({ onClose, initialMode }) {
             </div>
             {promoMessage.text && <div style={{ fontSize: '0.85rem', color: promoMessage.type === 'error' ? '#EF4444' : '#10B981', marginBottom: '15px', fontWeight: '500' }}>{promoMessage.text}</div>}
 
-            {/* Términos y Condiciones */}
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '20px', marginBottom: '20px' }}>
               <input type="checkbox" id="terms" required checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} style={{ marginTop: '3px', width: '16px', height: '16px', accentColor: 'var(--pida-accent)', cursor: 'pointer' }} />
               <label htmlFor="terms" style={{ fontSize: '0.85rem', color: '#4B5563', lineHeight: '1.5', cursor: 'pointer' }}>
@@ -292,7 +291,6 @@ function AuthFormContent({ onClose, initialMode }) {
           </div>
         )}
 
-        {/* Mensaje de Error Global */}
         {error && (
           <div style={{ background: '#FEE2E2', color: '#B91C1C', padding: '12px 15px', borderRadius: '8px', fontSize: '0.9rem', marginBottom: '20px', border: '1px solid #FCA5A5', lineHeight: '1.4' }}>
             {error}
@@ -304,7 +302,6 @@ function AuthFormContent({ onClose, initialMode }) {
         </button>
       </form>
 
-      {/* Enlaces de retorno */}
       <div style={{ marginTop: '25px', fontSize: '0.9rem', color: '#64748B', textAlign: 'center' }}>
         {mode === 'reset' && <span onClick={() => { setMode('login'); setError(''); }} style={{ color: 'var(--pida-accent)', textDecoration: 'underline', cursor: 'pointer', fontWeight: '600' }}>← Volver al login</span>}
         {mode === 'register' && <span onClick={() => { setMode('login'); setError(''); }} style={{ color: 'var(--pida-accent)', textDecoration: 'underline', cursor: 'pointer', fontWeight: '600' }}>← Ya tengo cuenta, iniciar sesión</span>}
