@@ -229,26 +229,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
   return (
     <div className="pida-view">
-      {/* ESTA ES LA BOMBA CSS: Fuerzas la aniquilación de cualquier padding inferior 
-        en la vista del chat SOLAMENTE cuando está en celular, para que el formulario 
-        baje y se pegue a la barra azul.
-      */}
-      <style>{`
-        @media (max-width: 768px) {
-          .pida-view {
-            padding-bottom: 0 !important;
-          }
-          .pida-view-form {
-            margin-bottom: 0 !important;
-            padding-bottom: 10px !important;
-            border-bottom: none !important;
-          }
-          .pida-form-actions {
-            margin-bottom: 0 !important;
-          }
-        }
-      `}</style>
-
       <div className="pida-view-content">
         <div id="pida-chat-box">
           
