@@ -79,7 +79,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
       const token = await user.getIdToken();
       
-      // SOLUCIÓN: Usamos "await" para obligar a que espere a que se guarde el título antes de refrescar el menú
       if (isNewConversation) {
         try {
           await fetch(`${API_CHAT}/conversations/${currentChatId}/title`, {
@@ -238,8 +237,8 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
               <div className="pida-welcome-content">
                 <img src="/img/PIDA-Productos_Stripe.png" alt="PIDA Robot" className="pida-welcome-robot" />
                 <div className="pida-welcome-text">
-                  <h3>¡Hola! Soy PIDA, tu asistente experto en Derechos Humanos.</h3>
-                  <p>Estoy para apoyarte y responder cualquier pregunta que me hagas, incluyendo investigaciones, análisis de casos, búsqueda de jurisprudencia y redacción legal.</p>
+                  <h3>¡Hola! Soy PIDA, tu asistente experto en Derechos Humanos y temas afines.</h3>
+                  <p>Estoy para apoyarte y responder cualquier pregunta que me hagas, incluyendo investigaciones, análisis de casos, búsqueda de jurisprudencia y redacción legal de todo tipo de documentos, cartas, informes, elaboración de proyectos y seguimiento y monitoreo.</p>
                   <strong>¿Qué te gustaría pedirme ahora?</strong>
                 </div>
               </div>
@@ -266,7 +265,14 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
         </div>
       </div>
 
-      <form className="pida-view-form" onSubmit={(e) => handleSend(e)}>
+      {/* --- CORRECCIÓN DEL ESPACIO FANTASMA --- 
+          Forzamos márgenes y padding a 0 en la base del formulario 
+      */}
+      <form 
+        className="pida-view-form" 
+        onSubmit={(e) => handleSend(e)}
+        style={{ margin: 0, marginBottom: 0, paddingBottom: 0 }}
+      >
         {messages.length > 0 && (
           <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '8px' }}>
             <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>TXT</button>
