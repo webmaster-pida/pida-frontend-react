@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
-const API_CHAT = "https://chat-v20-strong-465781488910.us-central1.run.app";
+const API_CHAT = "https://chat-v20-stripe-elements-465781488910.us-central1.run.app";
 
 export default function ChatInterface({ user, resetSignal, loadChatId, refreshHistory }) {
   const [messages, setMessages] = useState([]);
@@ -10,6 +10,11 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
   const [isTyping, setIsTyping] = useState(false);
   const [chatId, setChatId] = useState(null);
   const messagesEndRef = useRef(null);
+
+  // --- NUEVO: Interceptor para forzar que los links abran en nueva pestaña ---
+  const markdownComponents = {
+    a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />
+  };
 
   useEffect(() => {
     if (resetSignal > 0) {
@@ -154,7 +159,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
   const renderMessageContent = (msg, index) => {
     if (msg.role === 'user') {
-      return <ReactMarkdown>{msg.content}</ReactMarkdown>;
+      return <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>;
     }
 
     const regex = /(?:#{2,3}\s*|\*\*\s*)?Preguntas de Seguimiento\s*(?:\*\*|:)?/i;
@@ -189,7 +194,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
       return (
         <>
           <div className="markdown-content">
-            <ReactMarkdown>{mainContent}</ReactMarkdown>
+            <ReactMarkdown components={markdownComponents}>{mainContent}</ReactMarkdown>
           </div>
           
           {questions.length > 0 && (
@@ -213,7 +218,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
           {textAfterQuestions && (
             <div className="markdown-content" style={{ marginTop: '20px' }}>
-              <ReactMarkdown>{textAfterQuestions}</ReactMarkdown>
+              <ReactMarkdown components={markdownComponents}>{textAfterQuestions}</ReactMarkdown>
             </div>
           )}
         </>
@@ -222,7 +227,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
     return (
       <div className="markdown-content">
-        <ReactMarkdown>{msg.content}</ReactMarkdown>
+        <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
       </div>
     );
   };
@@ -264,10 +269,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
         </div>
       </div>
 
-      <form 
-        className="pida-view-form" 
-        onSubmit={(e) => handleSend(e)}
-      >
+      <form className="pida-view-form" onSubmit={(e) => handleSend(e)}>
         {messages.length > 0 && (
           <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '8px' }}>
             <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>TXT</button>
