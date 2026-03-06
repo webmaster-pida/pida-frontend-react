@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
-const API_CHAT = "https://chat-v20-stripe-elements-465781488910.us-central1.run.app";
+const API_CHAT = "https://chat-v20-strong-465781488910.us-central1.run.app";
 
 export default function ChatInterface({ user, resetSignal, loadChatId, refreshHistory }) {
   const [messages, setMessages] = useState([]);
