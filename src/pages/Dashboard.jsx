@@ -66,7 +66,7 @@ const InAppCheckout = ({ user }) => {
           priceId: planDetails.id,
           currency: currency.toLowerCase(),
           plan_key: plan,
-          trial_period_days: 5,
+          // 🛡️ CORRECCIÓN SPOOFING: Eliminado el envío de trial_period_days desde el frontend.
           name: user.displayName || user.email,
           promotion_code: discountData ? promoCode : ""
         })
