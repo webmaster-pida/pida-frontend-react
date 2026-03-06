@@ -166,7 +166,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           {!isAnalyzing && !resultText && !error && (
             <div className="pida-bubble pida-message-bubble">
               <div className="pida-welcome-content">
-                <img src="/img/PIDA-Productos_Stripe.png" alt="PIDA Robot" className="pida-welcome-robot" />
                 <div className="pida-welcome-text">
                   <h3>Analizador de Documentos</h3>
                   <p>Sube tus archivos (PDF, DOCX) y escribe una instrucción clara. PIDA leerá, resumirá y sistematizará el documento por ti.</p>

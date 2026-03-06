@@ -269,7 +269,7 @@
         .close-login-btn { position: absolute; top: 15px; right: 15px; border: none; background: none; font-size: 24px; cursor: pointer; color: #999; }
 
         /* ========================================================================= */
-        /* RESPONSIVIDAD MÓVIL (SIN ROBOT, SIN SCROLL) */
+        /* RESPONSIVIDAD MÓVIL */
         /* ========================================================================= */
         @media (max-width: 768px) {
             #pida-sidebar { width: 100%; height: 65px; flex-direction: row; justify-content: space-around; align-items: center; padding: 0; position: fixed; bottom: 0; left: 0; top: auto; z-index: 10000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
@@ -292,22 +292,15 @@
             .account-container { padding: 20px; border: none; box-shadow: none; }
             .pida-view-content { padding: 15px; }
 
-            /* --- CORRECCIÓN DEL SCROLL EN EL MENÚ DESPLEGABLE MÓVIL --- */
+            /* --- SOLUCIÓN: Cajas de menú dinámicas que evitan el scroll horizontal --- */
             .pida-dropdown-content {
                 position: fixed !important;
-                top: 115px !important;
-                left: 50% !important;
-                transform: translateX(-50%) !important;
+                top: 70px !important;
+                left: 5% !important;
                 width: 90vw !important;
-                max-width: 350px !important;
+                max-width: 90vw !important;
                 box-shadow: 0 15px 40px rgba(0,0,0,0.2) !important;
             }
-
-            /* --- ELIMINAR ROBOT Y CONDENSAR TEXTO EN MÓVILES --- */
-            .pida-welcome-content { flex-direction: column; align-items: center; min-width: 100% !important; }
-            .pida-welcome-robot { display: none !important; } /* Adiós robot en celular */
-            .pida-welcome-text > *:not(h3) { display: none !important; }
-            .pida-welcome-text h3 { margin-bottom: 0 !important; font-size: 1.1rem !important; }
         }
 
 		/* --- Estilos para el Menú Flotante y Visibilidad --- */
@@ -328,12 +321,50 @@
            ========================================= */
         #pre-welcome { display: flex; justify-content: flex-start; margin-top: 20px; }
         
-        /* UNIFICACIÓN DE ANCHO Y CENTRADO DE TÍTULOS PARA LAS 3 CAJAS */
-        .pida-welcome-content { display: flex; flex-direction: row; gap: 20px; align-items: center; width: 100%; max-width: 800px; margin: 0 auto; }
-        .pida-welcome-robot { width: 85px; height: auto; flex-shrink: 0; object-fit: contain; }
-        .pida-welcome-text { flex: 1; width: 100%; }
-        .pida-welcome-text h3 { text-align: center !important; display: block; width: 100%; margin-top: 0; font-size: 1.2rem; color: var(--pida-primary); font-weight: 700; margin-bottom: 15px; }
-        .pida-welcome-text p { text-align: center; }
+        /* UNIFICACIÓN DE ANCHO Y CENTRADO DE TÍTULOS PARA LAS 3 CAJAS (Adiós robot) */
+        .pida-welcome-content { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            align-items: center; 
+            justify-content: center;
+            width: 100%; 
+            max-width: 800px; 
+            margin: 0 auto; 
+        }
+        .pida-welcome-robot { 
+            display: none !important; /* ELIMINADO TOTALMENTE EN TODAS LAS PANTALLAS */
+        }
+        .pida-welcome-text { 
+            width: 100%; 
+            text-align: center; 
+        }
+        .pida-welcome-text h3 { 
+            margin-top: 0; 
+            font-size: 1.25rem; 
+            color: var(--pida-primary); 
+            line-height: 1.4; 
+            border-bottom: none; 
+            padding-bottom: 0; 
+            font-weight: 700; 
+            margin-bottom: 10px;
+            text-align: center !important; /* Siempre centrado */
+        }
+        .pida-welcome-text p { 
+            margin: 10px 0; 
+            line-height: 1.6; 
+            color: var(--pida-text-main); 
+            font-size: 0.95rem;
+            text-align: center; /* Centrado */
+        }
+        .pida-welcome-text strong { 
+            color: var(--pida-accent); 
+            font-weight: 700; 
+            display: block;
+            margin-top: 15px;
+            font-size: 1.05rem;
+            text-align: center;
+        }
 
         #pre-analysis-result { background: white; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); font-family: 'Inter', sans-serif; color: #334155; line-height: 1.7; user-select: text!important; -webkit-user-select: text!important; }
         #pre-analysis-result h1, #pre-analysis-result h2, #pre-analysis-result h3 { color: var(--pida-primary); margin-top: 1.5em; margin-bottom: 0.8em; font-weight: 700; line-height: 1.2; }
@@ -430,20 +461,6 @@
         .pida-modal-desc { color: #64748b !important; font-size: 1rem !important; line-height: 1.5 !important; margin-bottom: 30px !important; }
         .pida-modal-btn { background-color: #1d3557 !important; color: #ffffff !important; width: 100% !important; padding: 16px !important; border-radius: 12px !important; font-weight: 700 !important; font-size: 1rem !important; border: none !important; cursor: pointer !important; transition: transform 0.2s, background 0.2s !important; }
         .pida-modal-btn:hover { background-color: #0056B3 !important; transform: translateY(-2px) !important; }
-
-        /* =========================================
-           UNIFORMIDAD DE BOTONES SUPERIORES Y BADGE
-           ========================================= */
-        .pida-context-controls .pida-header-btn, .pida-context-controls .plan-badge { height: 42px !important; display: inline-flex !important; align-items: center !important; box-sizing: border-box !important; }
-        .pida-context-controls .context-group > .pida-header-btn.primary { width: 220px !important; min-width: 220px !important; justify-content: center !important; }
-        .pida-context-controls .pida-dropdown .pida-header-btn { width: 280px !important; min-width: 280px !important; justify-content: space-between !important; padding: 0 15px !important; }
-        .pida-context-controls .plan-badge { width: auto !important; min-width: 130px !important; justify-content: center !important; margin-right: 0 !important; }
-
-        @media (max-width: 768px) {
-            .pida-context-controls .context-group > .pida-header-btn.primary,
-            .pida-context-controls .pida-dropdown .pida-header-btn,
-            .pida-context-controls .plan-badge { width: auto !important; min-width: auto !important; padding: 0 12px !important; }
-        }
 
         /* =========================================
            ESTABILIZACIÓN MÓVIL CORREGIDA (PRO)

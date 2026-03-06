@@ -235,7 +235,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
           {messages.length === 0 && (
             <div className="pida-bubble pida-message-bubble">
               <div className="pida-welcome-content">
-                <img src="/img/PIDA-Productos_Stripe.png" alt="PIDA Robot" className="pida-welcome-robot" />
                 <div className="pida-welcome-text">
                   <h3>¡Hola! Soy PIDA, tu asistente experto en Derechos Humanos y temas afines.</h3>
                   <p>Estoy para apoyarte y responder cualquier pregunta que me hagas, incluyendo investigaciones, análisis de casos, búsqueda de jurisprudencia y redacción legal de todo tipo de documentos, cartas, informes, elaboración de proyectos y seguimiento y monitoreo.</p>
@@ -265,7 +264,10 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
         </div>
       </div>
 
-      <form className="pida-view-form" onSubmit={(e) => handleSend(e)}>
+      <form 
+        className="pida-view-form" 
+        onSubmit={(e) => handleSend(e)}
+      >
         {messages.length > 0 && (
           <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '8px' }}>
             <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>TXT</button>
