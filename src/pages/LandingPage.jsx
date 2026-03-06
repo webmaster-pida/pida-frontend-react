@@ -149,9 +149,9 @@ export default function LandingPage({ onOpenAuth }) {
                   border: '1px solid #e5e7eb'
                 }}>
                   <div style={{ position: 'absolute', top: '-10px', left: 0, width: '100%', height: '15px' }}></div>
-                  <a href="/newsletter-001.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 001</a>
-                  <a href="/newsletter-002.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 002</a>
-                  <a href="/newsletter-003.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 003</a>
+                  <a href="/newsletter-001.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Enero 2026</a>
+                  <a href="/newsletter-002.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Febrero 2026</a>
+                  <a href="/newsletter-003.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Marzo 2026</a>
                 </div>
               )}
             </div>
