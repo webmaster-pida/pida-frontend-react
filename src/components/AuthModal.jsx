@@ -8,7 +8,7 @@ const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3k
 
 const cardStyle = {
   style: {
-    base: { fontSize: '16px', fontFamily: '"Inter", sans-serif', color: '#1D3557', '::placeholder': { color: '#aab7c4' } },
+    base: { fontSize: '16px', fontFamily: '"Inter", sans-serif', color: '#1D3557', '::placeholder': { color: '#94A3B8' } },
     invalid: { color: '#EF4444' },
   },
   hidePostalCode: true
@@ -64,7 +64,7 @@ function AuthFormContent({ onClose, initialMode }) {
       if (!res.ok) throw new Error(data.detail || 'Código inválido');
 
       setDiscountData(data);
-      setPromoMessage({ text: `✅ Cupón "${data.coupon_name}" aplicado.`, type: 'success' });
+      setPromoMessage({ text: `✅ Cupón aplicado: ${data.description}`, type: 'success' });
     } catch (err) {
       setDiscountData(null);
       setPromoMessage({ text: `❌ ${err.message}`, type: 'error' });
@@ -158,7 +158,6 @@ function AuthFormContent({ onClose, initialMode }) {
 
       let msg = err.message || "Ocurrió un error.";
       
-      // SOLUCIÓN CLAVE: Mensaje amigable si la cuenta se creó pero el pago falló antes
       if (err.code === 'auth/email-already-in-use') {
           msg = "Esta cuenta ya existe. Haz clic en 'Volver al login' abajo, ingresa con tu contraseña y podrás pagar de forma segura desde tu panel de usuario.";
       }
@@ -173,12 +172,12 @@ function AuthFormContent({ onClose, initialMode }) {
 
   return (
     <>
-      <h2 id="auth-title" style={{ color: 'var(--pida-primary)', marginTop: 0, fontSize: '1.2rem' }}>
+      <h2 id="auth-title" style={{ color: 'var(--pida-primary)', marginTop: 0, fontSize: '1.4rem', fontWeight: '800' }}>
         {mode === 'login' && 'Bienvenido de nuevo'}
         {mode === 'register' && 'Completar Suscripción'}
         {mode === 'reset' && 'Recuperar Contraseña'}
       </h2>
-      <p style={{ color: '#666', marginBottom: '20px' }}>
+      <p style={{ color: '#64748B', marginBottom: '25px', fontSize: '0.95rem' }}>
         {mode === 'register' ? 'Ingresa tus datos de pago para activar tu plan.' : 'Accede para continuar tu investigación.'}
       </p>
 
@@ -193,6 +192,8 @@ function AuthFormContent({ onClose, initialMode }) {
       )}
 
       <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
+        
+        {/* CAMPOS DE REGISTRO */}
         {mode === 'register' && (
           <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
             <input type="text" className="login-input" style={{ marginBottom: 0 }} placeholder="Nombre" required value={firstName} onChange={e => setFirstName(e.target.value)} />
@@ -206,65 +207,107 @@ function AuthFormContent({ onClose, initialMode }) {
           <div style={{ position: 'relative' }}>
             <input type="password" className="login-input" placeholder="Contraseña" required value={password} onChange={e => setPassword(e.target.value)} />
             {mode === 'login' && (
-              <div style={{ textAlign: 'right', marginTop: '-10px', marginBottom: '15px' }}>
-                <span onClick={() => { setMode('reset'); setError(''); }} style={{ fontSize: '0.8rem', color: '#666', cursor: 'pointer' }}>¿Olvidaste tu contraseña?</span>
+              <div style={{ textAlign: 'right', marginTop: '-10px', marginBottom: '20px' }}>
+                <span onClick={() => { setMode('reset'); setError(''); }} style={{ fontSize: '0.85rem', color: 'var(--pida-accent)', cursor: 'pointer', fontWeight: '500' }}>¿Olvidaste tu contraseña?</span>
               </div>
             )}
           </div>
         )}
 
+        {/* --- NUEVA SECCIÓN DE PAGO (Diseño Mejorado y Forzado) --- */}
         {mode === 'register' && (
-          <div className="payment-summary-container">
-            <div className="order-summary-box">
-              <div className="summary-header">
+          <div style={{ marginTop: '10px', animation: 'fadeIn 0.3s ease' }}>
+            
+            {/* Resumen de Costo */}
+            <div style={{ padding: '15px', background: '#F8FAFC', borderRadius: '8px', marginBottom: '20px', border: '1px solid #E2E8F0' }}>
+              <div style={{ borderBottom: '1px solid #E2E8F0', paddingBottom: '10px', marginBottom: '10px', fontWeight: '700', color: 'var(--pida-primary)', fontSize: '0.95rem' }}>
                 Plan {planKey.charAt(0).toUpperCase() + planKey.slice(1)} ({intervalKey === 'monthly' ? 'Mensual' : 'Anual'})
               </div>
-              <div className="summary-price-row">
-                <span>Total a pagar:</span>
-                <div className="price-display-wrapper">
-                  <span className={`current-price ${discountData ? 'crossed-out' : ''}`}>{planDetails.text}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: '600', color: '#64748B' }}>Total a pagar:</span>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: '1.3rem', fontWeight: '800', color: 'var(--pida-primary)', textDecoration: discountData ? 'line-through' : 'none', opacity: discountData ? 0.5 : 1 }}>
+                    {planDetails.text}
+                  </span>
                   {discountData && (
-                    <span className="final-price">
+                    <div style={{ color: '#10B981', fontWeight: '800', fontSize: '1.2rem' }}>
                       {new Intl.NumberFormat(currency === 'MXN' ? 'es-MX' : 'en-US', { style: 'currency', currency }).format(discountData.final_amount / 100)}
-                    </span>
+                    </div>
                   )}
                 </div>
               </div>
-              {discountData && <div className="discount-pill">Ahorras: {discountData.description}</div>}
+              {discountData && (
+                <div style={{ background: '#DCFCE7', color: '#166534', fontSize: '0.75rem', fontWeight: '700', padding: '4px 10px', borderRadius: '12px', marginTop: '10px', display: 'inline-block', float: 'right' }}>
+                  Ahorras: {discountData.description}
+                </div>
+              )}
+              <div style={{ clear: 'both' }}></div>
             </div>
 
-            <label className="input-label">Datos de la tarjeta</label>
-            <div className="stripe-input-box">
+            {/* Tarjeta Stripe */}
+            <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Datos de la tarjeta</label>
+            <div style={{ padding: '15px', border: '1px solid #CBD5E1', borderRadius: '8px', background: 'white', marginBottom: '20px' }}>
               <CardElement options={cardStyle} />
             </div>
 
-            <div className="promo-section">
-              <div className="promo-input-group">
-                <input type="text" placeholder="CÓDIGO DE DESCUENTO" value={promoCode} onChange={e => setPromoCode(e.target.value)} disabled={!!discountData} />
-                <button type="button" onClick={handleApplyPromo} disabled={!!discountData || !promoCode}>
-                  {discountData ? '✓' : 'Aplicar'}
-                </button>
-              </div>
-              {promoMessage.text && <div className={`promo-msg ${promoMessage.type}`} style={{ display: 'block' }}>{promoMessage.text}</div>}
+            {/* Código Promocional */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+              <input 
+                type="text" 
+                style={{ padding: '12px 15px', flex: 1, border: '1px solid #CBD5E1', borderRadius: '8px', marginBottom: 0, textTransform: 'uppercase', fontSize: '0.9rem', outline: 'none' }} 
+                placeholder="CÓDIGO DE DESCUENTO" 
+                value={promoCode} 
+                onChange={e => setPromoCode(e.target.value)} 
+                disabled={!!discountData || isLoading} 
+              />
+              <button 
+                type="button" 
+                style={{ 
+                  background: discountData ? '#10B981' : 'var(--pida-primary)', 
+                  color: 'white', 
+                  border: 'none', 
+                  padding: '0 20px', 
+                  borderRadius: '8px', 
+                  fontWeight: '600', 
+                  cursor: (!!discountData || !promoCode || isLoading) ? 'not-allowed' : 'pointer', 
+                  opacity: (!!discountData || !promoCode || isLoading) && !discountData ? 0.6 : 1,
+                  transition: 'background 0.2s'
+                }} 
+                onClick={handleApplyPromo} 
+                disabled={!!discountData || !promoCode || isLoading}
+              >
+                {discountData ? '✓ Aplicado' : 'Aplicar'}
+              </button>
+            </div>
+            {promoMessage.text && <div style={{ fontSize: '0.85rem', color: promoMessage.type === 'error' ? '#EF4444' : '#10B981', marginBottom: '15px', fontWeight: '500' }}>{promoMessage.text}</div>}
+
+            {/* Términos y Condiciones */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '20px', marginBottom: '20px' }}>
+              <input type="checkbox" id="terms" required checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} style={{ marginTop: '3px', width: '16px', height: '16px', accentColor: 'var(--pida-accent)', cursor: 'pointer' }} />
+              <label htmlFor="terms" style={{ fontSize: '0.85rem', color: '#4B5563', lineHeight: '1.5', cursor: 'pointer' }}>
+                Acepto los <a href="https://pida-ai.com/terminos" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-accent)', fontWeight: '500' }}>términos de uso</a> y la <a href="https://pida-ai.com/privacidad" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-accent)', fontWeight: '500' }}>política de privacidad</a>.
+              </label>
             </div>
 
-            <div className="terms-box">
-              <input type="checkbox" id="terms" required checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} />
-              <label htmlFor="terms">Acepto los <a href="/terminos.html" target="_blank" rel="noreferrer">términos de uso</a> y la <a href="/privacidad.html" target="_blank" rel="noreferrer">política de privacidad</a>.</label>
-            </div>
           </div>
         )}
 
-        {error && <div className="login-error" style={{ display: 'block', marginBottom: '15px' }}>{error}</div>}
+        {/* Mensaje de Error Global */}
+        {error && (
+          <div style={{ background: '#FEE2E2', color: '#B91C1C', padding: '12px 15px', borderRadius: '8px', fontSize: '0.9rem', marginBottom: '20px', border: '1px solid #FCA5A5', lineHeight: '1.4' }}>
+            {error}
+          </div>
+        )}
 
-        <button type="submit" className="login-btn" disabled={isLoading || (!stripe && mode === 'register')}>
-          {isLoading ? loadingText : (mode === 'login' ? 'Ingresar' : mode === 'register' ? 'Iniciar prueba gratis' : 'Enviar enlace')}
+        <button type="submit" className="login-btn" style={{ padding: '16px', fontSize: '1.05rem', borderRadius: '8px' }} disabled={isLoading || (!stripe && mode === 'register')}>
+          {isLoading ? loadingText : (mode === 'login' ? 'Ingresar' : mode === 'register' ? 'Activar cuenta y probar 5 días' : 'Enviar enlace')}
         </button>
       </form>
 
-      <div style={{ marginTop: '20px', fontSize: '0.85rem', color: '#666', textAlign: 'center' }}>
-        {mode === 'reset' && <span onClick={() => { setMode('login'); setError(''); }} style={{ color: 'var(--pida-accent)', textDecoration: 'underline', cursor: 'pointer' }}>← Volver al login</span>}
-        {mode === 'register' && <span onClick={() => { setMode('login'); setError(''); }} style={{ color: 'var(--pida-accent)', textDecoration: 'underline', cursor: 'pointer' }}>← Volver al login</span>}
+      {/* Enlaces de retorno */}
+      <div style={{ marginTop: '25px', fontSize: '0.9rem', color: '#64748B', textAlign: 'center' }}>
+        {mode === 'reset' && <span onClick={() => { setMode('login'); setError(''); }} style={{ color: 'var(--pida-accent)', textDecoration: 'underline', cursor: 'pointer', fontWeight: '600' }}>← Volver al login</span>}
+        {mode === 'register' && <span onClick={() => { setMode('login'); setError(''); }} style={{ color: 'var(--pida-accent)', textDecoration: 'underline', cursor: 'pointer', fontWeight: '600' }}>← Ya tengo cuenta, iniciar sesión</span>}
       </div>
     </>
   );
@@ -273,10 +316,10 @@ function AuthFormContent({ onClose, initialMode }) {
 export default function AuthModal({ isOpen, initialMode = 'login', onClose }) {
   if (!isOpen) return null;
   return (
-    <div id="pida-login-screen" style={{ display: 'flex' }}>
-      <div className="login-card">
+    <div id="pida-login-screen" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="login-card" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
         <button className="close-login-btn" onClick={onClose} style={{ zIndex: 10 }}>×</button>
-        <img src="/img/PIDA_logo-576.png" alt="PIDA Logo" className="login-logo" />
+        <img src="/img/PIDA_logo-576.png" alt="PIDA Logo" className="login-logo" style={{ width: '140px', marginBottom: '25px' }} />
         <Elements stripe={stripePromise}>
           <AuthFormContent onClose={onClose} initialMode={initialMode} />
         </Elements>
