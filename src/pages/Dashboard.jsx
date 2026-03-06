@@ -58,6 +58,20 @@ const InAppCheckout = ({ user }) => {
     setLoading(true); setError('');
 
     try {
+      const cardElement = elements.getElement(CardElement);
+      
+      // 🛡️ NUEVO FLUJO: 1. Creamos y validamos el Método de Pago PRIMERO
+      const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement,
+        billing_details: { name: user.displayName || user.email || 'Usuario PIDA' }
+      });
+
+      if (pmError) {
+        throw new Error(pmError.message);
+      }
+
+      // 🛡️ 2. Solo si la tarjeta es real, llamamos al backend enviando el ID del Método de Pago
       const token = await user.getIdToken();
       const intentRes = await fetch(`${PIDA_CONFIG.API_CHAT}/create-payment-intent`, {
         method: 'POST',
@@ -66,28 +80,30 @@ const InAppCheckout = ({ user }) => {
           priceId: planDetails.id,
           currency: currency.toLowerCase(),
           plan_key: plan,
-          // 🛡️ CORRECCIÓN SPOOFING: Eliminado el envío de trial_period_days desde el frontend.
           name: user.displayName || user.email,
-          promotion_code: discountData ? promoCode : ""
+          promotion_code: discountData ? promoCode : "",
+          paymentMethodId: paymentMethod.id // <-- Le pasamos la tarjeta validada
         })
       });
       
       const data = await intentRes.json();
       if (!intentRes.ok) throw new Error(data.detail || "Error al procesar pago");
 
-      const cardElement = elements.getElement(CardElement);
-      let result;
-      
-      if (data.clientSecret.startsWith('seti_')) {
-        result = await stripe.confirmCardSetup(data.clientSecret, { payment_method: { card: cardElement, billing_details: { name: user.displayName || 'Usuario PIDA' } } });
-      } else {
-        result = await stripe.confirmCardPayment(data.clientSecret, { payment_method: { card: cardElement, billing_details: { name: user.displayName || 'Usuario PIDA' } } });
+      // 🛡️ 3. Si el banco del cliente exige autorización extra (3D Secure)
+      if (data.requiresAction) {
+        let result;
+        if (data.clientSecret.startsWith('seti_')) {
+          result = await stripe.confirmCardSetup(data.clientSecret);
+        } else {
+          result = await stripe.confirmCardPayment(data.clientSecret);
+        }
+        if (result.error) throw new Error(result.error.message);
       }
 
-      if (result.error) throw new Error(result.error.message);
-
+      // Éxito Total
       sessionStorage.setItem('pida_is_onboarding', 'true');
       window.location.reload(); 
+      
     } catch(err) {
       setError(`❌ ${err.message}`);
       setLoading(false);
