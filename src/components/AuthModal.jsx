@@ -284,7 +284,7 @@ function AuthFormContent({ onClose, initialMode }) {
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '20px', marginBottom: '20px' }}>
               <input type="checkbox" id="terms" required checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} style={{ marginTop: '3px', width: '16px', height: '16px', accentColor: 'var(--pida-accent)', cursor: 'pointer' }} />
               <label htmlFor="terms" style={{ fontSize: '0.85rem', color: '#4B5563', lineHeight: '1.5', cursor: 'pointer' }}>
-                Acepto los <a href="https://pida-ai.com/terminos" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-accent)', fontWeight: '500' }}>términos de uso</a> y la <a href="https://pida-ai.com/privacidad" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-accent)', fontWeight: '500' }}>política de privacidad</a>.
+                Acepto los <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-accent)', fontWeight: '500' }}>términos de uso</a> y la <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-accent)', fontWeight: '500' }}>política de privacidad</a>.
               </label>
             </div>
 
