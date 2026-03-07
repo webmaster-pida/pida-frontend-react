@@ -39,7 +39,7 @@
         }
 
 		img { max-width: 100%; height: auto; display: block; }
-        /* CORRECCIÓN: Margen inferior del logo reducido de 40px a 15px para eliminar espacio en blanco */
+        /* CORRECCIÓN: Margen inferior del logo reducido */
 		.hero-content img { margin: 0 auto 15px auto; display: block; }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -66,12 +66,12 @@
         .nav-menu .nav-link:visited { font-size: 0.9rem; font-weight: 500; color: #64748B !important; text-decoration: none !important; position: relative; transition: color 0.3s; }
         .nav-link:hover { color: var(--navy); }
 
-        /* CORRECCIÓN: Padding superior del hero reducido de 120px a 90px */
+        /* CORRECCIÓN: Padding superior del hero optimizado para quedar justo bajo el Nav */
         .hero { padding: 90px 0 40px; position: relative; overflow: hidden; }
         .bg-gradient-mesh { position: absolute; top: -20%; right: -10%; width: 800px; height: 800px; background: radial-gradient(circle, rgba(0, 195, 255, 0.05) 0%, rgba(255,255,255,0) 60%); z-index: -1; animation: breathe 10s infinite alternate; }
         .hero-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 60px; align-items: center; }
         
-        /* CORRECCIÓN: Margen inferior del h1 reducido de 24px a 16px */
+        /* CORRECCIÓN: Margen inferior del h1 reducido */
         .hero h1 { font-size: 3.5rem; margin-bottom: 16px; line-height: 1.1; }
         .hero-desc { font-size: 1.15rem; color: #4B5563; margin-bottom: 32px; max-width: 90%; }
         .badge-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; background: #EFF6FF; color: var(--navy); border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-bottom: 20px; }
@@ -79,6 +79,9 @@
         .hero-visual { height: 400px; position: relative; display: flex; justify-content: center; align-items: center; perspective: 1000px; }
         
         section { padding: 50px 0; }
+
+        /* 🔥 SOLUCIÓN CRÍTICA: Eliminar el espacio gigante que generaba el <section id="root"> vacío 🔥 */
+        section#root { padding: 0 !important; margin: 0 !important; height: 0 !important; overflow: hidden; border: none !important; }
         
         .section-intro { text-align: center; max-width: 900px; margin: 0 auto 60px; }
         .section-intro h2 { font-size: 2.5rem; margin-bottom: 16px; }
