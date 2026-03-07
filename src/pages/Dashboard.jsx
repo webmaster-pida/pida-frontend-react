@@ -58,6 +58,20 @@ const InAppCheckout = ({ user }) => {
     setLoading(true); setError('');
 
     try {
+      // =========================================================
+      // 📊 EVENTO GA4: BEGIN CHECKOUT (Intento de pago)
+      // =========================================================
+      try {
+        if (typeof window !== "undefined" && window.gtag) {
+          window.gtag("event", "begin_checkout", {
+            currency: currency.toUpperCase(),
+            value: discountData ? (discountData.final_amount / 100) : (planDetails.amount / 100),
+            items: [{ item_id: planDetails.id, item_name: `Plan ${plan.toUpperCase()} - ${interval}` }]
+          });
+        }
+      } catch (gaError) { console.error("GA Error:", gaError); }
+      // =========================================================
+
       const cardElement = elements.getElement(CardElement);
       
       // 🛡️ NUEVO FLUJO: 1. Creamos y validamos el Método de Pago PRIMERO
@@ -99,6 +113,28 @@ const InAppCheckout = ({ user }) => {
         }
         if (result.error) throw new Error(result.error.message);
       }
+
+      // =========================================================
+      // 📊 EVENTO GA4: PURCHASE (Venta exitosa)
+      // =========================================================
+      try {
+        if (typeof window !== "undefined" && window.gtag) {
+          window.gtag("event", "purchase", {
+            transaction_id: data.subscriptionId, // ID de la suscripción de Stripe
+            value: discountData ? (discountData.final_amount / 100) : (planDetails.amount / 100),
+            currency: currency.toUpperCase(),
+            items: [
+              {
+                item_id: planDetails.id,
+                item_name: `Plan ${plan.toUpperCase()} - ${interval}`,
+                coupon: discountData ? promoCode : undefined,
+                quantity: 1
+              }
+            ]
+          });
+        }
+      } catch (gaError) { console.error("GA Error:", gaError); }
+      // =========================================================
 
       // Éxito Total
       sessionStorage.setItem('pida_is_onboarding', 'true');
