@@ -690,3 +690,16 @@ textarea.form-input { resize: vertical; }
 .video-modal-card { position: relative; width: 90%; max-width: 850px; background-color: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.5); }
 .video-close-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 1.5rem; cursor: pointer; border-radius: 50%; width: 40px; height: 40px; z-index: 10; display: flex; align-items: center; justify-content: center; transition: background 0.3s; }
 .video-close-btn:hover { background: rgba(239, 68, 68, 0.9); }
+
+/* --- Ajuste de espacio superior del logo principal --- */
+.hero-logo-wrapper {
+  margin-top: -25px; /* Valor negativo para "jalar" el logo hacia arriba */
+  margin-bottom: 15px; 
+}
+
+/* En celulares reducimos un poco el ajuste para que no choque con el menú */
+@media (max-width: 850px) {
+  .hero-logo-wrapper {
+    margin-top: -10px;
+  }
+}

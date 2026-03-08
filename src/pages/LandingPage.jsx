@@ -124,7 +124,7 @@ export default function LandingPage({ onOpenAuth }) {
         <section className="hero">
           <div className="wrapper hero-grid">
             <div className="hero-content">
-              <div><img src="/img/PIDA_logo-576.png" alt="Logo PIDA" /></div>
+              <div className="hero-logo-wrapper"><img src="/img/PIDA_logo-576.png" alt="Logo PIDA" /></div>
               <h1>
                 Inteligencia Aumentada para la Defensa de los <br />
                 <span className="text-gradient">Derechos Humanos</span>
