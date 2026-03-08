@@ -103,6 +103,7 @@ export default function LandingPage({ onOpenAuth }) {
       <header className="nav" id="navbar">
         <div className="wrapper nav-inner">
           <nav className="nav-menu" style={{ display: 'flex', alignItems: 'center' }}>
+            <a href="#pida" className="nav-link">PIDA</a>
             <a href="#diferencia" className="nav-link">Diferencia PIDA</a>
             <a href="#ecosistema" className="nav-link">Ecosistema</a>
             <a href="#planes" className="nav-link">Planes</a>
@@ -134,14 +135,14 @@ export default function LandingPage({ onOpenAuth }) {
                   border: '1px solid #e5e7eb'
                 }}>
                   <div style={{ position: 'absolute', top: '-10px', left: 0, width: '100%', height: '15px' }}></div>
-                  <a href="/newsletter-001.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 001</a>
-                  <a href="/newsletter-002.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 002</a>
-                  <a href="/newsletter-003.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 003</a>
+                  <a href="/newsletter-001.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Enero 2026</a>
+                  <a href="/newsletter-002.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Febrero 2026</a>
+                  <a href="/newsletter-003.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Marzo 2026</a>
                 </div>
               )}
             </div>
 
-            {/* --- NUEVO: BOTÓN DE LOGIN EN EL MENÚ --- */}
+            {/* BOTÓN DE LOGIN EN EL MENÚ */}
             <button 
               onClick={() => onOpenAuth('login')}
               style={{ 
@@ -166,6 +167,7 @@ export default function LandingPage({ onOpenAuth }) {
       </header>
 
       <main>
+        <section id="pida"></section>
         <section className="hero">
           <div className="wrapper hero-grid">
             <div className="hero-content">
@@ -178,12 +180,12 @@ export default function LandingPage({ onOpenAuth }) {
                 Los asistentes de Inteligencia Artificial genéricos son un océano de información, pero sin un ancla, pueden llevarte a la deriva con datos imprecisos.
               </p>
               
-              {/* --- NUEVO: BOTONES DE ACCIÓN MEJORADOS EN EL HERO --- */}
+              {/* BOTONES DE ACCIÓN MEJORADOS EN EL HERO */}
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
                 <button className="btn btn-primary" onClick={() => document.getElementById('planes').scrollIntoView({ behavior: 'smooth' })}>
                   Ver Planes
                 </button>
-                <button className="btn btn-ghost" onClick={() => onOpenAuth('login')} style={{ backgroundColor: 'white' }}>
+                <button className="btn btn-ghost" onClick={() => onOpenAuth('login')} style={{ backgroundColor: 'white', border: '1px solid var(--pida-primary)', color: 'var(--pida-primary)' }}>
                   Login PIDA
                 </button>
               </div>
@@ -441,8 +443,8 @@ export default function LandingPage({ onOpenAuth }) {
         <div className="wrapper">                   
             <div className="copyright">
                 <span>&copy; 2025 IIRESODH PAYMENTS, LLC.</span>
-                <a href="https://pida-ai.com/terminos" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Términos de uso</a>
-                <a href="https://pida-ai.com/privacidad" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Política de privacidad</a>
+                <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Términos de uso</a>
+                <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Política de privacidad</a>
                 <a href="mailto:contacto@pida-ai.com" style={{ color: 'var(--navy)', textDecoration: 'none' }}>contacto@pida-ai.com</a>
             </div>
             <br />&nbsp;
