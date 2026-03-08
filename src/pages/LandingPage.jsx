@@ -88,7 +88,7 @@ export default function LandingPage({ onOpenAuth }) {
         <div className="wrapper nav-inner">
           <nav className="nav-menu" style={{ display: 'flex', alignItems: 'center' }}>
             
-            <a href="#root" className="nav-link hide-on-mobile">PIDA</a>
+            <a href="#pida" className="nav-link hide-on-mobile">PIDA</a>
             <a href="#diferencia" className="nav-link hide-on-mobile">Diferencia PIDA</a>
             <a href="#ecosistema" className="nav-link hide-on-mobile">Ecosistema</a>
             <a href="#planes" className="nav-link hide-on-mobile">Planes</a>
@@ -120,7 +120,7 @@ export default function LandingPage({ onOpenAuth }) {
       </header>
 
       <main>
-        <section id="root"></section>
+        <section id="pida"></section>
         <section className="hero">
           <div className="wrapper hero-grid">
             <div className="hero-content">
