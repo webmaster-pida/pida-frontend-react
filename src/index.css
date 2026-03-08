@@ -668,7 +668,7 @@ textarea.form-input { resize: vertical; }
 .auth-summary-price { font-size: 1.3rem; font-weight: 800; color: var(--pida-primary); }
 .auth-summary-price.discounted { text-decoration: line-through; opacity: 0.5; }
 .auth-summary-final-price { color: #10B981; font-weight: 800; font-size: 1.2rem; }
-.auth-discount-badge { background: #DCFCE7; color: #166534; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 12px; margin-top: 10px; display: inline-block; float: right; }
+.auth-discount-badge { background: #DCFCE7; color: #166534; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 12px; margin-top: 10px; float: right; }
 .stripe-element-box { padding: 15px; border: 1px solid #CBD5E1; border-radius: 8px; background: white; margin-bottom: 20px; }
 .input-label { font-weight: 600; font-size: 0.85rem; color: var(--pida-primary); margin-bottom: 8px; display: block; text-align: left; }
 
