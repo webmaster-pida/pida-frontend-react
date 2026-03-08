@@ -36,11 +36,9 @@ function AuthFormContent({ onClose, initialMode }) {
   const planKey = sessionStorage.getItem('pida_pending_plan') || 'basico';
   const intervalKey = sessionStorage.getItem('pida_pending_interval') || 'monthly';
   
-  // 🔐 PROTECCIÓN CONTRA CRASHES: Sanitización estricta de la moneda
   const rawCurrency = localStorage.getItem('pida_currency');
   const currency = ['USD', 'MXN'].includes(rawCurrency) ? rawCurrency : 'USD';
   
-  // Lectura segura del plan
   const planDetails = STRIPE_PRICES[planKey]?.[intervalKey]?.[currency] || STRIPE_PRICES['basico']['monthly']['USD'];
 
   const handleGoogleLogin = async () => {
@@ -163,11 +161,13 @@ function AuthFormContent({ onClose, initialMode }) {
 
       let msg = err.message || "Ocurrió un error.";
       
-      if (err.code === 'auth/email-already-in-use') {
+      // --- NUEVO: MENSAJES DE ERROR CLAROS PARA USUARIOS NUEVOS QUE INTENTAN LOGUEARSE ---
+      if (err.code === 'auth/user-not-found') {
+          msg = "No encontramos una cuenta con este correo. Recuerda que PIDA es premium, debes adquirir un plan primero.";
+      } else if (err.code === 'auth/email-already-in-use') {
           msg = "Esta cuenta ya existe. Haz clic en 'Volver al login' abajo, ingresa con tu contraseña y podrás pagar de forma segura desde tu panel de usuario.";
-      }
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-          msg = "Datos incorrectos.";
+      } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+          msg = "Datos incorrectos. Si eres nuevo, cierra esta ventana y elige un plan para suscribirte.";
       }
       
       setError(msg);
@@ -179,12 +179,29 @@ function AuthFormContent({ onClose, initialMode }) {
     <>
       <h2 id="auth-title" style={{ color: 'var(--pida-primary)', marginTop: 0, fontSize: '1.4rem', fontWeight: '800' }}>
         {mode === 'login' && 'Bienvenido de nuevo'}
-        {mode === 'register' && 'Suscríbete'}
+        {mode === 'register' && 'Completar Suscripción'}
         {mode === 'reset' && 'Recuperar Contraseña'}
       </h2>
-      <p style={{ color: '#64748B', marginBottom: '25px', fontSize: '0.95rem' }}>
+      <p style={{ color: '#64748B', marginBottom: '20px', fontSize: '0.95rem' }}>
         {mode === 'register' ? 'Ingresa tus datos de pago para activar tu plan.' : 'Accede para continuar tu investigación.'}
       </p>
+
+      {/* --- NUEVO: BANNER EXPLICATIVO PARA NUEVOS USUARIOS EN LA VISTA DE LOGIN --- */}
+      {mode === 'login' && (
+        <div style={{ padding: '15px', background: '#F0F9FF', borderRadius: '8px', marginBottom: '25px', border: '1px solid #BAE6FD', textAlign: 'center' }}>
+          <span style={{ fontSize: '0.9rem', color: '#0369A1', fontWeight: '600' }}>¿Aún no tienes cuenta?</span>
+          <p style={{ fontSize: '0.85rem', color: '#0284C7', margin: '5px 0 0 0', lineHeight: '1.4' }}>
+            PIDA es una plataforma premium. Para registrarte, primero debes seleccionar un plan. <br/>
+            <button 
+              type="button"
+              onClick={() => { onClose(); window.location.href = '/#planes'; }} 
+              style={{ background: 'none', border: 'none', color: 'var(--pida-primary)', fontWeight: 'bold', textDecoration: 'underline', cursor: 'pointer', marginTop: '8px', padding: 0 }}
+            >
+              Explorar planes y pruebas gratis →
+            </button>
+          </p>
+        </div>
+      )}
 
       {mode === 'login' && (
         <>
@@ -284,7 +301,7 @@ function AuthFormContent({ onClose, initialMode }) {
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '20px', marginBottom: '20px' }}>
               <input type="checkbox" id="terms" required checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} style={{ marginTop: '3px', width: '16px', height: '16px', accentColor: 'var(--pida-accent)', cursor: 'pointer' }} />
               <label htmlFor="terms" style={{ fontSize: '0.85rem', color: '#4B5563', lineHeight: '1.5', cursor: 'pointer' }}>
-                Acepto los <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-accent)', fontWeight: '500' }}>términos de uso</a> y la <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-accent)', fontWeight: '500' }}>política de privacidad</a>.
+                Acepto los <a href="https://pida-ai.com/terminos" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-accent)', fontWeight: '500' }}>términos de uso</a> y la <a href="https://pida-ai.com/privacidad" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-accent)', fontWeight: '500' }}>política de privacidad</a>.
               </label>
             </div>
 

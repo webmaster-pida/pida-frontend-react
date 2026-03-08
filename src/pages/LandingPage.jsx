@@ -3,27 +3,18 @@ import { STRIPE_PRICES } from '../config/constants';
 import { db } from '../config/firebase'; 
 
 export default function LandingPage({ onOpenAuth }) {
-  // Estados para controlar los precios
   const [interval, setInterval] = useState('monthly'); 
   const [currency, setCurrency] = useState('USD');     
-
-  // Estado para controlar el carrusel de testimonios
   const [currentSlide, setCurrentSlide] = useState(0);
-
-  // Estado para el menú Newsletter
   const [showNewsletter, setShowNewsletter] = useState(false);
-
-  // Estado para el Modal de Video
   const [isVideoOpen, setIsVideoOpen] = useState(false);
 
-  // Estados para el Formulario Corporativo
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({
       name: '', company: '', email: '', confirmEmail: '', countryCode: '+503', phone: '', message: ''
   });
   const [contactStatus, setContactStatus] = useState({ text: '', type: '', isSubmitting: false });
 
-  // Detección automática de ubicación para ajustar moneda
   useEffect(() => {
     const detectLocation = async () => {
       try {
@@ -37,7 +28,6 @@ export default function LandingPage({ onOpenAuth }) {
           setCurrency('MXN');
         }
       } catch (e) {
-        // Fallback por zona horaria
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
         if (/Mexico|Monterrey|Chihuahua|Tijuana|Cancun/i.test(tz)) {
           setCurrency('MXN');
@@ -47,7 +37,6 @@ export default function LandingPage({ onOpenAuth }) {
     detectLocation();
   }, []);
 
-  // Efecto para hacer scroll automático si la URL trae un ancla (ej. #planes)
   useEffect(() => {
     if (window.location.hash) {
       const targetId = window.location.hash.substring(1);
@@ -60,7 +49,6 @@ export default function LandingPage({ onOpenAuth }) {
     }
   }, []);
 
-  // Efecto para mover el carrusel automáticamente cada 5 segundos
   useEffect(() => {
     const timer = window.setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % 3); 
@@ -68,7 +56,6 @@ export default function LandingPage({ onOpenAuth }) {
     return () => window.clearInterval(timer);
   }, []);
 
-  // Función al hacer clic en un plan
   const handleSelectPlan = (planKey) => {
     sessionStorage.setItem('pida_pending_plan', planKey);
     sessionStorage.setItem('pida_pending_interval', interval);
@@ -76,7 +63,6 @@ export default function LandingPage({ onOpenAuth }) {
     onOpenAuth('register');
   };
 
-  // ENVÍO A LEADS CORPORATIVOS 
   const handleContactSubmit = async (e) => {
       e.preventDefault();
       
@@ -117,12 +103,10 @@ export default function LandingPage({ onOpenAuth }) {
       <header className="nav" id="navbar">
         <div className="wrapper nav-inner">
           <nav className="nav-menu" style={{ display: 'flex', alignItems: 'center' }}>
-            <a href="#root" className="nav-link">PIDA</a>
             <a href="#diferencia" className="nav-link">Diferencia PIDA</a>
             <a href="#ecosistema" className="nav-link">Ecosistema</a>
             <a href="#planes" className="nav-link">Planes</a>
 
-            {/* MENÚ DESPLEGABLE DE NEWSLETTER */}
             <div 
               style={{ position: 'relative', display: 'inline-block' }}
               onMouseEnter={() => setShowNewsletter(true)}
@@ -150,18 +134,38 @@ export default function LandingPage({ onOpenAuth }) {
                   border: '1px solid #e5e7eb'
                 }}>
                   <div style={{ position: 'absolute', top: '-10px', left: 0, width: '100%', height: '15px' }}></div>
-                  <a href="/newsletter-001.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Enero 2026</a>
-                  <a href="/newsletter-002.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Febrero 2026</a>
-                  <a href="/newsletter-003.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Marzo 2026</a>
+                  <a href="/newsletter-001.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 001</a>
+                  <a href="/newsletter-002.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 002</a>
+                  <a href="/newsletter-003.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Boletín 003</a>
                 </div>
               )}
             </div>
+
+            {/* --- NUEVO: BOTÓN DE LOGIN EN EL MENÚ --- */}
+            <button 
+              onClick={() => onOpenAuth('login')}
+              style={{ 
+                background: 'transparent', 
+                border: '2px solid var(--pida-primary)', 
+                color: 'var(--pida-primary)', 
+                padding: '6px 18px', 
+                borderRadius: '8px', 
+                fontWeight: '700', 
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                transition: 'all 0.2s',
+                marginLeft: '15px'
+              }}
+              onMouseOver={e => { e.currentTarget.style.background = 'var(--pida-primary)'; e.currentTarget.style.color = 'white'; }}
+              onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--pida-primary)'; }}
+            >
+              Login
+            </button>
           </nav>
         </div>
       </header>
 
       <main>
-        <section id="root"></section>
         <section className="hero">
           <div className="wrapper hero-grid">
             <div className="hero-content">
@@ -173,16 +177,20 @@ export default function LandingPage({ onOpenAuth }) {
               <p className="hero-desc">
                 Los asistentes de Inteligencia Artificial genéricos son un océano de información, pero sin un ancla, pueden llevarte a la deriva con datos imprecisos.
               </p>
-              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
-                <button className="btn btn-primary" onClick={() => onOpenAuth('login')}>
-                  Entrar a PIDA
+              
+              {/* --- NUEVO: BOTONES DE ACCIÓN MEJORADOS EN EL HERO --- */}
+              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+                <button className="btn btn-primary" onClick={() => document.getElementById('planes').scrollIntoView({ behavior: 'smooth' })}>
+                  Ver Planes
+                </button>
+                <button className="btn btn-ghost" onClick={() => onOpenAuth('login')} style={{ backgroundColor: 'white' }}>
+                  Login PIDA
                 </button>
               </div>
             </div>
             <div className="hero-visual-column" style={{ textAlign: 'center' }}>
               <img style={{ borderRadius: '8px', marginBottom: '20px' }} src="/img/PIDA-MASCOTA-576-trans.png" alt="Robot PIDA" />
               
-              {/* BOTÓN DE VIDEO */}
               <button 
                 id="open-video-modal-btn" 
                 onClick={() => setIsVideoOpen(true)}
@@ -209,7 +217,6 @@ export default function LandingPage({ onOpenAuth }) {
           </div>
         </section>
 
-        {/* SECCIÓN DIFERENCIA */}
         <section id="diferencia">
             <div className="wrapper">
                 <div className="section-intro">
@@ -220,7 +227,6 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
-        {/* SECCIÓN BONDADES */}
         <section id="bondades" style={{ background: '#FAFAFA' }}>
             <div className="wrapper">
                 <h2 style={{ marginBottom: '40px', textAlign: 'center' }}>Bondades únicas de PIDA</h2>
@@ -241,7 +247,6 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
-        {/* SECCIÓN ECOSISTEMA */}
         <section id="ecosistema" style={{ backgroundColor: '#FFFFFF', padding: '80px 0' }}>
             <div className="wrapper">
                 <div className="section-intro" style={{ marginBottom: '60px' }}>
@@ -294,7 +299,6 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
-        {/* SECCIÓN DE PLANES CON LÓGICA REACTIVA */}
         <section id="planes">
           <div className="wrapper">
             <div className="section-intro">
@@ -373,7 +377,6 @@ export default function LandingPage({ onOpenAuth }) {
           </div>
         </section>
 
-        {/* SECCIÓN INFO CORPORATIVA */}
         <section id="info-corporativa" style={{ marginTop: '60px', padding: '60px 20px', background: '#F8FAFC', borderRadius: '16px', border: '1px solid var(--pida-border)', textAlign: 'center' }}>
             <div className="wrapper" style={{ maxWidth: '900px', margin: '0 auto' }}>
                 <h3 style={{ color: 'var(--pida-primary)', fontSize: '2rem', marginBottom: '20px' }}>¿Necesitas PIDA para tu Organización o Institución?</h3>
@@ -393,7 +396,6 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
-        {/* SECCIÓN TESTIMONIOS */}
         <section id="testimonios">
             <div className="wrapper">
                 <div className="section-intro" style={{ marginBottom: '30px' }}>
@@ -436,19 +438,17 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
-        {/* FOOTER / COPYRIGHT */}
         <div className="wrapper">                   
             <div className="copyright">
                 <span>&copy; 2025 IIRESODH PAYMENTS, LLC.</span>
-                <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Términos de uso</a>
-                <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Política de privacidad</a>
+                <a href="https://pida-ai.com/terminos" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Términos de uso</a>
+                <a href="https://pida-ai.com/privacidad" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Política de privacidad</a>
                 <a href="mailto:contacto@pida-ai.com" style={{ color: 'var(--navy)', textDecoration: 'none' }}>contacto@pida-ai.com</a>
             </div>
             <br />&nbsp;
         </div>
       </main>
 
-      {/* MODAL DE VIDEO */}
       {isVideoOpen && (
         <div 
           id="pida-video-modal"
@@ -478,9 +478,6 @@ export default function LandingPage({ onOpenAuth }) {
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* MODAL DE CONTACTO CORPORATIVO (REDISEÑADO Y UNIFICADO CON EL DE LOGIN) */}
-      {/* ========================================================================= */}
       {isContactOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(29, 53, 87, 0.95)', zIndex: 200000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}>
             <div style={{ background: 'white', padding: '40px', borderRadius: '12px', width: '100%', maxWidth: '520px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)', position: 'relative', textAlign: 'center', maxHeight: '90vh', overflowY: 'auto' }}>
