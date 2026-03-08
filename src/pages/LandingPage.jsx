@@ -24,14 +24,10 @@ export default function LandingPage({ onOpenAuth }) {
         const data = await response.json();
         clearTimeout(timeoutId);
         
-        if (data.country_code === 'MX') {
-          setCurrency('MXN');
-        }
+        if (data.country_code === 'MX') { setCurrency('MXN'); }
       } catch (e) {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        if (/Mexico|Monterrey|Chihuahua|Tijuana|Cancun/i.test(tz)) {
-          setCurrency('MXN');
-        }
+        if (/Mexico|Monterrey|Chihuahua|Tijuana|Cancun/i.test(tz)) { setCurrency('MXN'); }
       }
     };
     detectLocation();
@@ -42,9 +38,7 @@ export default function LandingPage({ onOpenAuth }) {
       const targetId = window.location.hash.substring(1);
       setTimeout(() => {
         const element = document.getElementById(targetId);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+        if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 300);
     }
   }, []);
@@ -65,35 +59,25 @@ export default function LandingPage({ onOpenAuth }) {
 
   const handleContactSubmit = async (e) => {
       e.preventDefault();
-      
       if (contactForm.email !== contactForm.confirmEmail) {
           setContactStatus({ text: '❌ Los correos electrónicos no coinciden.', type: 'error', isSubmitting: false });
           return;
       }
-
       setContactStatus({ text: '', type: '', isSubmitting: true });
-
       const leadData = {
-          name: contactForm.name,
-          company: contactForm.company,
-          email: contactForm.email,
-          phone: `${contactForm.countryCode} ${contactForm.phone}`,
-          message: contactForm.message,
-          createdAt: new Date(), 
-          status: 'nuevo'
+          name: contactForm.name, company: contactForm.company, email: contactForm.email,
+          phone: `${contactForm.countryCode} ${contactForm.phone}`, message: contactForm.message,
+          createdAt: new Date(), status: 'nuevo'
       };
-
       try {
           await db.collection('leads_corporativos').add(leadData);
           setContactStatus({ text: 'Datos recibidos. Te contactaremos pronto.', type: 'success', isSubmitting: false });
-          
           setTimeout(() => {
               setIsContactOpen(false);
               setContactForm({ name: '', company: '', email: '', confirmEmail: '', countryCode: '+503', phone: '', message: '' });
               setContactStatus({ text: '', type: '', isSubmitting: false });
           }, 3000);
       } catch (error) {
-          console.error(error);
           setContactStatus({ text: 'Error de conexión. Intenta de nuevo.', type: 'error', isSubmitting: false });
       }
   };
@@ -104,8 +88,7 @@ export default function LandingPage({ onOpenAuth }) {
         <div className="wrapper nav-inner">
           <nav className="nav-menu" style={{ display: 'flex', alignItems: 'center' }}>
             
-            {/* ENLACES CON CLASE "hide-on-mobile" PARA CSS PROFESIONAL */}
-            <a href="#pida" className="nav-link hide-on-mobile">PIDA</a>
+            <a href="#root" className="nav-link hide-on-mobile">PIDA</a>
             <a href="#diferencia" className="nav-link hide-on-mobile">Diferencia PIDA</a>
             <a href="#ecosistema" className="nav-link hide-on-mobile">Ecosistema</a>
             <a href="#planes" className="nav-link hide-on-mobile">Planes</a>
@@ -120,48 +103,16 @@ export default function LandingPage({ onOpenAuth }) {
               </span>
               
               {showNewsletter && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  backgroundColor: '#ffffff',
-                  boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-                  borderRadius: '8px',
-                  padding: '8px 0',
-                  minWidth: '160px',
-                  zIndex: 9999,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  marginTop: '5px',
-                  border: '1px solid #e5e7eb'
-                }}>
+                <div className="newsletter-dropdown-content">
                   <div style={{ position: 'absolute', top: '-10px', left: 0, width: '100%', height: '15px' }}></div>
-                  <a href="/newsletter-001.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Enero 2026</a>
-                  <a href="/newsletter-002.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Febrero 2026</a>
-                  <a href="/newsletter-003.pdf" target="_blank" rel="noreferrer" style={{ padding: '10px 20px', color: '#1D3557', textDecoration: 'none', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.backgroundColor='#F3F4F6'} onMouseOut={e => e.target.style.backgroundColor='transparent'}>📄 Marzo 2026</a>
+                  <a href="/newsletter-001.pdf" target="_blank" rel="noreferrer">📄 Enero 2026</a>
+                  <a href="/newsletter-002.pdf" target="_blank" rel="noreferrer">📄 Febrero 2026</a>
+                  <a href="/newsletter-003.pdf" target="_blank" rel="noreferrer">📄 Marzo 2026</a>
                 </div>
               )}
             </div>
 
-            {/* BOTÓN DE LOGIN EN EL MENÚ */}
-            <button 
-              onClick={() => onOpenAuth('login')}
-              style={{ 
-                background: 'transparent', 
-                border: '2px solid var(--pida-primary)', 
-                color: 'var(--pida-primary)', 
-                padding: '6px 18px', 
-                borderRadius: '8px', 
-                fontWeight: '700', 
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                transition: 'all 0.2s',
-                marginLeft: '15px'
-              }}
-              onMouseOver={e => { e.currentTarget.style.background = 'var(--pida-primary)'; e.currentTarget.style.color = 'white'; }}
-              onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--pida-primary)'; }}
-            >
+            <button className="nav-login-btn" onClick={() => onOpenAuth('login')}>
               Login
             </button>
           </nav>
@@ -169,7 +120,7 @@ export default function LandingPage({ onOpenAuth }) {
       </header>
 
       <main>
-        <section id="pida"></section>
+        <section id="root"></section>
         <section className="hero">
           <div className="wrapper hero-grid">
             <div className="hero-content">
@@ -182,7 +133,6 @@ export default function LandingPage({ onOpenAuth }) {
                 Los asistentes de Inteligencia Artificial genéricos son un océano de información, pero sin un ancla, pueden llevarte a la deriva con datos imprecisos.
               </p>
               
-              {/* BOTONES DE ACCIÓN MEJORADOS EN EL HERO */}
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
                 <button className="btn btn-primary" onClick={() => document.getElementById('planes').scrollIntoView({ behavior: 'smooth' })}>
                   Ver Planes
@@ -195,25 +145,7 @@ export default function LandingPage({ onOpenAuth }) {
             <div className="hero-visual-column" style={{ textAlign: 'center' }}>
               <img style={{ borderRadius: '8px', marginBottom: '20px' }} src="/img/PIDA-MASCOTA-576-trans.png" alt="Robot PIDA" />
               
-              <button 
-                id="open-video-modal-btn" 
-                onClick={() => setIsVideoOpen(true)}
-                style={{ 
-                  display: 'inline-flex', 
-                  alignItems: 'center', 
-                  gap: '10px', 
-                  background: 'transparent', 
-                  border: '2px solid var(--pida-primary)', 
-                  color: 'var(--pida-primary)', 
-                  padding: '10px 25px', 
-                  borderRadius: '30px', 
-                  fontWeight: 'bold', 
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => { e.currentTarget.style.background = 'var(--pida-primary)'; e.currentTarget.style.color = 'white'; }}
-                onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--pida-primary)'; }}
-              >
+              <button className="btn-video-play" onClick={() => setIsVideoOpen(true)}>
                 <span style={{ fontSize: '1.2rem' }}>▶</span> Ver PIDA en acción
               </button>
 
@@ -303,7 +235,6 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
-        {/* SECCIÓN DE PLANES CON INTERRUPTOR MEJORADO */}
         <section id="planes">
           <div className="wrapper">
             <div className="section-intro">
@@ -314,37 +245,19 @@ export default function LandingPage({ onOpenAuth }) {
               </p>
             </div>
 
-            {/* --- CONTENEDOR REDISEÑADO PARA EVITAR OVERFLOW --- */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '40px' }}>
-              <div className="billing-toggle-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px' }}>
-                <span style={{ fontWeight: 700, color: interval === 'monthly' ? 'var(--pida-primary)' : '#94a3b8', transition: '0.3s', fontSize: '1.1rem' }}>Mensual</span>
+            <div className="billing-toggle-wrapper">
+              <div className="billing-toggle-controls">
+                <span className={`billing-label ${interval === 'monthly' ? 'active' : 'inactive'}`}>Mensual</span>
                 <label className="switch">
                   <input type="checkbox" checked={interval === 'annual'} onChange={(e) => setInterval(e.target.checked ? 'annual' : 'monthly')} />
                   <span className="slider round"></span>
                 </label>
-                <span style={{ fontWeight: 700, color: interval === 'annual' ? 'var(--pida-primary)' : '#94a3b8', transition: '0.3s', fontSize: '1.1rem' }}>Anual</span>
+                <span className={`billing-label ${interval === 'annual' ? 'active' : 'inactive'}`}>Anual</span>
               </div>
-              
-              {/* Espacio reservado y badge centrado abajo */}
-              <div style={{ minHeight: '28px', marginTop: '12px', display: 'flex', justifyContent: 'center' }}>
-                {interval === 'annual' && (
-                  <span className="discount-badge" style={{ 
-                    display: 'inline-block', 
-                    padding: '4px 14px', 
-                    background: '#DCFCE7', 
-                    color: '#166534', 
-                    borderRadius: '15px', 
-                    fontSize: '0.85rem', 
-                    fontWeight: '700', 
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
-                    animation: 'fadeIn 0.3s ease'
-                  }}>
-                    ¡Dos meses gratis!
-                  </span>
-                )}
+              <div className="discount-tooltip-container">
+                {interval === 'annual' && <span className="discount-tooltip">¡Dos meses gratis!</span>}
               </div>
             </div>
-            {/* -------------------------------------------------- */}
 
             <div className="pricing-grid">
               
@@ -409,14 +322,9 @@ export default function LandingPage({ onOpenAuth }) {
                 <p style={{ color: 'var(--pida-text-muted)', fontSize: '1.15rem', lineHeight: '1.7', marginBottom: '35px' }}>
                     PIDA está diseñado para escalar con las necesidades de grandes equipos de litigio que requieren de mucha investigación y redacción. Si representas a una firma legal, una organización de defensa de derechos humanos, una fiscalía o formas parte de cualquier órgano de gobierno o bien, perteneces a una institución académica, ofrecemos esquemas de licenciamiento por volumen. 
                     <br /><br />
-                    Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario. Haz clic en el botón para solicitar una propuesta adaptada a tu organización.
+                    Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario.
                 </p>
-                <button 
-                  id="btn-corp-contact" 
-                  className="btn btn-primary" 
-                  style={{ padding: '18px 45px', fontWeight: '700', fontSize: '1.1rem', borderRadius: '12px', boxShadow: '0 4px 15px rgba(29, 53, 87, 0.2)' }}
-                  onClick={() => setIsContactOpen(true)}
-                >
+                <button className="btn btn-primary" onClick={() => setIsContactOpen(true)}>
                     Contactar con Soporte Corporativo
                 </button>
             </div>
@@ -475,28 +383,12 @@ export default function LandingPage({ onOpenAuth }) {
         </div>
       </main>
 
+      {/* MODAL DE VIDEO USANDO CLASES CSS */}
       {isVideoOpen && (
-        <div 
-          id="pida-video-modal"
-          style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0.85)', zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }} 
-          onClick={() => setIsVideoOpen(false)}
-        >
-          <div style={{ position: 'relative', width: '90%', maxWidth: '850px', backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 15px 40px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()}>
-            <button 
-              id="close-video-modal-btn"
-              onClick={() => setIsVideoOpen(false)} 
-              style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontSize: '1.5rem', cursor: 'pointer', borderRadius: '50%', width: '40px', height: '40px', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.3s' }}
-              onMouseOver={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.9)'}
-              onMouseOut={e => e.currentTarget.style.background = 'rgba(0,0,0,0.6)'}
-            >
-              ×
-            </button>
-            <video 
-              id="pida-presentation-video" 
-              controls 
-              autoPlay 
-              style={{ width: '100%', display: 'block', maxHeight: '80vh' }}
-            >
+        <div className="modal-backdrop" onClick={() => setIsVideoOpen(false)}>
+          <div className="video-modal-card" onClick={e => e.stopPropagation()}>
+            <button className="video-close-btn" onClick={() => setIsVideoOpen(false)}>×</button>
+            <video id="pida-presentation-video" controls autoPlay style={{ width: '100%', display: 'block', maxHeight: '80vh' }}>
               <source src="https://storage.googleapis.com/img-pida/PIDA.mp4" type="video/mp4" />
               Tu navegador no soporta la reproducción de videos.
             </video>
@@ -504,38 +396,37 @@ export default function LandingPage({ onOpenAuth }) {
         </div>
       )}
 
+      {/* MODAL CORPORATIVO USANDO CLASES CSS */}
       {isContactOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(29, 53, 87, 0.95)', zIndex: 200000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}>
-            <div style={{ background: 'white', padding: '40px', borderRadius: '12px', width: '100%', maxWidth: '520px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)', position: 'relative', textAlign: 'center', maxHeight: '90vh', overflowY: 'auto' }}>
-                <button onClick={() => setIsContactOpen(false)} style={{ position: 'absolute', top: '15px', right: '15px', border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', color: '#999', zIndex: 10 }}>×</button>
-                
-                <img src="/img/PIDA_logo-576.png" alt="PIDA Logo" style={{ width: '140px', marginBottom: '20px' }} />
-                
-                <h2 style={{ color: 'var(--pida-primary)', marginTop: 0, fontSize: '1.4rem', fontWeight: '800' }}>Contacto Corporativo</h2>
-                <p style={{ color: '#64748B', marginBottom: '25px', fontSize: '0.95rem' }}>Déjanos tus datos y un asesor se pondrá en contacto contigo para diseñar un plan a la medida de tu organización.</p>
+        <div className="modal-backdrop">
+            <div className="modal-card">
+                <button className="modal-close-btn" onClick={() => setIsContactOpen(false)}>×</button>
+                <img src="/img/PIDA_logo-576.png" alt="PIDA Logo" style={{ width: '140px', marginBottom: '20px', margin: '0 auto' }} />
+                <h2 className="modal-title">Contacto Corporativo</h2>
+                <p className="modal-subtitle">Déjanos tus datos y un asesor se pondrá en contacto contigo para diseñar un plan a la medida de tu organización.</p>
 
                 <form onSubmit={handleContactSubmit} style={{ textAlign: 'left' }}>
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                        <input type="text" placeholder="Nombre completo" required value={contactForm.name} onChange={e => setContactForm({...contactForm, name: e.target.value})} style={{ flex: 1, padding: '12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '1rem', outline: 'none' }} />
-                        <input type="text" placeholder="Organización / Empresa" required value={contactForm.company} onChange={e => setContactForm({...contactForm, company: e.target.value})} style={{ flex: 1, padding: '12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '1rem', outline: 'none' }} />
+                    <div className="form-group-row">
+                        <input type="text" className="form-input no-margin" placeholder="Nombre completo" required value={contactForm.name} onChange={e => setContactForm({...contactForm, name: e.target.value})} />
+                        <input type="text" className="form-input no-margin" placeholder="Organización / Empresa" required value={contactForm.company} onChange={e => setContactForm({...contactForm, company: e.target.value})} />
                     </div>
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                        <input type="email" placeholder="Correo electrónico" required value={contactForm.email} onChange={e => setContactForm({...contactForm, email: e.target.value})} style={{ flex: 1, padding: '12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '1rem', outline: 'none' }} />
-                        <input type="email" placeholder="Confirmar correo" required value={contactForm.confirmEmail} onChange={e => setContactForm({...contactForm, confirmEmail: e.target.value})} style={{ flex: 1, padding: '12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '1rem', outline: 'none' }} />
+                    <div className="form-group-row">
+                        <input type="email" className="form-input no-margin" placeholder="Correo electrónico" required value={contactForm.email} onChange={e => setContactForm({...contactForm, email: e.target.value})} />
+                        <input type="email" className="form-input no-margin" placeholder="Confirmar correo" required value={contactForm.confirmEmail} onChange={e => setContactForm({...contactForm, confirmEmail: e.target.value})} />
                     </div>
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                        <input type="text" placeholder="Cód. (Ej: +503)" required value={contactForm.countryCode} onChange={e => setContactForm({...contactForm, countryCode: e.target.value})} style={{ width: '120px', padding: '12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '1rem', outline: 'none' }} />
-                        <input type="tel" placeholder="Número de teléfono" required value={contactForm.phone} onChange={e => setContactForm({...contactForm, phone: e.target.value})} style={{ flex: 1, padding: '12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '1rem', outline: 'none' }} />
+                    <div className="form-group-row">
+                        <input type="text" className="form-input no-margin" placeholder="Cód. (Ej: +503)" required value={contactForm.countryCode} onChange={e => setContactForm({...contactForm, countryCode: e.target.value})} style={{ maxWidth: '120px' }} />
+                        <input type="tel" className="form-input no-margin" placeholder="Número de teléfono" required value={contactForm.phone} onChange={e => setContactForm({...contactForm, phone: e.target.value})} />
                     </div>
-                    <textarea placeholder="Cuéntanos un poco sobre las necesidades de tu equipo..." rows="3" required value={contactForm.message} onChange={e => setContactForm({...contactForm, message: e.target.value})} style={{ width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '1rem', outline: 'none', marginBottom: '15px', resize: 'vertical' }}></textarea>
+                    <textarea className="form-input" placeholder="Cuéntanos un poco sobre las necesidades de tu equipo..." rows="3" required value={contactForm.message} onChange={e => setContactForm({...contactForm, message: e.target.value})}></textarea>
 
                     {contactStatus.text && (
-                        <div style={{ padding: '12px 15px', borderRadius: '8px', fontSize: '0.9rem', marginBottom: '20px', lineHeight: '1.4', background: contactStatus.type === 'error' ? '#FEE2E2' : '#D1FAE5', color: contactStatus.type === 'error' ? '#B91C1C' : '#047857', border: `1px solid ${contactStatus.type === 'error' ? '#FCA5A5' : '#6EE7B7'}` }}>
+                        <div className={`status-msg ${contactStatus.type}`}>
                             {contactStatus.text}
                         </div>
                     )}
 
-                    <button type="submit" disabled={contactStatus.isSubmitting} style={{ width: '100%', padding: '16px', background: 'var(--pida-accent)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1.05rem', fontWeight: '600', cursor: contactStatus.isSubmitting ? 'not-allowed' : 'pointer', opacity: contactStatus.isSubmitting ? 0.7 : 1, transition: 'background 0.2s' }}>
+                    <button type="submit" className="form-submit-btn" disabled={contactStatus.isSubmitting}>
                         {contactStatus.isSubmitting ? 'Enviando información...' : 'Enviar Solicitud'}
                     </button>
                 </form>
