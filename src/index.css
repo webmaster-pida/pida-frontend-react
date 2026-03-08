@@ -553,3 +553,10 @@
         #pida-app-layout { height: 100dvh; height: 100svh; display: flex; flex-direction: row; overflow: hidden !important; }
         .pida-view-content { flex: 1 1 auto; overflow-y: auto !important; -webkit-overflow-scrolling: touch; padding-bottom: 20px; }
         .pida-view-form { flex: 0 0 auto; background: white; z-index: 10; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+
+        /* --- RESPONSIVIDAD DEL MENÚ SUPERIOR --- */
+        @media (max-width: 850px) {
+        .hide-on-mobile {
+            display: none !important;
+        }
+        }

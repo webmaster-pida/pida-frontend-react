@@ -103,10 +103,12 @@ export default function LandingPage({ onOpenAuth }) {
       <header className="nav" id="navbar">
         <div className="wrapper nav-inner">
           <nav className="nav-menu" style={{ display: 'flex', alignItems: 'center' }}>
-            <a href="#pida" className="nav-link">PIDA</a>
-            <a href="#diferencia" className="nav-link">Diferencia PIDA</a>
-            <a href="#ecosistema" className="nav-link">Ecosistema</a>
-            <a href="#planes" className="nav-link">Planes</a>
+            
+            {/* ENLACES CON CLASE "hide-on-mobile" PARA CSS PROFESIONAL */}
+            <a href="#pida" className="nav-link hide-on-mobile">PIDA</a>
+            <a href="#diferencia" className="nav-link hide-on-mobile">Diferencia PIDA</a>
+            <a href="#ecosistema" className="nav-link hide-on-mobile">Ecosistema</a>
+            <a href="#planes" className="nav-link hide-on-mobile">Planes</a>
 
             <div 
               style={{ position: 'relative', display: 'inline-block' }}
