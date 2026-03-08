@@ -303,6 +303,7 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
+        {/* SECCIÓN DE PLANES CON INTERRUPTOR MEJORADO */}
         <section id="planes">
           <div className="wrapper">
             <div className="section-intro">
@@ -313,16 +314,37 @@ export default function LandingPage({ onOpenAuth }) {
               </p>
             </div>
 
-            <div className="billing-toggle-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginBottom: '40px' }}>
-              <span style={{ fontWeight: 700, color: interval === 'monthly' ? 'var(--pida-primary)' : '#94a3b8', transition: '0.3s' }}>Mensual</span>
-              <label className="switch">
-                <input type="checkbox" checked={interval === 'annual'} onChange={(e) => setInterval(e.target.checked ? 'annual' : 'monthly')} />
-                <span className="slider round"></span>
-              </label>
-              <span style={{ fontWeight: 700, color: interval === 'annual' ? 'var(--pida-primary)' : '#94a3b8', transition: '0.3s', position: 'relative' }}>
-                Anual {interval === 'annual' && <span className="discount-badge" style={{ display: 'inline-block' }}>¡Dos meses gratis!</span>}
-              </span>
+            {/* --- CONTENEDOR REDISEÑADO PARA EVITAR OVERFLOW --- */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '40px' }}>
+              <div className="billing-toggle-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px' }}>
+                <span style={{ fontWeight: 700, color: interval === 'monthly' ? 'var(--pida-primary)' : '#94a3b8', transition: '0.3s', fontSize: '1.1rem' }}>Mensual</span>
+                <label className="switch">
+                  <input type="checkbox" checked={interval === 'annual'} onChange={(e) => setInterval(e.target.checked ? 'annual' : 'monthly')} />
+                  <span className="slider round"></span>
+                </label>
+                <span style={{ fontWeight: 700, color: interval === 'annual' ? 'var(--pida-primary)' : '#94a3b8', transition: '0.3s', fontSize: '1.1rem' }}>Anual</span>
+              </div>
+              
+              {/* Espacio reservado y badge centrado abajo */}
+              <div style={{ minHeight: '28px', marginTop: '12px', display: 'flex', justifyContent: 'center' }}>
+                {interval === 'annual' && (
+                  <span className="discount-badge" style={{ 
+                    display: 'inline-block', 
+                    padding: '4px 14px', 
+                    background: '#DCFCE7', 
+                    color: '#166534', 
+                    borderRadius: '15px', 
+                    fontSize: '0.85rem', 
+                    fontWeight: '700', 
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+                    animation: 'fadeIn 0.3s ease'
+                  }}>
+                    ¡Dos meses gratis!
+                  </span>
+                )}
+              </div>
             </div>
+            {/* -------------------------------------------------- */}
 
             <div className="pricing-grid">
               
