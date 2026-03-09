@@ -263,7 +263,7 @@ function AuthFormContent({ onClose, initialMode }) {
             <div className="terms-group">
               <input type="checkbox" className="terms-checkbox" required checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} />
               <label className="terms-label" onClick={() => setTermsAccepted(!termsAccepted)}>
-                Acepto los <a href="https://pida-ai.com/terminos" target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}>términos de uso</a> y la <a href="https://pida-ai.com/privacidad" target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}>política de privacidad</a>.
+                Acepto los <a href="/terminos.html" target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}>términos de uso</a> y la <a href="/privacidad.html" target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}>política de privacidad</a>.
               </label>
             </div>
           </div>
