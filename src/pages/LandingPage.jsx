@@ -8,6 +8,7 @@ export default function LandingPage({ onOpenAuth }) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showNewsletter, setShowNewsletter] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [isUS, setIsUS] = useState(false); // <--- NUEVO: Estado para detectar si es EE.UU.
 
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({
@@ -24,10 +25,18 @@ export default function LandingPage({ onOpenAuth }) {
         const data = await response.json();
         clearTimeout(timeoutId);
         
-        if (data.country_code === 'MX') { setCurrency('MXN'); }
+        if (data.country_code === 'US') {
+          setIsUS(true); // Bloqueo visual para EE.UU.
+        } else if (data.country_code === 'MX') { 
+          setCurrency('MXN'); 
+        }
       } catch (e) {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        if (/Mexico|Monterrey|Chihuahua|Tijuana|Cancun/i.test(tz)) { setCurrency('MXN'); }
+        if (/America\/(New_York|Chicago|Los_Angeles|Denver|Phoenix|Detroit|Boise|Anchorage)/i.test(tz)) {
+          setIsUS(true);
+        } else if (/Mexico|Monterrey|Chihuahua|Tijuana|Cancun/i.test(tz)) { 
+          setCurrency('MXN'); 
+        }
       }
     };
     detectLocation();
@@ -143,7 +152,6 @@ export default function LandingPage({ onOpenAuth }) {
               </div>
             </div>
             
-            {/* Ocultamos esta columna completa en celulares agregando 'hide-on-mobile' */}
             <div className="hero-visual-column hide-on-mobile" style={{ textAlign: 'center' }}>
               <img style={{ borderRadius: '8px', marginBottom: '20px' }} src="/img/PIDA-MASCOTA-576-trans.png" alt="Robot PIDA" />
               
@@ -151,8 +159,6 @@ export default function LandingPage({ onOpenAuth }) {
                 <span style={{ fontSize: '1.2rem' }}>▶</span> Ver PIDA en acción
               </button>
             </div>
-            {/* ------------------------------------------------------------------------- */}
-
           </div>
         </section>
 
@@ -248,74 +254,87 @@ export default function LandingPage({ onOpenAuth }) {
               </p>
             </div>
 
-            <div className="billing-toggle-wrapper">
-              <div className="billing-toggle-controls">
-                <span className={`billing-label ${interval === 'monthly' ? 'active' : 'inactive'}`}>Mensual</span>
-                <label className="switch">
-                  <input type="checkbox" checked={interval === 'annual'} onChange={(e) => setInterval(e.target.checked ? 'annual' : 'monthly')} />
-                  <span className="slider round"></span>
-                </label>
-                <span className={`billing-label ${interval === 'annual' ? 'active' : 'inactive'}`}>Anual</span>
+            {/* === BLOQUE DE VERIFICACIÓN PARA ESTADOS UNIDOS === */}
+            {isUS ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px', background: '#FEF2F2', borderRadius: '12px', border: '1px solid #FECACA', color: '#991B1B', maxWidth: '650px', margin: '0 auto 50px auto' }}>
+                <h3 style={{ marginBottom: '15px', color: '#991B1B', fontSize: '1.4rem' }}>Servicio no disponible en su región</h3>
+                <p style={{ fontWeight: '500', lineHeight: '1.6' }}>
+                  Por políticas regulatorias y de privacidad corporativa, la comercialización de suscripciones de PIDA no se encuentra disponible actualmente para usuarios o entidades ubicadas dentro del territorio de los Estados Unidos.
+                </p>
               </div>
-              <div className="discount-tooltip-container">
-                {interval === 'annual' && <span className="discount-tooltip">¡Dos meses gratis!</span>}
-              </div>
-            </div>
-
-            <div className="pricing-grid">
-              
-              <div className="pricing-card">
-                <h3>Básico</h3>
-                <div className="price-container">
-                  <span className="price-val">{STRIPE_PRICES.basico[interval][currency].text}</span>
-                  <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
+            ) : (
+              <>
+                {/* SI NO ES EE.UU., MUESTRA LOS PLANES NORMALMENTE */}
+                <div className="billing-toggle-wrapper">
+                  <div className="billing-toggle-controls">
+                    <span className={`billing-label ${interval === 'monthly' ? 'active' : 'inactive'}`}>Mensual</span>
+                    <label className="switch">
+                      <input type="checkbox" checked={interval === 'annual'} onChange={(e) => setInterval(e.target.checked ? 'annual' : 'monthly')} />
+                      <span className="slider round"></span>
+                    </label>
+                    <span className={`billing-label ${interval === 'annual' ? 'active' : 'inactive'}`}>Anual</span>
+                  </div>
+                  <div className="discount-tooltip-container">
+                    {interval === 'annual' && <span className="discount-tooltip">¡Dos meses gratis!</span>}
+                  </div>
                 </div>
-                <ul className="plan-features">
-                  <li>✅ Newsletter mensual</li>
-                  <li>✅ 5 consultas diarias</li>
-                  <li>✅ 3 análisis de documentos</li>
-                  <li>✅ 1 archivo por análisis</li>
-                  <li>❌ Sin precalificador</li>
-                </ul>
-                <button className="btn btn-primary plan-cta" onClick={() => handleSelectPlan('basico')}>Elegir Básico</button>
-              </div>
 
-              <div className="pricing-card featured">
-                <div className="card-badge">Más Popular</div>
-                <h3>Avanzado</h3>
-                <div className="price-container">
-                  <span className="price-val">{STRIPE_PRICES.avanzado[interval][currency].text}</span>
-                  <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
+                <div className="pricing-grid">
+                  <div className="pricing-card">
+                    <h3>Básico</h3>
+                    <div className="price-container">
+                      <span className="price-val">{STRIPE_PRICES.basico[interval][currency].text}</span>
+                      <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
+                    </div>
+                    <ul className="plan-features">
+                      <li>✅ Newsletter mensual</li>
+                      <li>✅ 5 consultas diarias</li>
+                      <li>✅ 3 análisis de documentos</li>
+                      <li>✅ 1 archivo por análisis</li>
+                      <li>❌ Sin precalificador</li>
+                    </ul>
+                    <button className="btn btn-primary plan-cta" onClick={() => handleSelectPlan('basico')}>Elegir Básico</button>
+                  </div>
+
+                  <div className="pricing-card featured">
+                    <div className="card-badge">Más Popular</div>
+                    <h3>Avanzado</h3>
+                    <div className="price-container">
+                      <span className="price-val">{STRIPE_PRICES.avanzado[interval][currency].text}</span>
+                      <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
+                    </div>
+                    <ul className="plan-features">
+                      <li>✅ Newsletter mensual</li>
+                      <li>✅ 20 consultas diarias</li>
+                      <li>✅ 15 análisis de documentos</li>
+                      <li>✅ 3 archivos por análisis</li>
+                      <li>✅ 20 precalificaciones diarias</li>
+                      <li>✅ Descuentos en productos IIRESODH</li>
+                    </ul>
+                    <button className="btn btn-primary plan-cta" onClick={() => handleSelectPlan('avanzado')}>Elegir Avanzado</button>
+                  </div>
+
+                  <div className="pricing-card">
+                    <h3>Premium</h3>
+                    <div className="price-container">
+                      <span className="price-val">{STRIPE_PRICES.premium[interval][currency].text}</span>
+                      <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
+                    </div>
+                    <ul className="plan-features">
+                      <li>✅ Newsletter mensual</li>
+                      <li>✅ 100 consultas diarias</li>
+                      <li>✅ 25 análisis de documentos</li>
+                      <li>✅ 5 archivos por análisis</li>
+                      <li>✅ 100 precalificaciones diarias</li>
+                      <li>✅ Descuentos en productos IIRESODH</li>
+                    </ul>
+                    <button className="btn btn-primary plan-cta" onClick={() => handleSelectPlan('premium')}>Elegir Premium</button>
+                  </div>
                 </div>
-                <ul className="plan-features">
-                  <li>✅ Newsletter mensual</li>
-                  <li>✅ 20 consultas diarias</li>
-                  <li>✅ 15 análisis de documentos</li>
-                  <li>✅ 3 archivos por análisis</li>
-                  <li>✅ 20 precalificaciones diarias</li>
-                  <li>✅ Descuentos en productos IIRESODH</li>
-                </ul>
-                <button className="btn btn-primary plan-cta" onClick={() => handleSelectPlan('avanzado')}>Elegir Avanzado</button>
-              </div>
+              </>
+            )}
+            {/* === FIN DEL BLOQUE DE VERIFICACIÓN === */}
 
-              <div className="pricing-card">
-                <h3>Premium</h3>
-                <div className="price-container">
-                  <span className="price-val">{STRIPE_PRICES.premium[interval][currency].text}</span>
-                  <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
-                </div>
-                <ul className="plan-features">
-                  <li>✅ Newsletter mensual</li>
-                  <li>✅ 100 consultas diarias</li>
-                  <li>✅ 25 análisis de documentos</li>
-                  <li>✅ 5 archivos por análisis</li>
-                  <li>✅ 100 precalificaciones diarias</li>
-                  <li>✅ Descuentos en productos IIRESODH</li>
-                </ul>
-                <button className="btn btn-primary plan-cta" onClick={() => handleSelectPlan('premium')}>Elegir Premium</button>
-              </div>
-
-            </div>
           </div>
         </section>
 
@@ -386,7 +405,6 @@ export default function LandingPage({ onOpenAuth }) {
         </div>
       </main>
 
-      {/* MODAL DE VIDEO USANDO CLASES CSS */}
       {isVideoOpen && (
         <div className="modal-backdrop" onClick={() => setIsVideoOpen(false)}>
           <div className="video-modal-card" onClick={e => e.stopPropagation()}>
@@ -399,7 +417,6 @@ export default function LandingPage({ onOpenAuth }) {
         </div>
       )}
 
-      {/* MODAL CORPORATIVO USANDO CLASES CSS */}
       {isContactOpen && (
         <div className="modal-backdrop">
             <div className="modal-card">
