@@ -109,6 +109,25 @@ function AuthFormContent({ onClose, initialMode }) {
         }
 
         setLoadingText('Iniciando prueba gratis...');
+
+        // --- INICIO: EVENTOS GOOGLE ANALYTICS ---
+        const numericValue = discountData ? (discountData.final_amount / 100) : parseFloat(planDetails.text.replace(/[^0-9.-]+/g,""));
+        const itemName = `Plan ${planKey.toUpperCase()} - ${intervalKey.toUpperCase()}`;
+
+        if (typeof window !== 'undefined' && window.gtag) {
+          window.gtag('event', 'begin_checkout', {
+            currency: currency,
+            value: numericValue,
+            items: [{
+              item_id: planDetails.id,
+              item_name: itemName,
+              price: numericValue,
+              quantity: 1
+            }]
+          });
+        }
+        // --- FIN: EVENTOS GOOGLE ANALYTICS ---
+
         const token = await user.getIdToken();
         const intentRes = await fetch(`${PIDA_CONFIG.API_CHAT}/create-payment-intent`, {
           method: 'POST',
@@ -140,6 +159,23 @@ function AuthFormContent({ onClose, initialMode }) {
         }
 
         if (result.error) throw new Error(result.error.message);
+
+        // --- INICIO: EVENTO DE COMPRA GOOGLE ANALYTICS ---
+        if (typeof window !== 'undefined' && window.gtag) {
+          const transactionId = data.clientSecret.startsWith('seti_') ? result.setupIntent.id : result.paymentIntent.id;
+          window.gtag('event', 'purchase', {
+            transaction_id: transactionId,
+            currency: currency,
+            value: numericValue,
+            items: [{
+              item_id: planDetails.id,
+              item_name: itemName,
+              price: numericValue,
+              quantity: 1
+            }]
+          });
+        }
+        // --- FIN: EVENTO DE COMPRA GOOGLE ANALYTICS ---
 
         setLoadingText('¡Suscripción activada!');
         sessionStorage.setItem('pida_is_onboarding', 'true');
