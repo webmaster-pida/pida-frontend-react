@@ -142,14 +142,17 @@ export default function LandingPage({ onOpenAuth }) {
                 </button>
               </div>
             </div>
-            <div className="hero-visual-column" style={{ textAlign: 'center' }}>
+            
+            {/* Ocultamos esta columna completa en celulares agregando 'hide-on-mobile' */}
+            <div className="hero-visual-column hide-on-mobile" style={{ textAlign: 'center' }}>
               <img style={{ borderRadius: '8px', marginBottom: '20px' }} src="/img/PIDA-MASCOTA-576-trans.png" alt="Robot PIDA" />
               
               <button className="btn-video-play" onClick={() => setIsVideoOpen(true)}>
                 <span style={{ fontSize: '1.2rem' }}>▶</span> Ver PIDA en acción
               </button>
-
             </div>
+            {/* ------------------------------------------------------------------------- */}
+
           </div>
         </section>
 
