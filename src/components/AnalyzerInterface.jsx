@@ -170,7 +170,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
                   <h3>Analizador de Documentos</h3>
                   <p>Sube tus archivos (PDF, DOCX) y escribe una instrucción clara. PIDA leerá, resumirá y sistematizará el documento por ti.</p>
                   <p style={{ marginTop: '15px', fontWeight: 'bold', color: '#1D3557' }}>Ejemplos de lo que puedes pedir:</p>
-                  <ul style={{ margin: '8px 0 0 20px', padding: 0, listStyleType: 'disc', color: '#374151' }}>
+                  <ul style={{ margin: '8px 0 0 0', padding: 0, listStyleType: 'none', color: '#374151' }}>
                     <li style={{ marginBottom: '6px' }}>"Haz un resumen ejecutivo de este documento."</li>
                     <li style={{ marginBottom: '6px' }}>"Identifica las cláusulas de rescisión y sus penalizaciones."</li>
                     <li style={{ marginBottom: '6px' }}>"Extrae una lista cronológica de los hechos."</li>
