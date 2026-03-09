@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import LandingPage from './pages/LandingPage';
 import AuthModal from './components/AuthModal';
 import Dashboard from './pages/Dashboard';
-import SystemBanner from './components/SystemBanner'; // <--- 1. IMPORTAR
+import SystemBanner from './components/SystemBanner'; 
+import NotFound from './pages/NotFound'; // <--- IMPORTAMOS LA NUEVA PÁGINA
 import { auth } from './config/firebase';
 
 function App() {
@@ -20,9 +21,23 @@ function App() {
 
   if (loading) return <div id="pida-global-loader"><div className="loader"></div></div>;
 
+  // --- LÓGICA DE ENRUTAMIENTO NATIVO (404) ---
+  // Si la ruta no es la raíz, mostramos la página de error
+  const currentPath = window.location.pathname;
+  const isNotFound = currentPath !== '/' && currentPath !== '/index.html';
+
+  if (isNotFound) {
+    return (
+      <>
+        <SystemBanner />
+        <NotFound />
+      </>
+    );
+  }
+  // ------------------------------------------
+
   return (
     <>
-      {/* <--- 2. COLOCAR EL BANNER AQUÍ ARRIBA ---> */}
       <SystemBanner /> 
 
       {!user ? (
