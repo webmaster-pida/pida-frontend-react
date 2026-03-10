@@ -4,6 +4,10 @@ import { Exporter, getTimestampedName } from '../utils/exporter';
 
 const API_ANA = "https://analize-v20-stripe-elements-465781488910.us-central1.run.app";
 
+const markdownComponents = {
+  a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />
+};
+
 export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [files, setFiles] = useState([]);
   const [instructions, setInstructions] = useState('');
@@ -68,9 +72,17 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     setError('');
   };
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = async (eOrInstruction = null) => {
+    // Evitar recarga si viene de un formulario (Enter)
+    if (eOrInstruction && eOrInstruction.preventDefault) {
+      eOrInstruction.preventDefault();
+    }
+
+    // Determinar si la instrucción viene del input manual o de un botón de seguimiento
+    const currentInstruction = typeof eOrInstruction === 'string' ? eOrInstruction : instructions;
+
     if (files.length === 0) {
-      alert("Sube al menos un documento.");
+      alert("Sube al menos un documento para poder realizar el análisis.");
       return;
     }
 
@@ -80,7 +92,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
     const fd = new FormData();
     files.forEach(f => fd.append('files', f));
-    fd.append('instructions', instructions.trim() || "Realizar un análisis jurídico detallado de estos documentos, identificando puntos clave, riesgos y conclusiones.");
+    fd.append('instructions', currentInstruction.trim() || "Realizar un análisis jurídico detallado de estos documentos, identificando puntos clave, riesgos y conclusiones.");
 
     try {
       const token = await user.getIdToken();
@@ -157,6 +169,82 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     return clean;
   };
 
+  // Función para manejar el click en una pregunta sugerida
+  const handleFollowUpClick = (question) => {
+    setInstructions(question);
+    if (files.length > 0) {
+      handleAnalyze(question);
+    } else {
+      alert("Estás viendo un análisis antiguo. Para profundizar con esta pregunta, por favor vuelve a subir el documento original aquí abajo y haz clic en Analizar.");
+    }
+  };
+
+  // Renderizado Inteligente que separa botones de seguimiento
+  const renderAnalysisContent = (text) => {
+    if (!text) return null;
+    let formattedText = formatMarkdown(text);
+    
+    const regex = /(?:#{2,3}\s*|\*\*\s*)?Preguntas de Seguimiento\s*(?:\*\*|:)?/i;
+    const match = formattedText.match(regex);
+    const isCurrentlyTypingThis = isAnalyzing; // No mostrar botones mientras escribe
+
+    if (match && !isCurrentlyTypingThis) {
+      const mainContent = formattedText.substring(0, match.index);
+      const afterHeading = formattedText.substring(match.index + match[0].length);
+
+      const lines = afterHeading.split('\n');
+      const questions = [];
+      const leftoverLines = [];
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        const isListItem = /^([-*•]|\d+[.)])\s*/.test(trimmed);
+        const isLinkOrSource = /\[.*\]\(http|\bhttps?:\/\//i.test(trimmed) || trimmed.toLowerCase().includes('fuente:');
+
+        if (isListItem && questions.length < 3 && !isLinkOrSource && trimmed.length > 5) {
+          questions.push(trimmed.replace(/^[-*•0-9.)]+\s*/, '').replace(/["*]/g, '').trim());
+        } else {
+          leftoverLines.push(line);
+        }
+      }
+
+      let textAfterQuestions = leftoverLines.join('\n').trim();
+
+      return (
+        <>
+          <ReactMarkdown components={markdownComponents}>{mainContent}</ReactMarkdown>
+          
+          {questions.length > 0 && (
+            <div className="follow-up-section" style={{ marginTop: '25px', paddingTop: '20px', borderTop: '1px solid #E5E7EB' }}>
+              <strong style={{ display: 'block', marginBottom: '12px', color: 'var(--pida-primary)', fontSize: '0.95rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                ¿Quieres profundizar en este documento?
+              </strong>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {questions.map((q, i) => (
+                  <button 
+                    key={i} 
+                    className="follow-up-btn"
+                    onClick={() => handleFollowUpClick(q)}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {textAfterQuestions && (
+            <div style={{ marginTop: '20px' }}>
+              <ReactMarkdown components={markdownComponents}>{textAfterQuestions}</ReactMarkdown>
+            </div>
+          )}
+        </>
+      );
+    }
+
+    return <ReactMarkdown components={markdownComponents}>{formattedText}</ReactMarkdown>;
+  };
+
   return (
     <div className="pida-view">
       <div className="pida-view-content">
@@ -189,7 +277,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
           {resultText && (
             <div id="analyzer-analysis-result" className="pida-bubble pida-message-bubble markdown-content" style={{ marginTop: '20px', maxWidth: '100%', padding: '20px' }}>
-              <ReactMarkdown>{formatMarkdown(resultText)}</ReactMarkdown>
+              {renderAnalysisContent(resultText)}
             </div>
           )}
 
@@ -244,7 +332,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           </div>
         )}
 
-        {/* Añadimos soporte para Enter en el analizador por si acaso también lo querías aquí */}
         <textarea 
           id="user-instructions" 
           rows="2" 
@@ -252,7 +339,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           placeholder="Instrucciones para el análisis..."
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAnalyze(); } }}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) handleAnalyze(e); }}
           disabled={isAnalyzing}
         />
         
