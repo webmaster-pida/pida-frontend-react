@@ -138,8 +138,8 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
    2. ESTILOS DE LA APP Y DASHBOARD
    ========================================= */
 #pida-app-layout { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: var(--pida-bg-app); z-index: 99999; display: flex; color: var(--pida-text-main); transition: top 0.3s ease, height 0.3s ease; }
-#pida-app-root { all: initial; font-family: var(--pida-font); display: none; } 
-#pida-app-root * { box-sizing: border-box; font-family: var(--pida-font); }
+#pida-app-layout { font-family: var(--pida-font); } 
+#pida-app-layout * { font-family: var(--pida-font); }
 #pida-sidebar { width: 260px; background-color: var(--pida-primary); display: flex; flex-direction: column; padding-top: 25px; flex-shrink: 0; border-right: 1px solid rgba(255,255,255,0.05); }
 .pida-logo-container { margin-bottom: 30px; display: flex; justify-content: center; }
 .pida-sidebar-logo { width: 150px; height: auto; display: block; }
