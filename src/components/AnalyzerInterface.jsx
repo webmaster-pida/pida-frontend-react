@@ -73,12 +73,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   };
 
   const handleAnalyze = async (eOrInstruction = null) => {
-    // Evitar recarga si viene de un formulario (Enter)
     if (eOrInstruction && eOrInstruction.preventDefault) {
       eOrInstruction.preventDefault();
     }
 
-    // Determinar si la instrucción viene del input manual o de un botón de seguimiento
     const currentInstruction = typeof eOrInstruction === 'string' ? eOrInstruction : instructions;
 
     if (files.length === 0) {
@@ -126,7 +124,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               const d = JSON.parse(line.substring(6));
               if (d.error) throw new Error(d.error);
               if (d.text) {
-                
                 const chars = d.text;
                 const step = 10; 
                 for (let i = 0; i < chars.length; i += step) {
@@ -134,7 +131,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
                   setResultText(fullText);
                   await new Promise(resolve => setTimeout(resolve, 2));
                 }
-
               }
             } catch (e) {}
           }
@@ -169,7 +165,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     return clean;
   };
 
-  // Función para manejar el click en una pregunta sugerida
   const handleFollowUpClick = (question) => {
     setInstructions(question);
     if (files.length > 0) {
@@ -179,18 +174,22 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
   };
 
-  // Renderizado Inteligente que separa botones de seguimiento
   const renderAnalysisContent = (text) => {
     if (!text) return null;
     let formattedText = formatMarkdown(text);
     
-    const regex = /(?:#{2,3}\s*|\*\*\s*)?Preguntas de Seguimiento\s*(?:\*\*|:)?/i;
-    const match = formattedText.match(regex);
-    const isCurrentlyTypingThis = isAnalyzing; // No mostrar botones mientras escribe
+    // REGEX MEJORADA: Busca el título SOLO si está en una línea nueva y tomaremos la última coincidencia.
+    const regex = /(?:^|\n)(?:#{2,3}\s*|\*\*\s*)?Preguntas de Seguimiento\s*(?:\*\*|:)?\s*(?:\n|$)/gi;
+    const matches = [...formattedText.matchAll(regex)];
+    const isCurrentlyTypingThis = isAnalyzing; 
 
-    if (match && !isCurrentlyTypingThis) {
-      const mainContent = formattedText.substring(0, match.index);
-      const afterHeading = formattedText.substring(match.index + match[0].length);
+    if (matches.length > 0 && !isCurrentlyTypingThis) {
+      // Tomamos la última aparición real del título
+      const lastMatch = matches[matches.length - 1];
+      const splitIndex = lastMatch.index;
+
+      const mainContent = formattedText.substring(0, splitIndex);
+      const afterHeading = formattedText.substring(splitIndex + lastMatch[0].length);
 
       const lines = afterHeading.split('\n');
       const questions = [];
@@ -250,7 +249,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       <div className="pida-view-content">
         <div id="pida-chat-box"> 
           
-          {/* Bienvenida Uniforme con el Robot */}
           {!isAnalyzing && !resultText && !error && (
             <div className="pida-bubble pida-message-bubble">
               <div className="pida-welcome-content">
