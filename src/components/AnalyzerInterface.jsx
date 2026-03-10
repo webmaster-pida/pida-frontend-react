@@ -147,7 +147,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const formatMarkdown = (text) => {
     if (!text) return "";
     let clean = text;
-
     clean = clean.replace(/([^\n])\s*\n*(#{1,6}\s+)/g, '$1\n\n$2');
     clean = clean.replace(/^\s*\*\*\s*$/gm, '');
 
@@ -178,13 +177,11 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     if (!text) return null;
     let formattedText = formatMarkdown(text);
     
-    // REGEX MEJORADA: Busca el título SOLO si está en una línea nueva y tomaremos la última coincidencia.
     const regex = /(?:^|\n)(?:#{2,3}\s*|\*\*\s*)?Preguntas de Seguimiento\s*(?:\*\*|:)?\s*(?:\n|$)/gi;
     const matches = [...formattedText.matchAll(regex)];
     const isCurrentlyTypingThis = isAnalyzing; 
 
     if (matches.length > 0 && !isCurrentlyTypingThis) {
-      // Tomamos la última aparición real del título
       const lastMatch = matches[matches.length - 1];
       const splitIndex = lastMatch.index;
 
@@ -197,12 +194,16 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
       for (const line of lines) {
         const trimmed = line.trim();
+        if (!trimmed) continue; 
+
         const isListItem = /^([-*•]|\d+[.)])\s*/.test(trimmed);
         const isLinkOrSource = /\[.*\]\(http|\bhttps?:\/\//i.test(trimmed) || trimmed.toLowerCase().includes('fuente:');
 
         if (isListItem && questions.length < 3 && !isLinkOrSource && trimmed.length > 5) {
           questions.push(trimmed.replace(/^[-*•0-9.)]+\s*/, '').replace(/["*]/g, '').trim());
-        } else {
+        } else if (isLinkOrSource) {
+          // CONTROL ESTRICTO: Solo preservamos la línea si es explícitamente un enlace o una fuente.
+          // El relleno conversacional ("Para profundizar...") será silenciado e ignorado.
           leftoverLines.push(line);
         }
       }
