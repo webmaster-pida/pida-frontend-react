@@ -11,12 +11,16 @@ const markdownComponents = {
 export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [files, setFiles] = useState([]);
   const [instructions, setInstructions] = useState('');
+  
+  // AHORA USAMOS UN ARRAY DE MENSAJES PARA HISTORIAL CONTINUO
+  const [messages, setMessages] = useState([]);
+  const [currentAnaId, setCurrentAnaId] = useState(null);
+  
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [resultText, setResultText] = useState('');
   const [error, setError] = useState('');
   
   const fileInputRef = useRef(null);
-  const resultEndRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     if (resetSignal > 0) {
@@ -24,12 +28,15 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
   }, [resetSignal]);
 
+  // Cargar un análisis previo desde la BD
   useEffect(() => {
     if (loadAnaId) {
       const loadPastAna = async () => {
         setIsAnalyzing(true);
         setError('');
-        setResultText('');
+        setMessages([]);
+        setCurrentAnaId(null);
+        
         try {
           const token = await user.getIdToken();
           const res = await fetch(`${API_ANA}/analysis-history/${loadAnaId}`, {
@@ -38,7 +45,26 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           if (!res.ok) throw new Error("Error del servidor");
           
           const data = await res.json();
-          setResultText(data.analysis);
+          
+          // Soporte para JSON nuevo (Hilo) y Texto Antiguo (Un solo análisis)
+          try {
+            const parsed = JSON.parse(data.analysis);
+            if (Array.isArray(parsed)) {
+                setMessages(parsed);
+            } else {
+                setMessages([
+                    { role: 'user', content: data.instructions },
+                    { role: 'model', content: data.analysis }
+                ]);
+            }
+          } catch(e) {
+            setMessages([
+                { role: 'user', content: data.instructions },
+                { role: 'model', content: data.analysis }
+            ]);
+          }
+          
+          setCurrentAnaId(loadAnaId);
           setFiles([]); 
         } catch (err) {
           setError("❌ Error cargando el análisis guardado.");
@@ -51,8 +77,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   }, [loadAnaId, user]);
 
   useEffect(() => {
-    resultEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [resultText, isAnalyzing]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isAnalyzing]);
 
   const handleFileChange = (e) => {
     if (e.target.files) {
@@ -68,7 +94,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const handleClear = () => {
     setFiles([]);
     setInstructions('');
-    setResultText('');
+    setMessages([]);
+    setCurrentAnaId(null);
     setError('');
   };
 
@@ -79,18 +106,38 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
     const currentInstruction = typeof eOrInstruction === 'string' ? eOrInstruction : instructions;
 
-    if (files.length === 0) {
+    if (files.length === 0 && messages.length === 0) {
       alert("Sube al menos un documento para poder realizar el análisis.");
+      return;
+    }
+    
+    // PROTECCIÓN: Si es una pregunta de seguimiento pero el usuario NO subió el documento en la sesión actual
+    if (files.length === 0 && messages.length > 0) {
+      alert("Estás continuando un análisis antiguo. Por seguridad, no guardamos tus archivos en texto plano, así que debes adjuntar el documento original aquí abajo antes de poder hacer preguntas adicionales sobre él.");
       return;
     }
 
     setIsAnalyzing(true);
-    setResultText('');
     setError('');
+    
+    // Agregamos la instrucción del usuario a la pantalla
+    const newMessages = [...messages, { role: 'user', content: currentInstruction }];
+    setMessages(newMessages);
+    setInstructions('');
 
     const fd = new FormData();
     files.forEach(f => fd.append('files', f));
-    fd.append('instructions', currentInstruction.trim() || "Realizar un análisis jurídico detallado de estos documentos, identificando puntos clave, riesgos y conclusiones.");
+    
+    // PREPARAMOS EL CONTEXTO PARA LA IA (Le recordamos lo que ya hablamos)
+    let promptToSend = currentInstruction;
+    if (messages.length > 0) {
+       const historyText = messages.map(m => `${m.role === 'user' ? 'Instrucción previa' : 'Análisis previo'}:\n${m.content}`).join('\n\n');
+       promptToSend = `CONTEXTO DEL ANÁLISIS PREVIO CON EL USUARIO:\n${historyText}\n\nNUEVA INSTRUCCIÓN A RESPONDER AHORA:\n${currentInstruction}\n\nPor favor, responde únicamente a la NUEVA INSTRUCCIÓN basándote en los documentos y el contexto.`;
+    }
+
+    fd.append('instructions', promptToSend);
+    if (currentAnaId) fd.append('analysis_id', currentAnaId);
+    fd.append('history_json', JSON.stringify(newMessages)); // Le mandamos la UI actual al backend para que la guarde en Firestore
 
     try {
       const token = await user.getIdToken();
@@ -123,15 +170,32 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             try {
               const d = JSON.parse(line.substring(6));
               if (d.error) throw new Error(d.error);
+              
               if (d.text) {
                 const chars = d.text;
                 const step = 10; 
                 for (let i = 0; i < chars.length; i += step) {
                   fullText += chars.substring(i, i + step);
-                  setResultText(fullText);
+                  
+                  // Actualizamos el último mensaje de la IA en pantalla
+                  setMessages(prev => {
+                    const lastMsg = prev[prev.length - 1];
+                    if (lastMsg && lastMsg.role === 'model') {
+                        return [...prev.slice(0, -1), { ...lastMsg, content: fullText }];
+                    } else {
+                        return [...prev, { role: 'model', content: fullText }];
+                    }
+                  });
+
                   await new Promise(resolve => setTimeout(resolve, 2));
                 }
               }
+              
+              // Recibimos el ID del backend para mantener el hilo en Firebase
+              if (d.analysis_id) {
+                  setCurrentAnaId(d.analysis_id);
+              }
+              
             } catch (e) {}
           }
         }
@@ -139,6 +203,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     } catch (err) {
       console.error(err);
       setError(`❌ Ocurrió un problema: ${err.message}`);
+      // Removemos el mensaje del usuario si falló
+      setMessages(prev => prev.slice(0, -1));
     } finally {
       setIsAnalyzing(false);
     }
@@ -147,6 +213,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const formatMarkdown = (text) => {
     if (!text) return "";
     let clean = text;
+
     clean = clean.replace(/([^\n])\s*\n*(#{1,6}\s+)/g, '$1\n\n$2');
     clean = clean.replace(/^\s*\*\*\s*$/gm, '');
 
@@ -166,20 +233,17 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
   const handleFollowUpClick = (question) => {
     setInstructions(question);
-    if (files.length > 0) {
-      handleAnalyze(question);
-    } else {
-      alert("Estás viendo un análisis antiguo. Para profundizar con esta pregunta, por favor vuelve a subir el documento original aquí abajo y haz clic en Analizar.");
-    }
+    handleAnalyze(question);
   };
 
-  const renderAnalysisContent = (text) => {
+  // Renderizado que mantiene tu Regex original e ignora lo sobrante
+  const renderAnalysisContent = (text, idx) => {
     if (!text) return null;
     let formattedText = formatMarkdown(text);
     
     const regex = /(?:^|\n)(?:#{2,3}\s*|\*\*\s*)?Preguntas de Seguimiento\s*(?:\*\*|:)?\s*(?:\n|$)/gi;
     const matches = [...formattedText.matchAll(regex)];
-    const isCurrentlyTypingThis = isAnalyzing; 
+    const isCurrentlyTypingThis = isAnalyzing && idx === messages.length - 1; 
 
     if (matches.length > 0 && !isCurrentlyTypingThis) {
       const lastMatch = matches[matches.length - 1];
@@ -191,6 +255,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       const lines = afterHeading.split('\n');
       const questions = [];
       const leftoverLines = [];
+      let foundFirstQuestion = false;
 
       for (const line of lines) {
         const trimmed = line.trim();
@@ -201,10 +266,11 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
         if (isListItem && questions.length < 3 && !isLinkOrSource && trimmed.length > 5) {
           questions.push(trimmed.replace(/^[-*•0-9.)]+\s*/, '').replace(/["*]/g, '').trim());
-        } else if (isLinkOrSource) {
-          // CONTROL ESTRICTO: Solo preservamos la línea si es explícitamente un enlace o una fuente.
-          // El relleno conversacional ("Para profundizar...") será silenciado e ignorado.
-          leftoverLines.push(line);
+          foundFirstQuestion = true;
+        } else {
+          if (foundFirstQuestion) {
+            leftoverLines.push(line);
+          }
         }
       }
 
@@ -250,12 +316,12 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       <div className="pida-view-content">
         <div id="pida-chat-box"> 
           
-          {!isAnalyzing && !resultText && !error && (
+          {messages.length === 0 && !isAnalyzing && !error && (
             <div className="pida-bubble pida-message-bubble">
               <div className="pida-welcome-content">
                 <div className="pida-welcome-text">
                   <h3>Analizador de Documentos</h3>
-                  <p>Sube tus archivos (PDF, DOCX) y escribe una instrucción clara. PIDA leerá, resumirá y sistematizará el documento por ti.</p>
+                  <p>Sube tus archivos (PDF, DOCX) y escribe una instrucción clara. PIDA leerá, resumirá y sistematizará el documento por ti. Podrás continuar haciendo preguntas de seguimiento.</p>
                   <p style={{ marginTop: '15px', fontWeight: 'bold', color: '#1D3557' }}>Ejemplos de lo que puedes pedir:</p>
                   <ul style={{ margin: '8px 0 0 0', padding: 0, listStyleType: 'none', color: '#374151' }}>
                     <li style={{ marginBottom: '6px' }}>"Haz un resumen ejecutivo de este documento."</li>
@@ -267,16 +333,19 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             </div>
           )}
 
-          {isAnalyzing && !resultText && (
+          {/* DIBUJADO CONTINUO DEL HILO DE ANÁLISIS */}
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`pida-bubble ${msg.role === 'user' ? 'user-message-bubble' : 'pida-message-bubble'}`}>
+                {msg.role === 'user' 
+                    ? <div className="markdown-content"><ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown></div>
+                    : <div className="markdown-content">{renderAnalysisContent(msg.content, idx)}</div>}
+            </div>
+          ))}
+
+          {isAnalyzing && (!messages.length || messages[messages.length - 1].role === 'user') && (
             <div style={{ textAlign: 'center', marginTop: '40px' }}>
               <div className="loader"></div>
               <p style={{ color: 'var(--pida-text-muted)', marginTop: '15px' }}>Analizando documentos...</p>
-            </div>
-          )}
-
-          {resultText && (
-            <div id="analyzer-analysis-result" className="pida-bubble pida-message-bubble markdown-content" style={{ marginTop: '20px', maxWidth: '100%', padding: '20px' }}>
-              {renderAnalysisContent(resultText)}
             </div>
           )}
 
@@ -286,17 +355,18 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             </div>
           )}
 
-          <div ref={resultEndRef} />
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
       <div className="pida-view-form">
         
-        {resultText && (
+        {/* EXPORTACIÓN DEL HILO COMPLETO */}
+        {messages.length > 0 && (
           <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '8px' }}>
-            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", resultText)}>TXT</button>
-            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", resultText)}>DOCX</button>
-            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", resultText)}>PDF</button>
+            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>TXT</button>
+            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>DOCX</button>
+            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>PDF</button>
           </div>
         )}
 
