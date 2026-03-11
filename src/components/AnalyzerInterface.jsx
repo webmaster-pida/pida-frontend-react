@@ -18,7 +18,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState('');
   
-  // NUEVO ESTADO PARA EL MODAL BONITO
   const [showMissingFileModal, setShowMissingFileModal] = useState(false);
   
   const fileInputRef = useRef(null);
@@ -111,7 +110,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       return;
     }
     
-    // REEMPLAZO DEL ALERT POR EL MODAL BONITO
     if (files.length === 0 && messages.length > 0) {
       setShowMissingFileModal(true);
       return;
@@ -127,10 +125,14 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     const fd = new FormData();
     files.forEach(f => fd.append('files', f));
     
+    // =========================================================================
+    // OVERRIDE DE PROMPT PARA PREGUNTAS DE SEGUIMIENTO
+    // Si hay mensajes previos, obligamos a la IA a ir directo al grano.
+    // =========================================================================
     let promptToSend = currentInstruction;
     if (messages.length > 0) {
        const historyText = messages.map(m => `${m.role === 'user' ? 'Instrucción previa' : 'Análisis previo'}:\n${m.content}`).join('\n\n');
-       promptToSend = `CONTEXTO DEL ANÁLISIS PREVIO CON EL USUARIO:\n${historyText}\n\nNUEVA INSTRUCCIÓN A RESPONDER AHORA:\n${currentInstruction}\n\nPor favor, responde únicamente a la NUEVA INSTRUCCIÓN basándote en los documentos y el contexto.`;
+       promptToSend = `[INSTRUCCIÓN DE SEGUIMIENTO]:\nEl usuario está haciendo una pregunta sobre el documento ya analizado.\n\nREGLAS PARA ESTA RESPUESTA:\n1. NO repitas el análisis inicial. IGNORA por completo el formato de "Resumen Ejecutivo", "Análisis Detallado", etc.\n2. Ve directo al grano y responde ÚNICA Y EXHAUSTIVAMENTE a la NUEVA PREGUNTA del usuario.\n3. Recuerda que al final SIEMPRE debes incluir el delimitador ---PREGUNTAS--- con 3 nuevas sugerencias de seguimiento.\n\n[CONTEXTO PREVIO]\n${historyText}\n\n[NUEVA PREGUNTA DEL USUARIO]\n${currentInstruction}`;
     }
 
     fd.append('instructions', promptToSend);
@@ -425,14 +427,13 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         </div>
       </div>
 
-      {/* --- MODAL PARA ARCHIVO FALTANTE --- */}
       {showMissingFileModal && (
         <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setShowMissingFileModal(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: '40px 30px', maxWidth: '420px', borderRadius: '16px' }}>
             <button className="modal-close-btn" onClick={() => setShowMissingFileModal(false)}>×</button>
             
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-              <div style={{ background: '#EFF6FF', color: 'var(--pida-accent)', width: '65px', height: '65px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>
+              <div style={{ background: '#EFF6FF', color: 'var(--pida-accent)', width: '65px', height: '65px', borderRadius: '50%', display: 'flex', alignContent: 'center', justifyContent: 'center', fontSize: '2rem', alignItems: 'center' }}>
                 📄
               </div>
             </div>
