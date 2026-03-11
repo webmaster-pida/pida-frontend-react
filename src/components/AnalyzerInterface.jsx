@@ -12,12 +12,14 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [files, setFiles] = useState([]);
   const [instructions, setInstructions] = useState('');
   
-  // AHORA USAMOS UN ARRAY DE MENSAJES PARA HISTORIAL CONTINUO
   const [messages, setMessages] = useState([]);
   const [currentAnaId, setCurrentAnaId] = useState(null);
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState('');
+  
+  // NUEVO ESTADO PARA EL MODAL BONITO
+  const [showMissingFileModal, setShowMissingFileModal] = useState(false);
   
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -28,7 +30,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
   }, [resetSignal]);
 
-  // Cargar un análisis previo desde la BD
   useEffect(() => {
     if (loadAnaId) {
       const loadPastAna = async () => {
@@ -46,7 +47,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           
           const data = await res.json();
           
-          // Soporte para JSON nuevo (Hilo) y Texto Antiguo (Un solo análisis)
           try {
             const parsed = JSON.parse(data.analysis);
             if (Array.isArray(parsed)) {
@@ -111,16 +111,15 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       return;
     }
     
-    // PROTECCIÓN: Si es una pregunta de seguimiento pero el usuario NO subió el documento en la sesión actual
+    // REEMPLAZO DEL ALERT POR EL MODAL BONITO
     if (files.length === 0 && messages.length > 0) {
-      alert("Estás continuando un análisis antiguo. Por seguridad, no guardamos tus archivos en texto plano, así que debes adjuntar el documento original aquí abajo antes de poder hacer preguntas adicionales sobre él.");
+      setShowMissingFileModal(true);
       return;
     }
 
     setIsAnalyzing(true);
     setError('');
     
-    // Agregamos la instrucción del usuario a la pantalla
     const newMessages = [...messages, { role: 'user', content: currentInstruction }];
     setMessages(newMessages);
     setInstructions('');
@@ -128,7 +127,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     const fd = new FormData();
     files.forEach(f => fd.append('files', f));
     
-    // PREPARAMOS EL CONTEXTO PARA LA IA (Le recordamos lo que ya hablamos)
     let promptToSend = currentInstruction;
     if (messages.length > 0) {
        const historyText = messages.map(m => `${m.role === 'user' ? 'Instrucción previa' : 'Análisis previo'}:\n${m.content}`).join('\n\n');
@@ -137,7 +135,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
     fd.append('instructions', promptToSend);
     if (currentAnaId) fd.append('analysis_id', currentAnaId);
-    fd.append('history_json', JSON.stringify(newMessages)); // Le mandamos la UI actual al backend para que la guarde en Firestore
+    fd.append('history_json', JSON.stringify(newMessages)); 
 
     try {
       const token = await user.getIdToken();
@@ -177,7 +175,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
                 for (let i = 0; i < chars.length; i += step) {
                   fullText += chars.substring(i, i + step);
                   
-                  // Actualizamos el último mensaje de la IA en pantalla
                   setMessages(prev => {
                     const lastMsg = prev[prev.length - 1];
                     if (lastMsg && lastMsg.role === 'model') {
@@ -191,7 +188,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
                 }
               }
               
-              // Recibimos el ID del backend para mantener el hilo en Firebase
               if (d.analysis_id) {
                   setCurrentAnaId(d.analysis_id);
               }
@@ -203,7 +199,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     } catch (err) {
       console.error(err);
       setError(`❌ Ocurrió un problema: ${err.message}`);
-      // Removemos el mensaje del usuario si falló
       setMessages(prev => prev.slice(0, -1));
     } finally {
       setIsAnalyzing(false);
@@ -213,7 +208,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const formatMarkdown = (text) => {
     if (!text) return "";
     let clean = text;
-
     clean = clean.replace(/([^\n])\s*\n*(#{1,6}\s+)/g, '$1\n\n$2');
     clean = clean.replace(/^\s*\*\*\s*$/gm, '');
 
@@ -236,26 +230,21 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     handleAnalyze(question);
   };
 
-  // Renderizado que mantiene tu Regex original e ignora lo sobrante
   const renderAnalysisContent = (text, idx) => {
     if (!text) return null;
-    let formattedText = formatMarkdown(text);
     
-    const regex = /(?:^|\n)(?:#{2,3}\s*|\*\*\s*)?Preguntas de Seguimiento\s*(?:\*\*|:)?\s*(?:\n|$)/gi;
-    const matches = [...formattedText.matchAll(regex)];
+    const separatorRegex = /(?:---PREGUNTAS---|(?:\n|^)(?:#{2,4}\s*|\*\*\s*)?Preguntas de Seguimiento(?:\s*\*\*|:)?\s*\n)/i;
+    
+    const parts = text.split(separatorRegex);
     const isCurrentlyTypingThis = isAnalyzing && idx === messages.length - 1; 
 
-    if (matches.length > 0 && !isCurrentlyTypingThis) {
-      const lastMatch = matches[matches.length - 1];
-      const splitIndex = lastMatch.index;
+    if (parts.length > 1 && !isCurrentlyTypingThis) {
+      const mainContent = parts[0];
+      const questionsPart = parts.slice(1).join('\n'); 
 
-      const mainContent = formattedText.substring(0, splitIndex);
-      const afterHeading = formattedText.substring(splitIndex + lastMatch[0].length);
-
-      const lines = afterHeading.split('\n');
+      const lines = questionsPart.split('\n');
       const questions = [];
-      const leftoverLines = [];
-      let foundFirstQuestion = false;
+      const sources = [];
 
       for (const line of lines) {
         const trimmed = line.trim();
@@ -266,19 +255,16 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
         if (isListItem && questions.length < 3 && !isLinkOrSource && trimmed.length > 5) {
           questions.push(trimmed.replace(/^[-*•0-9.)]+\s*/, '').replace(/["*]/g, '').trim());
-          foundFirstQuestion = true;
-        } else {
-          if (foundFirstQuestion) {
-            leftoverLines.push(line);
-          }
+        } else if (isLinkOrSource) {
+          sources.push(line);
         }
       }
 
-      let textAfterQuestions = leftoverLines.join('\n').trim();
-
       return (
         <>
-          <ReactMarkdown components={markdownComponents}>{mainContent}</ReactMarkdown>
+          <div className="markdown-content">
+            <ReactMarkdown components={markdownComponents}>{formatMarkdown(mainContent)}</ReactMarkdown>
+          </div>
           
           {questions.length > 0 && (
             <div className="follow-up-section" style={{ marginTop: '25px', paddingTop: '20px', borderTop: '1px solid #E5E7EB' }}>
@@ -299,16 +285,20 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             </div>
           )}
 
-          {textAfterQuestions && (
-            <div style={{ marginTop: '20px' }}>
-              <ReactMarkdown components={markdownComponents}>{textAfterQuestions}</ReactMarkdown>
+          {sources.length > 0 && (
+            <div className="markdown-content" style={{ marginTop: '20px' }}>
+              <ReactMarkdown components={markdownComponents}>{sources.join('\n')}</ReactMarkdown>
             </div>
           )}
         </>
       );
     }
 
-    return <ReactMarkdown components={markdownComponents}>{formattedText}</ReactMarkdown>;
+    return (
+        <div className="markdown-content">
+            <ReactMarkdown components={markdownComponents}>{formatMarkdown(text)}</ReactMarkdown>
+        </div>
+    );
   };
 
   return (
@@ -333,12 +323,11 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             </div>
           )}
 
-          {/* DIBUJADO CONTINUO DEL HILO DE ANÁLISIS */}
           {messages.map((msg, idx) => (
             <div key={idx} className={`pida-bubble ${msg.role === 'user' ? 'user-message-bubble' : 'pida-message-bubble'}`}>
                 {msg.role === 'user' 
                     ? <div className="markdown-content"><ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown></div>
-                    : <div className="markdown-content">{renderAnalysisContent(msg.content, idx)}</div>}
+                    : renderAnalysisContent(msg.content, idx)}
             </div>
           ))}
 
@@ -361,12 +350,28 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
       <div className="pida-view-form">
         
-        {/* EXPORTACIÓN DEL HILO COMPLETO */}
         {messages.length > 0 && (
           <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '8px' }}>
             <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>TXT</button>
             <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>DOCX</button>
             <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>PDF</button>
+          </div>
+        )}
+
+        {files.length > 0 && messages.length === 0 && !isAnalyzing && (
+          <div style={{ marginBottom: '15px', padding: '15px', background: '#F8FAFC', borderRadius: '8px', border: '1px dashed #CBD5E1' }}>
+            <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--pida-primary)', marginBottom: '10px', textTransform: 'uppercase' }}>Sugerencias rápidas:</span>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button type="button" className="pida-button-secondary" style={{ background: 'white', border: '1px solid var(--pida-border)', padding: '6px 12px', fontSize: '0.85rem', borderRadius: '20px' }} onClick={() => handleAnalyze("Elabora un resumen ejecutivo destacando los puntos más importantes de este documento.")}>
+                ⚡ Resumen Ejecutivo
+              </button>
+              <button type="button" className="pida-button-secondary" style={{ background: 'white', border: '1px solid var(--pida-border)', padding: '6px 12px', fontSize: '0.85rem', borderRadius: '20px' }} onClick={() => handleAnalyze("Identifica posibles riesgos, vacíos legales o posibles contradicciones en los argumentos planteados.")}>
+                ⚖️ Riesgos y Contradicciones
+              </button>
+              <button type="button" className="pida-button-secondary" style={{ background: 'white', border: '1px solid var(--pida-border)', padding: '6px 12px', fontSize: '0.85rem', borderRadius: '20px' }} onClick={() => handleAnalyze("Extrae una línea de tiempo con los hechos, fechas y plazos clave mencionados.")}>
+                📅 Línea de Tiempo
+              </button>
+            </div>
           </div>
         )}
 
@@ -419,6 +424,38 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           </button>
         </div>
       </div>
+
+      {/* --- MODAL PARA ARCHIVO FALTANTE --- */}
+      {showMissingFileModal && (
+        <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setShowMissingFileModal(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: '40px 30px', maxWidth: '420px', borderRadius: '16px' }}>
+            <button className="modal-close-btn" onClick={() => setShowMissingFileModal(false)}>×</button>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+              <div style={{ background: '#EFF6FF', color: 'var(--pida-accent)', width: '65px', height: '65px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>
+                📄
+              </div>
+            </div>
+            
+            <h2 className="modal-title" style={{ fontSize: '1.4rem', marginBottom: '15px' }}>Documento Requerido</h2>
+            <p className="modal-subtitle" style={{ fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '30px', color: '#4B5563' }}>
+              Estás continuando un análisis antiguo. Por políticas de privacidad y seguridad, <strong>no guardamos tus archivos</strong> en nuestros servidores.
+              <br /><br />
+              Para hacer preguntas de seguimiento, por favor vuelve a adjuntar el documento original.
+            </p>
+            
+            <button 
+              className="form-submit-btn" 
+              onClick={() => {
+                setShowMissingFileModal(false);
+                fileInputRef.current?.click();
+              }}
+            >
+              Subir documento
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
