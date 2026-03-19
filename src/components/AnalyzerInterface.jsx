@@ -8,6 +8,42 @@ const markdownComponents = {
   a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />
 };
 
+// =========================================================================
+// MAPEO DE ERRORES UI/UX
+// Intercepta errores técnicos del backend y los convierte en información para el modal
+// =========================================================================
+const translateFileError = (errMsg) => {
+  if (!errMsg) return { title: "Error Desconocido", message: "Ocurrió un error desconocido al procesar el archivo.", icon: "❌" };
+
+  const lowerMsg = errMsg.toLowerCase();
+
+  if (lowerMsg.includes('password') || lowerMsg.includes('encrypt') || lowerMsg.includes('protegido') || lowerMsg.includes('contraseña')) {
+    return { title: "Documento Protegido", message: "El documento tiene una **contraseña de apertura** o restricciones de lectura.\n\nPor favor, retira la protección de seguridad y vuelve a subir el archivo para que la IA pueda analizarlo.", icon: "🔒" };
+  }
+  if (lowerMsg.includes('corrupt') || lowerMsg.includes('eof') || lowerMsg.includes('bad zip') || lowerMsg.includes('unreadable') || lowerMsg.includes('dañado')) {
+    return { title: "Archivo Corrupto", message: "No pudimos leer el documento. Puede que esté **dañado** o su descarga haya sido incompleta.\n\nIntenta guardarlo nuevamente o exportarlo a PDF/DOCX desde tu procesador de texto original.", icon: "⚠️" };
+  }
+  if (lowerMsg.includes('empty') || lowerMsg.includes('vacío') || lowerMsg.includes('no text')) {
+    return { title: "Documento sin Texto", message: "El archivo parece estar vacío o es una **imagen escaneada sin texto reconocible (OCR)**.\n\nPIDA requiere documentos que contengan texto seleccionable para poder analizarlos adecuadamente.", icon: "📄" };
+  }
+  if (lowerMsg.includes('size') || lowerMsg.includes('large') || lowerMsg.includes('demasiado grande') || lowerMsg.includes('413')) {
+    return { title: "Límite de Tamaño", message: "El documento es **demasiado pesado** o tiene demasiadas páginas para ser procesado en una sola solicitud.\n\nIntenta dividir el documento en partes más pequeñas para un análisis óptimo.", icon: "⚖️" };
+  }
+  if (lowerMsg.includes('format') || lowerMsg.includes('support') || lowerMsg.includes('formato')) {
+    return { title: "Formato no Soportado", message: "El formato del archivo no es compatible con el motor de análisis.\n\nPor favor, asegúrate de subir únicamente archivos **PDF** (`.pdf`) o documentos de **Word** (`.docx`).", icon: "🚫" };
+  }
+  if (lowerMsg.includes('timeout') || lowerMsg.includes('tiempo')) {
+    return { title: "Tiempo Agotado", message: "El documento es demasiado complejo y el servidor tardó mucho en leerlo.\n\nEsto suele ocurrir con archivos extremadamente largos o pesados. Intenta procesarlo por partes.", icon: "⏱️" };
+  }
+  if (lowerMsg.includes('límite') || lowerMsg.includes('suscripción') || lowerMsg.includes('402') || lowerMsg.includes('403') || lowerMsg.includes('429')) {
+    return { title: "Límite Alcanzado", message: "Has alcanzado tu límite de análisis diarios o tu suscripción no se encuentra activa.\n\nRevisa el estado de tu cuenta en el panel principal para continuar.", icon: "💳" };
+  }
+
+  // Error genérico por defecto
+  return { title: "Error de Análisis", message: `Ocurrió un problema durante el análisis:\n\n\`${errMsg}\``, icon: "❌" };
+};
+
+
 export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [files, setFiles] = useState([]);
   const [instructions, setInstructions] = useState('');
@@ -16,8 +52,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [currentAnaId, setCurrentAnaId] = useState(null);
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [statusText, setStatusText] = useState(''); // NUEVO ESTADO: Feedback visual de carga
-  const [error, setError] = useState('');
+  const [statusText, setStatusText] = useState(''); 
+  
+  // Modificamos el estado de error para manejar el Modal
+  const [errorModal, setErrorModal] = useState({ show: false, title: '', message: '', icon: '' });
   
   const [showMissingFileModal, setShowMissingFileModal] = useState(false);
   
@@ -35,7 +73,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       const loadPastAna = async () => {
         setIsAnalyzing(true);
         setStatusText('Cargando historial...');
-        setError('');
+        setErrorModal({ show: false, title: '', message: '', icon: '' });
         setMessages([]);
         setCurrentAnaId(null);
         
@@ -44,7 +82,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           const res = await fetch(`${API_ANA}/analysis-history/${loadAnaId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          if (!res.ok) throw new Error("Error del servidor");
+          if (!res.ok) throw new Error("Error del servidor al cargar el historial.");
           
           const data = await res.json();
           
@@ -68,7 +106,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           setCurrentAnaId(loadAnaId);
           setFiles([]); 
         } catch (err) {
-          setError("❌ Error cargando el análisis guardado.");
+          const mappedError = translateFileError(err.message);
+          setErrorModal({ show: true, ...mappedError });
         } finally {
           setIsAnalyzing(false);
           setStatusText('');
@@ -98,7 +137,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     setInstructions('');
     setMessages([]);
     setCurrentAnaId(null);
-    setError('');
+    setErrorModal({ show: false, title: '', message: '', icon: '' });
     setStatusText('');
   };
 
@@ -120,7 +159,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
 
     setIsAnalyzing(true);
-    setError('');
+    setErrorModal({ show: false, title: '', message: '', icon: '' });
     
     const newMessages = [...messages, { role: 'user', content: currentInstruction }];
     setMessages(newMessages);
@@ -201,9 +240,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
       if (!res.ok) {
         if (res.status === 403 || res.status === 402 || res.status === 429) {
-          throw new Error("Has alcanzado tu límite de análisis diarios o tu suscripción no está activa.");
+          throw new Error("Límite de suscripción alcanzado.");
         }
-        throw new Error(`Error del servidor (${res.status})`);
+        const errorJson = await res.json().catch(() => null);
+        throw new Error(errorJson?.detail || `Error del servidor (${res.status})`);
       }
 
       const reader = res.body.getReader();
@@ -222,7 +262,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           if (line.startsWith('data:')) {
             try {
               const d = JSON.parse(line.substring(6));
-              if (d.error) throw new Error(d.error);
+              
+              if (d.error) throw new Error(d.error); // Forzar captura en el catch general
               
               if (d.text) {
                 const chars = d.text;
@@ -247,14 +288,25 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
                   setCurrentAnaId(d.analysis_id);
               }
               
-            } catch (e) {}
+            } catch (e) {
+              if(e.message) throw e;
+            }
           }
         }
       }
     } catch (err) {
-      console.error(err);
-      setError(`❌ Ocurrió un problema: ${err.message}`);
-      setMessages(prev => prev.slice(0, -1));
+      console.error("Error en Análisis:", err);
+      // Transformamos el error técnico en UX
+      const mappedError = translateFileError(err.message);
+      setErrorModal({ show: true, ...mappedError });
+      
+      // Revertimos el prompt fallido
+      setMessages(prev => {
+        if(prev.length > 0 && prev[prev.length - 1].role === 'user') {
+          return prev.slice(0, -1);
+        }
+        return prev;
+      });
     } finally {
       setIsAnalyzing(false);
       setStatusText('');
@@ -362,7 +414,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       <div className="pida-view-content">
         <div id="pida-chat-box"> 
           
-          {messages.length === 0 && !isAnalyzing && !error && (
+          {messages.length === 0 && !isAnalyzing && (
             <div className="pida-bubble pida-message-bubble">
               <div className="pida-welcome-content">
                 <div className="pida-welcome-text">
@@ -393,12 +445,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               <p style={{ color: 'var(--pida-text-muted)', marginTop: '15px' }}>
                 {statusText || "Analizando documentos..."}
               </p>
-            </div>
-          )}
-
-          {error && (
-            <div className="pida-bubble pida-message-bubble" style={{ marginTop: '20px' }}>
-              <div style={{ color: '#EF4444', fontWeight: 'bold' }}>{error}</div>
             </div>
           )}
 
@@ -483,6 +529,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         </div>
       </div>
 
+      {/* MODAL DE ADVERTENCIA: FALTA DOCUMENTO ORIGINAL */}
       {showMissingFileModal && (
         <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setShowMissingFileModal(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: '40px 30px', maxWidth: '420px', borderRadius: '16px' }}>
@@ -513,6 +560,36 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           </div>
         </div>
       )}
+
+      {/* NUEVO: MODAL DE MANEJO DE ERRORES E INTELIGENCIA DE UX */}
+      {errorModal.show && (
+        <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setErrorModal({ show: false, title: '', message: '', icon: '' })}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: '40px 30px', maxWidth: '420px', borderRadius: '16px', border: '1px solid #FECACA' }}>
+            <button className="modal-close-btn" onClick={() => setErrorModal({ show: false, title: '', message: '', icon: '' })}>×</button>
+
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+              <div style={{ background: '#FEF2F2', color: '#EF4444', width: '65px', height: '65px', borderRadius: '50%', display: 'flex', alignContent: 'center', justifyContent: 'center', fontSize: '2rem', alignItems: 'center' }}>
+                {errorModal.icon}
+              </div>
+            </div>
+
+            <h2 className="modal-title" style={{ fontSize: '1.4rem', marginBottom: '15px', color: '#B91C1C' }}>{errorModal.title}</h2>
+            
+            <div className="modal-subtitle markdown-content" style={{ fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '30px', color: '#4B5563', textAlign: 'left' }}>
+              <ReactMarkdown components={markdownComponents}>{errorModal.message}</ReactMarkdown>
+            </div>
+
+            <button 
+              className="form-submit-btn" 
+              style={{ backgroundColor: '#EF4444', border: 'none' }}
+              onClick={() => setErrorModal({ show: false, title: '', message: '', icon: '' })}
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
