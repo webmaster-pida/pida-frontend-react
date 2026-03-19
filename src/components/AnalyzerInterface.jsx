@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
-const API_ANA = "https://analize-v20-stripe-elements-465781488910.us-central1.run.app";
+const API_ANA = "https://analize-v20-strong-465781488910.us-central1.run.app";
 
 const markdownComponents = {
   a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />
@@ -16,6 +16,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [currentAnaId, setCurrentAnaId] = useState(null);
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [statusText, setStatusText] = useState(''); // NUEVO ESTADO: Feedback visual de carga
   const [error, setError] = useState('');
   
   const [showMissingFileModal, setShowMissingFileModal] = useState(false);
@@ -33,6 +34,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     if (loadAnaId) {
       const loadPastAna = async () => {
         setIsAnalyzing(true);
+        setStatusText('Cargando historial...');
         setError('');
         setMessages([]);
         setCurrentAnaId(null);
@@ -69,6 +71,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           setError("❌ Error cargando el análisis guardado.");
         } finally {
           setIsAnalyzing(false);
+          setStatusText('');
         }
       };
       loadPastAna();
@@ -96,6 +99,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     setMessages([]);
     setCurrentAnaId(null);
     setError('');
+    setStatusText('');
   };
 
   const handleAnalyze = async (eOrInstruction = null) => {
@@ -122,9 +126,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     setMessages(newMessages);
     setInstructions('');
 
-    const fd = new FormData();
-    files.forEach(f => fd.append('files', f));
-    
     // =========================================================================
     // OVERRIDE DE PROMPT PARA PREGUNTAS DE SEGUIMIENTO
     // Si hay mensajes previos, obligamos a la IA a ir directo al grano.
@@ -135,12 +136,63 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
        promptToSend = `[INSTRUCCIÓN DE SEGUIMIENTO]:\nEl usuario está haciendo una pregunta sobre el documento ya analizado.\n\nREGLAS PARA ESTA RESPUESTA:\n1. NO repitas el análisis inicial. IGNORA por completo el formato de "Resumen Ejecutivo", "Análisis Detallado", etc.\n2. Ve directo al grano y responde ÚNICA Y EXHAUSTIVAMENTE a la NUEVA PREGUNTA del usuario.\n3. Recuerda que al final SIEMPRE debes incluir el delimitador ---PREGUNTAS--- con 3 nuevas sugerencias de seguimiento.\n\n[CONTEXTO PREVIO]\n${historyText}\n\n[NUEVA PREGUNTA DEL USUARIO]\n${currentInstruction}`;
     }
 
-    fd.append('instructions', promptToSend);
-    if (currentAnaId) fd.append('analysis_id', currentAnaId);
-    fd.append('history_json', JSON.stringify(newMessages)); 
-
     try {
       const token = await user.getIdToken();
+      let uploadedFilesData = [];
+
+      // =========================================================================
+      // NUEVO FLUJO GCS: 1. SUBIR A GOOGLE CLOUD STORAGE DIRECTAMENTE
+      // =========================================================================
+      if (files.length > 0) {
+        setStatusText('Generando rutas seguras...');
+        
+        const fileMetadata = files.map(f => ({ name: f.name, type: f.type || 'application/pdf' }));
+        const urlRes = await fetch(`${API_ANA}/generate-upload-urls/`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ files: fileMetadata })
+        });
+
+        if (!urlRes.ok) {
+           const errData = await urlRes.json().catch(() => ({}));
+           throw new Error(errData.detail || "Error obteniendo permisos de subida.");
+        }
+
+        const urlData = await urlRes.json();
+        const { urls } = urlData;
+
+        setStatusText('Subiendo documentos (esto puede tardar unos segundos)...');
+        const uploadPromises = files.map((file, i) => {
+          return fetch(urls[i].upload_url, {
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type || 'application/pdf' }
+          });
+        });
+
+        await Promise.all(uploadPromises);
+
+        uploadedFilesData = urls.map(u => ({
+          gs_uri: u.gs_uri,
+          filename: u.filename,
+          mime_type: u.mime_type
+        }));
+      }
+
+      // =========================================================================
+      // NUEVO FLUJO GCS: 2. INICIAR ANÁLISIS EN EL BACKEND
+      // =========================================================================
+      setStatusText('Analizando documentos con IA...');
+      const fd = new FormData();
+      
+      fd.append('files_data', JSON.stringify(uploadedFilesData)); // Enviamos el JSON con los gs_uri
+      fd.append('instructions', promptToSend);
+      if (currentAnaId) fd.append('analysis_id', currentAnaId);
+      fd.append('history_json', JSON.stringify(newMessages)); 
+
       const res = await fetch(`${API_ANA}/analyze/`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }, 
@@ -157,6 +209,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let fullText = "";
+      setStatusText(''); // Limpiamos el texto porque el stream ha comenzado
 
       while (true) {
         const { value, done } = await reader.read();
@@ -204,6 +257,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       setMessages(prev => prev.slice(0, -1));
     } finally {
       setIsAnalyzing(false);
+      setStatusText('');
     }
   };
 
@@ -336,7 +390,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           {isAnalyzing && (!messages.length || messages[messages.length - 1].role === 'user') && (
             <div style={{ textAlign: 'center', marginTop: '40px' }}>
               <div className="loader"></div>
-              <p style={{ color: 'var(--pida-text-muted)', marginTop: '15px' }}>Analizando documentos...</p>
+              <p style={{ color: 'var(--pida-text-muted)', marginTop: '15px' }}>
+                {statusText || "Analizando documentos..."}
+              </p>
             </div>
           )}
 
