@@ -26,14 +26,15 @@ const translateFileError = (errMsg) => {
   if (lowerMsg.includes('empty') || lowerMsg.includes('vacío') || lowerMsg.includes('no text')) {
     return { title: "Documento sin Texto", message: "El archivo parece estar vacío o es una **imagen escaneada sin texto reconocible (OCR)**.\n\nPIDA requiere documentos que contengan texto seleccionable para poder analizarlos adecuadamente.", icon: "📄" };
   }
-  if (lowerMsg.includes('size') || lowerMsg.includes('large') || lowerMsg.includes('demasiado grande') || lowerMsg.includes('413')) {
-    return { title: "Límite de Tamaño", message: "El documento es **demasiado pesado** o tiene demasiadas páginas para ser procesado en una sola solicitud.\n\nIntenta dividir el documento en partes más pequeñas para un análisis óptimo.", icon: "⚖️" };
+  // 👇 AQUÍ ESTÁ LA ACTUALIZACIÓN: Incluimos la sugerencia de comprimir el PDF por temas de resolución.
+  if (lowerMsg.includes('size') || lowerMsg.includes('large') || lowerMsg.includes('demasiado grande') || lowerMsg.includes('413') || lowerMsg.includes('invalid argument') || lowerMsg.includes('400 request contains') || lowerMsg.includes('400')) {
+    return { title: "Límite de Complejidad Excedido", message: "El documento supera el límite de procesamiento de la IA.\n\nEsto ocurre si el archivo excede las **1,000 páginas**, tiene demasiado texto, o contiene **imágenes/escaneos de muy alta resolución**.\n\n**Solución:** Intenta **comprimir el PDF** (para reducir la calidad de las imágenes) o divídelo en partes más pequeñas.", icon: "⚖️" };
   }
   if (lowerMsg.includes('format') || lowerMsg.includes('support') || lowerMsg.includes('formato')) {
     return { title: "Formato no Soportado", message: "El formato del archivo no es compatible con el motor de análisis.\n\nPor favor, asegúrate de subir únicamente archivos **PDF** (`.pdf`) o documentos de **Word** (`.docx`).", icon: "🚫" };
   }
   if (lowerMsg.includes('timeout') || lowerMsg.includes('tiempo')) {
-    return { title: "Tiempo Agotado", message: "El documento es demasiado complejo y el servidor tardó mucho en leerlo.\n\nEsto suele ocurrir con archivos extremadamente largos o pesados. Intenta procesarlo por partes.", icon: "⏱️" };
+    return { title: "Tiempo Agotado", message: "El documento es demasiado complejo y el servidor tardó mucho en leerlo.\n\nEsto suele ocurrir con archivos extremadamente largos o pesados. Intenta procesarlo por partes o comprimirlo.", icon: "⏱️" };
   }
   if (lowerMsg.includes('límite') || lowerMsg.includes('suscripción') || lowerMsg.includes('402') || lowerMsg.includes('403') || lowerMsg.includes('429')) {
     return { title: "Límite Alcanzado", message: "Has alcanzado tu límite de análisis diarios o tu suscripción no se encuentra activa.\n\nRevisa el estado de tu cuenta en el panel principal para continuar.", icon: "💳" };
@@ -54,7 +55,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [statusText, setStatusText] = useState(''); 
   
-  // Modificamos el estado de error para manejar el Modal
   const [errorModal, setErrorModal] = useState({ show: false, title: '', message: '', icon: '' });
   
   const [showMissingFileModal, setShowMissingFileModal] = useState(false);
@@ -124,7 +124,27 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const handleFileChange = (e) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      setFiles(prev => [...prev, ...selectedFiles]);
+      const validFiles = [];
+      
+      // Validación estricta en el Frontend basada en los límites de Gemini 2.5 Pro
+      selectedFiles.forEach(file => {
+        const fileSizeMB = file.size / (1024 * 1024);
+        if (fileSizeMB > 50) { 
+          setErrorModal({ 
+            show: true, 
+            title: "Archivo demasiado pesado", 
+            message: `El archivo **${file.name}** pesa ${fileSizeMB.toFixed(2)} MB.\n\nEl límite máximo permitido es de **50 MB** por documento. Por favor, comprime tu archivo o divídelo.`, 
+            icon: "⚖️" 
+          });
+        } else {
+          validFiles.push(file);
+        }
+      });
+
+      if (validFiles.length > 0) {
+        setFiles(prev => [...prev, ...validFiles]);
+        setErrorModal({ show: false, title: '', message: '', icon: '' });
+      }
     }
   };
 
@@ -227,7 +247,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       setStatusText('Analizando documentos con IA...');
       const fd = new FormData();
       
-      fd.append('files_data', JSON.stringify(uploadedFilesData)); // Enviamos el JSON con los gs_uri
+      fd.append('files_data', JSON.stringify(uploadedFilesData)); 
       fd.append('instructions', promptToSend);
       if (currentAnaId) fd.append('analysis_id', currentAnaId);
       fd.append('history_json', JSON.stringify(newMessages)); 
@@ -249,7 +269,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let fullText = "";
-      setStatusText(''); // Limpiamos el texto porque el stream ha comenzado
+      setStatusText(''); 
 
       while (true) {
         const { value, done } = await reader.read();
@@ -263,7 +283,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             try {
               const d = JSON.parse(line.substring(6));
               
-              if (d.error) throw new Error(d.error); // Forzar captura en el catch general
+              if (d.error) throw new Error(d.error); 
               
               if (d.text) {
                 const chars = d.text;
