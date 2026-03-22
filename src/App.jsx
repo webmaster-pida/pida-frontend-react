@@ -3,7 +3,8 @@ import LandingPage from './pages/LandingPage';
 import AuthModal from './components/AuthModal';
 import Dashboard from './pages/Dashboard';
 import SystemBanner from './components/SystemBanner'; 
-import NotFound from './pages/NotFound'; // <--- IMPORTAMOS LA NUEVA PÁGINA
+import NotFound from './pages/NotFound';
+import UpdateNotifier from './components/UpdateNotifier'; // <--- 1. IMPORTAMOS EL NOTIFICADOR
 import { auth } from './config/firebase';
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
     return (
       <>
         <SystemBanner />
+        <UpdateNotifier /> {/* <--- 2. LO COLOCAMOS EN LA VISTA 404 POR SI ACASO */}
         <NotFound />
       </>
     );
@@ -39,6 +41,7 @@ function App() {
   return (
     <>
       <SystemBanner /> 
+      <UpdateNotifier /> {/* <--- 3. LO COLOCAMOS A NIVEL GLOBAL DE LA APP */}
 
       {!user ? (
         <>
