@@ -9,7 +9,7 @@ const markdownComponents = {
 };
 
 // =========================================================================
-// MAPEO DE ERRORES UI/UX (SIN EMOJIS)
+// MAPEO DE ERRORES UI/UX
 // =========================================================================
 const translateFileError = (errMsg) => {
   if (!errMsg) return { title: "Error Desconocido", message: "Ocurrió un error desconocido al procesar el archivo." };
