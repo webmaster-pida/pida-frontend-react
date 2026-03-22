@@ -32,21 +32,18 @@ const translateFileError = (errMsg, currentFiles = []) => {
     return { title: "Límite de Tamaño Excedido", message: "El documento supera el peso máximo permitido por tu plan actual.\n\nPor favor, revisa tu nivel de suscripción o divide el documento en partes más pequeñas para proceder con el análisis." };
   }
   
-  // EL ERROR GENÉRICO 400 DE VERTEX AI (Desempate Inteligente de Corrupción vs Tokens)
   if (lowerMsg.includes('invalid argument') || lowerMsg.includes('400 request contains') || lowerMsg.includes('400')) {
     let totalSizeMB = 0;
     if (currentFiles && currentFiles.length > 0) {
         totalSizeMB = currentFiles.reduce((acc, file) => acc + ((file.size || 0) / (1024 * 1024)), 0);
     }
     
-    // Si pesa menos de 10 MB, es imposible que sature a la IA por complejidad. Es 100% Corrupción.
     if (currentFiles && currentFiles.length > 0 && totalSizeMB < 10) {
         return { 
             title: "Archivo Corrupto o Dañado", 
             message: "El motor de Inteligencia Artificial no pudo procesar el documento porque presenta **corrupción oculta en su estructura interna**.\n\n**Solución rápida:** Abre el documento en tu computadora, selecciona la opción **'Imprimir'**, elige **'Guardar como PDF'** y vuelve a subir esta nueva versión generada." 
         };
     } else {
-        // Si es un archivo grande (> 10MB), mostramos ambas posibilidades.
         return { 
             title: "Error de Lectura o Complejidad", 
             message: "El motor de análisis rechazó el documento. Esto suele ocurrir por dos motivos:\n\n1. El archivo presenta **corrupción en su estructura interna**.\n2. El documento supera la **capacidad máxima de procesamiento** (ej. exceso de resolución visual o miles de páginas).\n\n**Solución:** Verifica que el archivo sea válido. Si el problema persiste, intenta comprimirlo, dividirlo en secciones o guardarlo nuevamente como PDF ('Imprimir > Guardar como PDF')." 
@@ -81,9 +78,37 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [errorModal, setErrorModal] = useState({ show: false, title: '', message: '' });
   const [showMissingFileModal, setShowMissingFileModal] = useState(false);
   
+  // =========================================================================
+  // REFS Y ESTADOS PARA EL SMART SCROLLING
+  // =========================================================================
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
+  // Escucha el evento de scroll del usuario
+  const handleScroll = () => {
+    if (chatContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+      // Si el usuario está a menos de 80px del final, consideramos que está "abajo"
+      const distanceToBottom = scrollHeight - scrollTop - clientHeight;
+      setIsAtBottom(distanceToBottom < 80);
+    }
+  };
+
+  // Función para forzar el scroll
+  const scrollToBottom = (behavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  };
+
+  // Efecto principal del Smart Scrolling (Solo baja si isAtBottom es true)
+  useEffect(() => {
+    if (isAtBottom) {
+      scrollToBottom();
+    }
+  }, [messages, isAnalyzing]);
+
+  // Al reiniciar o limpiar, volvemos a activar el scroll
   useEffect(() => {
     if (resetSignal > 0) {
       handleClear();
@@ -98,6 +123,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         setErrorModal({ show: false, title: '', message: '' });
         setMessages([]);
         setCurrentAnaId(null);
+        setIsAtBottom(true); // Al cargar historial forzamos scroll abajo
         
         try {
           const token = await user.getIdToken();
@@ -127,6 +153,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           
           setCurrentAnaId(loadAnaId);
           setFiles([]); 
+          setTimeout(() => scrollToBottom('auto'), 100);
         } catch (err) {
           const mappedError = translateFileError(err.message, []);
           setErrorModal({ show: true, ...mappedError });
@@ -139,9 +166,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
   }, [loadAnaId, user]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isAnalyzing]);
 
   const handleFileChange = (e) => {
     if (e.target.files) {
@@ -179,6 +203,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     setCurrentAnaId(null);
     setErrorModal({ show: false, title: '', message: '' });
     setStatusText('');
+    setIsAtBottom(true);
   };
 
   const handleAnalyze = async (eOrInstruction = null) => {
@@ -199,6 +224,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
 
     setIsAnalyzing(true);
+    setIsAtBottom(true); // Al enviar mensaje, siempre forzamos ir abajo
+    setTimeout(() => scrollToBottom(), 50);
+
     setErrorModal({ show: false, title: '', message: '' });
     
     const newMessages = [...messages, { role: 'user', content: currentInstruction }];
@@ -215,9 +243,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       const token = await user.getIdToken();
       let uploadedFilesData = [];
 
-      // =========================================================================
-      // CLASIFICACIÓN DE ARCHIVOS PARA OPTIMIZACIÓN INTELIGENTE
-      // =========================================================================
       const smallFiles = [];
       const largeFiles = [];
 
@@ -230,7 +255,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           }
       });
 
-      // 1. FLUJO ARCHIVOS NORMALES (< 10 MB o DOCX) - Subida directa GCS
       if (smallFiles.length > 0) {
         setStatusText('Autenticando y preparando documentos...');
         
@@ -268,7 +292,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         });
       }
 
-      // 2. FLUJO ARCHIVOS PESADOS (10 MB - 50 MB) - Compresión en Backend
       if (largeFiles.length > 0) {
         setStatusText('Optimizando archivos pesados (reduciendo resolución para la IA)...');
         
@@ -300,9 +323,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         });
       }
 
-      // =========================================================================
-      // 3. INICIAR ANÁLISIS EN VERTEX AI
-      // =========================================================================
       setStatusText('Procesando información con el motor de IA...');
       const fd = new FormData();
       
@@ -375,7 +395,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       }
     } catch (err) {
       console.error("Error en Análisis:", err);
-      // PASAMOS EL ARREGLO DE ARCHIVOS AL TRADUCTOR PARA EL DESEMPATE INTELIGENTE
       const mappedError = translateFileError(err.message, files);
       setErrorModal({ show: true, ...mappedError });
       
@@ -488,8 +507,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   };
 
   return (
-    <div className="pida-view">
-      <div className="pida-view-content">
+    <div className="pida-view" style={{ position: 'relative' }}>
+      
+      {/* EL EVENTO ONSCROLL AHORA ESTÁ EN EL CONTENEDOR PRINCIPAL */}
+      <div className="pida-view-content" ref={chatContainerRef} onScroll={handleScroll}>
         <div id="pida-chat-box"> 
           
           {messages.length === 0 && !isAnalyzing && (
@@ -526,9 +547,45 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             </div>
           )}
 
-          <div ref={messagesEndRef} />
+          {/* ANCLA INVISIBLE PARA EL SCROLL */}
+          <div ref={messagesEndRef} style={{ height: '1px' }} />
         </div>
       </div>
+
+      {/* BOTÓN FLOTANTE PARA SMART SCROLLING */}
+      {!isAtBottom && messages.length > 0 && (
+        <button
+          onClick={() => {
+            setIsAtBottom(true);
+            scrollToBottom();
+          }}
+          style={{
+            position: 'absolute',
+            bottom: '180px', // Justo por encima de la caja de texto
+            right: '25px',
+            width: '42px',
+            height: '42px',
+            borderRadius: '50%',
+            backgroundColor: '#0056B3',
+            color: 'white',
+            border: 'none',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 900,
+            opacity: 0.9,
+            transition: 'opacity 0.2s ease-in-out'
+          }}
+          title="Ir al último mensaje"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <polyline points="19 12 12 19 5 12"></polyline>
+          </svg>
+        </button>
+      )}
 
       <div className="pida-view-form">
         
