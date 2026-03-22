@@ -13,34 +13,37 @@ const markdownComponents = {
 // Intercepta errores técnicos del backend y los convierte en información para el modal
 // =========================================================================
 const translateFileError = (errMsg) => {
-  if (!errMsg) return { title: "Error Desconocido", message: "Ocurrió un error desconocido al procesar el archivo.", icon: "❌" };
+  if (!errMsg) return { title: "Error Desconocido", message: "Ocurrió un error desconocido al procesar el archivo." };
 
   const lowerMsg = errMsg.toLowerCase();
 
   if (lowerMsg.includes('password') || lowerMsg.includes('encrypt') || lowerMsg.includes('protegido') || lowerMsg.includes('contraseña')) {
-    return { title: "Documento Protegido", message: "El documento tiene una **contraseña de apertura** o restricciones de lectura.\n\nPor favor, retira la protección de seguridad y vuelve a subir el archivo para que la IA pueda analizarlo.", icon: "🔒" };
+    return { title: "Documento Protegido", message: "El documento tiene una **contraseña de apertura** o restricciones de lectura.\n\nPor favor, retira la protección de seguridad y vuelve a subir el archivo para que la IA pueda analizarlo." };
   }
   if (lowerMsg.includes('corrupt') || lowerMsg.includes('eof') || lowerMsg.includes('bad zip') || lowerMsg.includes('unreadable') || lowerMsg.includes('dañado')) {
-    return { title: "Archivo Corrupto", message: "No pudimos leer el documento. Puede que esté **dañado** o su descarga haya sido incompleta.\n\nIntenta guardarlo nuevamente o exportarlo a PDF/DOCX desde tu procesador de texto original.", icon: "⚠️" };
+    return { title: "Archivo Corrupto", message: "No pudimos leer el documento. Puede que esté **dañado** o su descarga haya sido incompleta.\n\nIntenta guardarlo nuevamente o exportarlo a PDF/DOCX desde tu procesador de texto original." };
   }
-  // 👇 AQUÍ ESTÁ LA ACTUALIZACIÓN: Corregido para reflejar que la IA sí lee escaneos.
   if (lowerMsg.includes('empty') || lowerMsg.includes('vacío') || lowerMsg.includes('no text')) {
-    return { title: "Documento Vacío o en Blanco", message: "El archivo parece estar **completamente vacío** o contiene solo páginas en blanco.\n\nVerifica que el archivo original contenga información visible (ya sea texto o imágenes escaneadas) antes de volver a subirlo.", icon: "📄" };
+    return { title: "Documento Vacío o en Blanco", message: "El archivo parece estar **completamente vacío** o contiene solo páginas en blanco.\n\nVerifica que el archivo original contenga información visible (ya sea texto o imágenes escaneadas) antes de volver a subirlo." };
   }
-  if (lowerMsg.includes('size') || lowerMsg.includes('large') || lowerMsg.includes('demasiado grande') || lowerMsg.includes('413') || lowerMsg.includes('invalid argument') || lowerMsg.includes('400 request contains') || lowerMsg.includes('400')) {
-    return { title: "Límite de Complejidad Excedido", message: "El documento supera el límite de procesamiento de la IA.\n\nEsto ocurre si el archivo excede las **1,000 páginas**, tiene demasiado texto, o contiene **imágenes/escaneos de muy alta resolución**.\n\n**Solución:** Intenta **comprimir el PDF** (para reducir la calidad de las imágenes) o divídelo en partes más pequeñas.", icon: "⚖️" };
+  if (lowerMsg.includes('size') || lowerMsg.includes('large') || lowerMsg.includes('demasiado grande') || lowerMsg.includes('413')) {
+    return { title: "Límite de Tamaño Excedido", message: "El documento supera el tamaño máximo permitido por la plataforma.\n\nIntenta **comprimir el PDF** o dividirlo en partes más pequeñas para asegurar un análisis óptimo." };
+  }
+  // 👇 ACTUALIZACIÓN CLAVE: El error 400 de Vertex AI engloba corrupción interna Y exceso de complejidad.
+  if (lowerMsg.includes('invalid argument') || lowerMsg.includes('400 request contains') || lowerMsg.includes('400')) {
+    return { title: "Error de Lectura o Complejidad", message: "El motor de Inteligencia Artificial rechazó el documento.\n\nEsto suele ocurrir por dos motivos principales:\n1. El archivo está **ligeramente corrupto** o tiene una codificación interna que la IA no puede interpretar.\n2. El documento supera la **capacidad máxima de lectura** (ej. más de 1,000 páginas o exceso de resolución).\n\n**Solución:** Verifica que el archivo se abra correctamente en tu dispositivo. Si el archivo es válido, intenta **comprimir el PDF** o dividirlo en secciones más cortas." };
   }
   if (lowerMsg.includes('format') || lowerMsg.includes('support') || lowerMsg.includes('formato')) {
-    return { title: "Formato no Soportado", message: "El formato del archivo no es compatible con el motor de análisis.\n\nPor favor, asegúrate de subir únicamente archivos **PDF** (`.pdf`) o documentos de **Word** (`.docx`).", icon: "🚫" };
+    return { title: "Formato no Soportado", message: "El formato del archivo no es compatible con el motor de análisis.\n\nPor favor, asegúrate de subir únicamente archivos **PDF** (`.pdf`) o documentos de **Word** (`.docx`)." };
   }
   if (lowerMsg.includes('timeout') || lowerMsg.includes('tiempo')) {
-    return { title: "Tiempo Agotado", message: "El documento es demasiado complejo y el servidor tardó mucho en leerlo.\n\nEsto suele ocurrir con archivos extremadamente largos o pesados. Intenta procesarlo por partes o comprimirlo.", icon: "⏱️" };
+    return { title: "Tiempo Agotado", message: "El documento es demasiado complejo y el servidor tardó mucho en leerlo.\n\nEsto suele ocurrir con archivos extremadamente largos o pesados. Intenta procesarlo por partes o comprimirlo." };
   }
   if (lowerMsg.includes('límite') || lowerMsg.includes('suscripción') || lowerMsg.includes('402') || lowerMsg.includes('403') || lowerMsg.includes('429')) {
-    return { title: "Límite Alcanzado", message: "Has alcanzado tu límite de análisis diarios o tu suscripción no se encuentra activa.\n\nRevisa el estado de tu cuenta en el panel principal para continuar.", icon: "💳" };
+    return { title: "Límite Alcanzado", message: "Has alcanzado tu límite de análisis diarios o tu suscripción no se encuentra activa.\n\nRevisa el estado de tu cuenta en el panel principal para continuar." };
   }
 
-  return { title: "Error de Análisis", message: `Ocurrió un problema durante el análisis:\n\n\`${errMsg}\``, icon: "❌" };
+  return { title: "Error de Análisis", message: `Ocurrió un problema durante el análisis:\n\n\`${errMsg}\`` };
 };
 
 
@@ -54,7 +57,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [statusText, setStatusText] = useState(''); 
   
-  const [errorModal, setErrorModal] = useState({ show: false, title: '', message: '', icon: '' });
+  // Limpiamos el ícono del estado del modal
+  const [errorModal, setErrorModal] = useState({ show: false, title: '', message: '' });
   const [showMissingFileModal, setShowMissingFileModal] = useState(false);
   
   const fileInputRef = useRef(null);
@@ -71,7 +75,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       const loadPastAna = async () => {
         setIsAnalyzing(true);
         setStatusText('Cargando historial...');
-        setErrorModal({ show: false, title: '', message: '', icon: '' });
+        setErrorModal({ show: false, title: '', message: '' });
         setMessages([]);
         setCurrentAnaId(null);
         
@@ -130,8 +134,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           setErrorModal({ 
             show: true, 
             title: "Archivo demasiado pesado", 
-            message: `El archivo **${file.name}** pesa ${fileSizeMB.toFixed(2)} MB.\n\nEl límite máximo absoluto es de **50 MB** por documento para evitar bloqueos del sistema. Por favor, comprime tu archivo o divídelo.`, 
-            icon: "⚖️" 
+            message: `El archivo **${file.name}** pesa ${fileSizeMB.toFixed(2)} MB.\n\nEl límite máximo absoluto es de **50 MB** por documento para evitar bloqueos del sistema. Por favor, comprime tu archivo o divídelo.`
           });
         } else {
           validFiles.push(file);
@@ -140,7 +143,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
       if (validFiles.length > 0) {
         setFiles(prev => [...prev, ...validFiles]);
-        setErrorModal({ show: false, title: '', message: '', icon: '' });
+        setErrorModal({ show: false, title: '', message: '' });
       }
     }
   };
@@ -154,7 +157,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     setInstructions('');
     setMessages([]);
     setCurrentAnaId(null);
-    setErrorModal({ show: false, title: '', message: '', icon: '' });
+    setErrorModal({ show: false, title: '', message: '' });
     setStatusText('');
   };
 
@@ -176,7 +179,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
 
     setIsAnalyzing(true);
-    setErrorModal({ show: false, title: '', message: '', icon: '' });
+    setErrorModal({ show: false, title: '', message: '' });
     
     const newMessages = [...messages, { role: 'user', content: currentInstruction }];
     setMessages(newMessages);
@@ -591,9 +594,13 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             <button className="modal-close-btn" onClick={() => setShowMissingFileModal(false)}>×</button>
             
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-              <div style={{ background: '#EFF6FF', color: 'var(--pida-accent)', width: '65px', height: '65px', borderRadius: '50%', display: 'flex', alignContent: 'center', justifyContent: 'center', fontSize: '2rem', alignItems: 'center' }}>
-                📄
-              </div>
+              <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#0056B3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
             </div>
             
             <h2 className="modal-title" style={{ fontSize: '1.4rem', marginBottom: '15px' }}>Documento Requerido</h2>
@@ -616,19 +623,21 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         </div>
       )}
 
-      {/* NUEVO: MODAL DE MANEJO DE ERRORES E INTELIGENCIA DE UX */}
+      {/* NUEVO: MODAL PROFESIONAL DE MANEJO DE ERRORES */}
       {errorModal.show && (
-        <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setErrorModal({ show: false, title: '', message: '', icon: '' })}>
-          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: '40px 30px', maxWidth: '420px', borderRadius: '16px', border: '1px solid #FECACA' }}>
-            <button className="modal-close-btn" onClick={() => setErrorModal({ show: false, title: '', message: '', icon: '' })}>×</button>
+        <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setErrorModal({ show: false, title: '', message: '' })}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: '40px 30px', maxWidth: '440px', borderRadius: '16px', border: '1px solid #FECACA' }}>
+            <button className="modal-close-btn" onClick={() => setErrorModal({ show: false, title: '', message: '' })}>×</button>
 
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-              <div style={{ background: '#FEF2F2', color: '#EF4444', width: '65px', height: '65px', borderRadius: '50%', display: 'flex', alignContent: 'center', justifyContent: 'center', fontSize: '2rem', alignItems: 'center' }}>
-                {errorModal.icon}
-              </div>
+              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
             </div>
 
-            <h2 className="modal-title" style={{ fontSize: '1.4rem', marginBottom: '15px', color: '#B91C1C' }}>{errorModal.title}</h2>
+            <h2 className="modal-title" style={{ fontSize: '1.3rem', marginBottom: '15px', color: '#B91C1C' }}>{errorModal.title}</h2>
             
             <div className="modal-subtitle markdown-content" style={{ fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '30px', color: '#4B5563', textAlign: 'left' }}>
               <ReactMarkdown components={markdownComponents}>{errorModal.message}</ReactMarkdown>
@@ -637,7 +646,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             <button 
               className="form-submit-btn" 
               style={{ backgroundColor: '#EF4444', border: 'none' }}
-              onClick={() => setErrorModal({ show: false, title: '', message: '', icon: '' })}
+              onClick={() => setErrorModal({ show: false, title: '', message: '' })}
             >
               Entendido
             </button>
