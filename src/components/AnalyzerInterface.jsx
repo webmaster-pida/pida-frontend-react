@@ -213,7 +213,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         setStatusText('Autenticando y preparando documentos...');
         
         const fileMetadata = smallFiles.map(f => ({ name: f.name, type: f.type || 'application/pdf' }));
-        const urlRes = await fetch(`${API_ANA}/generate-upload-urls/`, {
+        const urlRes = await fetch(`${API_ANA}/generate-upload-urls`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -254,7 +254,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             const formData = new FormData();
             formData.append('file', file);
 
-            const optRes = await fetch(`${API_ANA}/compress-and-upload/`, {
+            const optRes = await fetch(`${API_ANA}/compress-and-upload`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
@@ -289,7 +289,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       if (currentAnaId) fd.append('analysis_id', currentAnaId);
       fd.append('history_json', JSON.stringify(newMessages)); 
 
-      const res = await fetch(`${API_ANA}/analyze/`, {
+      const res = await fetch(`${API_ANA}/analyze`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }, 
         body: fd
@@ -498,7 +498,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             <div style={{ textAlign: 'center', marginTop: '40px' }}>
               <div className="loader"></div>
               <p style={{ color: 'var(--pida-text-muted)', marginTop: '15px' }}>
-                {statusText || "Analizando documentos..."}
+                {statusText || "Procesando solicitud..."}
               </p>
             </div>
           )}
