@@ -14,10 +14,33 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
   const [resultText, setResultText] = useState('');
   const [error, setError] = useState('');
 
+  // =========================================================================
+  // REFS Y ESTADOS PARA EL SMART SCROLLING
+  // =========================================================================
   const resultEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
+  // Escucha el evento de scroll del usuario
+  const handleScroll = () => {
+    if (chatContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+      // Si el usuario está a menos de 80px del final, consideramos que está "abajo"
+      const distanceToBottom = scrollHeight - scrollTop - clientHeight;
+      setIsAtBottom(distanceToBottom < 80);
+    }
+  };
+
+  // Función para forzar el scroll
+  const scrollToBottom = (behavior = 'smooth') => {
+    resultEndRef.current?.scrollIntoView({ behavior });
+  };
+
+  // Efecto principal del Smart Scrolling (Solo baja si isAtBottom es true)
   useEffect(() => {
-    resultEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isAtBottom) {
+      scrollToBottom();
+    }
   }, [resultText, isAnalyzing]);
 
   const handleClear = () => {
@@ -27,6 +50,7 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
     setResultText('');
     setError('');
     setStatusMsg('Analizando delitos y violaciones a DDHH...');
+    setIsAtBottom(true);
   };
 
   useEffect(() => {
@@ -42,6 +66,8 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
       setFacts(loadPreData.facts || '');
       setResultText(loadPreData.analysis || '');
       setError('');
+      setIsAtBottom(true);
+      setTimeout(() => scrollToBottom('auto'), 100);
     }
   }, [loadPreData]);
 
@@ -56,6 +82,10 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
     setResultText('');
     setError('');
     setStatusMsg('Conectando con PIDA...');
+    
+    // Forzamos el scroll hacia abajo al iniciar el análisis
+    setIsAtBottom(true);
+    setTimeout(() => scrollToBottom(), 50);
 
     const finalTitle = title.trim() || `Caso ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
 
@@ -139,8 +169,10 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
   };
 
   return (
-    <div className="pida-view">
-      <div className="pida-view-content">
+    <div className="pida-view" style={{ position: 'relative' }}>
+      
+      {/* EL EVENTO ONSCROLL ESTÁ EN EL CONTENEDOR PRINCIPAL */}
+      <div className="pida-view-content" ref={chatContainerRef} onScroll={handleScroll}>
         <div id="pida-chat-box">
           
           {/* Bienvenida Uniforme con el Robot */}
@@ -177,10 +209,48 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
             </div>
           )}
 
-          <div ref={resultEndRef} />
+          {/* ANCLA INVISIBLE PARA EL SCROLL */}
+          <div ref={resultEndRef} style={{ height: '1px' }} />
 
         </div>
       </div>
+
+      {/* BOTÓN FLOTANTE PARA SMART SCROLLING */}
+      {!isAtBottom && resultText && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            setIsAtBottom(true);
+            scrollToBottom();
+          }}
+          style={{
+            position: 'absolute',
+            bottom: '240px', // Ajustado a la altura del formulario del precalificador
+            right: '25px',
+            width: '42px',
+            height: '42px',
+            borderRadius: '50%',
+            backgroundColor: '#0056B3',
+            color: 'white',
+            border: 'none',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 900,
+            opacity: 0.9,
+            transition: 'opacity 0.2s ease-in-out'
+          }}
+          title="Ir al final del análisis"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <polyline points="19 12 12 19 5 12"></polyline>
+          </svg>
+        </button>
+      )}
 
       <div className="pida-view-form">
         
