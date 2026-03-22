@@ -9,8 +9,7 @@ const markdownComponents = {
 };
 
 // =========================================================================
-// MAPEO DE ERRORES UI/UX
-// Intercepta errores técnicos del backend y los convierte en información para el modal
+// MAPEO DE ERRORES UI/UX (SIN EMOJIS)
 // =========================================================================
 const translateFileError = (errMsg) => {
   if (!errMsg) return { title: "Error Desconocido", message: "Ocurrió un error desconocido al procesar el archivo." };
@@ -18,32 +17,31 @@ const translateFileError = (errMsg) => {
   const lowerMsg = errMsg.toLowerCase();
 
   if (lowerMsg.includes('password') || lowerMsg.includes('encrypt') || lowerMsg.includes('protegido') || lowerMsg.includes('contraseña')) {
-    return { title: "Documento Protegido", message: "El documento tiene una **contraseña de apertura** o restricciones de lectura.\n\nPor favor, retira la protección de seguridad y vuelve a subir el archivo para que la IA pueda analizarlo." };
+    return { title: "Documento Protegido", message: "El documento tiene una **contraseña de apertura** o restricciones de lectura.\n\nPor favor, retira la protección de seguridad y vuelve a subir el archivo para que la Inteligencia Artificial pueda analizarlo." };
   }
   if (lowerMsg.includes('corrupt') || lowerMsg.includes('eof') || lowerMsg.includes('bad zip') || lowerMsg.includes('unreadable') || lowerMsg.includes('dañado')) {
-    return { title: "Archivo Corrupto", message: "No pudimos leer el documento. Puede que esté **dañado** o su descarga haya sido incompleta.\n\nIntenta guardarlo nuevamente o exportarlo a PDF/DOCX desde tu procesador de texto original." };
+    return { title: "Archivo Corrupto", message: "No fue posible leer el documento. Es probable que esté **dañado** o su descarga haya sido incompleta.\n\nTe sugerimos guardarlo nuevamente o exportarlo a PDF/DOCX desde tu procesador de texto original." };
   }
   if (lowerMsg.includes('empty') || lowerMsg.includes('vacío') || lowerMsg.includes('no text')) {
-    return { title: "Documento Vacío o en Blanco", message: "El archivo parece estar **completamente vacío** o contiene solo páginas en blanco.\n\nVerifica que el archivo original contenga información visible (ya sea texto o imágenes escaneadas) antes de volver a subirlo." };
+    return { title: "Documento Vacío o en Blanco", message: "El archivo parece estar **completamente vacío** o contiene solo páginas en blanco.\n\nVerifica que el archivo original contenga información visible antes de intentar subirlo nuevamente." };
   }
   if (lowerMsg.includes('size') || lowerMsg.includes('large') || lowerMsg.includes('demasiado grande') || lowerMsg.includes('413')) {
-    return { title: "Límite de Tamaño Excedido", message: "El documento supera el tamaño máximo permitido por la plataforma.\n\nIntenta **comprimir el PDF** o dividirlo en partes más pequeñas para asegurar un análisis óptimo." };
+    return { title: "Límite de Tamaño Excedido", message: "El documento supera el tamaño máximo de 50 MB permitido por la plataforma.\n\nPor favor, divide el documento en partes más pequeñas para asegurar un análisis óptimo." };
   }
-  // 👇 ACTUALIZACIÓN CLAVE: El error 400 de Vertex AI engloba corrupción interna Y exceso de complejidad.
   if (lowerMsg.includes('invalid argument') || lowerMsg.includes('400 request contains') || lowerMsg.includes('400')) {
-    return { title: "Error de Lectura o Complejidad", message: "El motor de Inteligencia Artificial rechazó el documento.\n\nEsto suele ocurrir por dos motivos principales:\n1. El archivo está **ligeramente corrupto** o tiene una codificación interna que la IA no puede interpretar.\n2. El documento supera la **capacidad máxima de lectura** (ej. más de 1,000 páginas o exceso de resolución).\n\n**Solución:** Verifica que el archivo se abra correctamente en tu dispositivo. Si el archivo es válido, intenta **comprimir el PDF** o dividirlo en secciones más cortas." };
+    return { title: "Error de Lectura o Complejidad", message: "El motor de análisis rechazó el documento. Esto suele ocurrir por dos motivos principales:\n\n1. El archivo presenta **corrupción en su estructura interna**.\n2. El documento supera la **capacidad máxima de procesamiento** (ej. más de 1,000 páginas o exceso de resolución visual).\n\n**Solución:** Verifica que el archivo sea válido y legible. Si el problema persiste, divídelo en secciones más cortas." };
   }
   if (lowerMsg.includes('format') || lowerMsg.includes('support') || lowerMsg.includes('formato')) {
-    return { title: "Formato no Soportado", message: "El formato del archivo no es compatible con el motor de análisis.\n\nPor favor, asegúrate de subir únicamente archivos **PDF** (`.pdf`) o documentos de **Word** (`.docx`)." };
+    return { title: "Formato no Soportado", message: "El formato del archivo no es compatible con el motor de análisis.\n\nAsegúrate de subir únicamente archivos en formato **PDF** (`.pdf`) o documentos de **Word** (`.docx`)." };
   }
   if (lowerMsg.includes('timeout') || lowerMsg.includes('tiempo')) {
-    return { title: "Tiempo Agotado", message: "El documento es demasiado complejo y el servidor tardó mucho en leerlo.\n\nEsto suele ocurrir con archivos extremadamente largos o pesados. Intenta procesarlo por partes o comprimirlo." };
+    return { title: "Tiempo de Espera Agotado", message: "El documento es demasiado complejo y el servidor tardó más de lo esperado en procesarlo.\n\nEsto suele ocurrir con archivos extremadamente largos. Intenta procesarlo por partes." };
   }
   if (lowerMsg.includes('límite') || lowerMsg.includes('suscripción') || lowerMsg.includes('402') || lowerMsg.includes('403') || lowerMsg.includes('429')) {
-    return { title: "Límite Alcanzado", message: "Has alcanzado tu límite de análisis diarios o tu suscripción no se encuentra activa.\n\nRevisa el estado de tu cuenta en el panel principal para continuar." };
+    return { title: "Límite de Suscripción Alcanzado", message: "Has alcanzado el límite de análisis diarios de tu plan o tu suscripción no se encuentra activa.\n\nRevisa el estado de tu cuenta en el panel principal para continuar utilizando el servicio." };
   }
 
-  return { title: "Error de Análisis", message: `Ocurrió un problema durante el análisis:\n\n\`${errMsg}\`` };
+  return { title: "Error de Análisis", message: `Ocurrió un problema técnico durante el proceso:\n\n\`${errMsg}\`` };
 };
 
 
@@ -57,7 +55,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [statusText, setStatusText] = useState(''); 
   
-  // Limpiamos el ícono del estado del modal
   const [errorModal, setErrorModal] = useState({ show: false, title: '', message: '' });
   const [showMissingFileModal, setShowMissingFileModal] = useState(false);
   
@@ -133,8 +130,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         if (fileSizeMB > 50) { 
           setErrorModal({ 
             show: true, 
-            title: "Archivo demasiado pesado", 
-            message: `El archivo **${file.name}** pesa ${fileSizeMB.toFixed(2)} MB.\n\nEl límite máximo absoluto es de **50 MB** por documento para evitar bloqueos del sistema. Por favor, comprime tu archivo o divídelo.`
+            title: "Archivo excede el límite máximo", 
+            message: `El archivo **${file.name}** pesa ${fileSizeMB.toFixed(2)} MB.\n\nEl límite máximo absoluto permitido en la plataforma es de **50 MB** por documento para garantizar el rendimiento del sistema. Por favor, divide tu archivo antes de subirlo.`
           });
         } else {
           validFiles.push(file);
@@ -169,7 +166,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     const currentInstruction = typeof eOrInstruction === 'string' ? eOrInstruction : instructions;
 
     if (files.length === 0 && messages.length === 0) {
-      alert("Sube al menos un documento para poder realizar el análisis.");
+      alert("Por favor, selecciona al menos un documento para analizar.");
       return;
     }
     
@@ -203,7 +200,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
       files.forEach(f => {
           const sizeMB = f.size / (1024 * 1024);
-          // Si el archivo es > 10MB y es un PDF, lo mandamos a comprimir al backend
+          // Si el archivo pesa entre 10MB y 50MB y es un PDF, lo mandamos a comprimir al backend
           if (sizeMB > 10 && sizeMB <= 50 && f.type === 'application/pdf') {
               largeFiles.push(f);
           } else {
@@ -211,9 +208,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           }
       });
 
-      // 1. FLUJO ARCHIVOS PEQUEÑOS (Subida directa GCS con URL firmada)
+      // 1. FLUJO ARCHIVOS NORMALES (< 10 MB o DOCX) - Subida directa GCS
       if (smallFiles.length > 0) {
-        setStatusText('Generando rutas seguras...');
+        setStatusText('Autenticando y preparando documentos...');
         
         const fileMetadata = smallFiles.map(f => ({ name: f.name, type: f.type || 'application/pdf' }));
         const urlRes = await fetch(`${API_ANA}/generate-upload-urls/`, {
@@ -227,13 +224,13 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
         if (!urlRes.ok) {
            const errData = await urlRes.json().catch(() => ({}));
-           throw new Error(errData.detail || "Error obteniendo permisos de subida.");
+           throw new Error(errData.detail || "Error al obtener permisos de almacenamiento.");
         }
 
         const urlData = await urlRes.json();
         const { urls } = urlData;
 
-        setStatusText('Subiendo documentos (esto puede tardar unos segundos)...');
+        setStatusText('Cargando documentos en el servidor seguro...');
         const uploadPromises = smallFiles.map((file, i) => {
           return fetch(urls[i].upload_url, {
             method: 'PUT',
@@ -249,9 +246,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         });
       }
 
-      // 2. FLUJO ARCHIVOS GRANDES (Envío al Endpoint de Compresión FastAPI)
+      // 2. FLUJO ARCHIVOS PESADOS (10 MB - 50 MB) - Compresión en Backend
       if (largeFiles.length > 0) {
-        setStatusText('Optimizando y reduciendo el peso de tus documentos para la IA...');
+        setStatusText('Optimizando archivos pesados (reduciendo resolución para la IA)...');
         
         const optimizePromises = largeFiles.map(async (file) => {
             const formData = new FormData();
@@ -265,7 +262,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
             if (!optRes.ok) {
                 const errData = await optRes.json().catch(() => ({}));
-                throw new Error(errData.detail || `Error optimizando archivo ${file.name}`);
+                throw new Error(errData.detail || `Fallo al optimizar el archivo: ${file.name}`);
             }
 
             return await optRes.json();
@@ -282,9 +279,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       }
 
       // =========================================================================
-      // 3. INICIAR ANÁLISIS EN EL BACKEND CON TODOS LOS gs_uris
+      // 3. INICIAR ANÁLISIS EN VERTEX AI
       // =========================================================================
-      setStatusText('Analizando documentos con IA...');
+      setStatusText('Procesando información con el motor de IA...');
       const fd = new FormData();
       
       fd.append('files_data', JSON.stringify(uploadedFilesData)); 
@@ -300,7 +297,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
       if (!res.ok) {
         if (res.status === 403 || res.status === 402 || res.status === 429) {
-          throw new Error("Límite de suscripción alcanzado.");
+          throw new Error("Has excedido el límite de tu suscripción activa.");
         }
         const errorJson = await res.json().catch(() => null);
         throw new Error(errorJson?.detail || `Error del servidor (${res.status})`);
@@ -594,7 +591,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             <button className="modal-close-btn" onClick={() => setShowMissingFileModal(false)}>×</button>
             
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-              <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#0056B3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0056B3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                 <polyline points="14 2 14 8 20 8"></polyline>
                 <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -623,14 +620,14 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         </div>
       )}
 
-      {/* NUEVO: MODAL PROFESIONAL DE MANEJO DE ERRORES */}
+      {/* MODAL PROFESIONAL DE MANEJO DE ERRORES */}
       {errorModal.show && (
         <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setErrorModal({ show: false, title: '', message: '' })}>
           <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: '40px 30px', maxWidth: '440px', borderRadius: '16px', border: '1px solid #FECACA' }}>
             <button className="modal-close-btn" onClick={() => setErrorModal({ show: false, title: '', message: '' })}>×</button>
 
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="12" y1="8" x2="12" y2="12"></line>
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
