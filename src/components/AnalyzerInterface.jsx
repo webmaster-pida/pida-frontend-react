@@ -9,9 +9,9 @@ const markdownComponents = {
 };
 
 // =========================================================================
-// MAPEO DE ERRORES UI/UX Verificar **Solución:**
+// MAPEO DE ERRORES UI/UX (DESEMPATE INTELIGENTE Y SIN EMOJIS)
 // =========================================================================
-const translateFileError = (errMsg) => {
+const translateFileError = (errMsg, currentFiles = []) => {
   if (!errMsg) return { title: "Error Desconocido", message: "Ocurrió un error desconocido al procesar el archivo." };
 
   const lowerMsg = errMsg.toLowerCase();
@@ -19,19 +19,41 @@ const translateFileError = (errMsg) => {
   if (lowerMsg.includes('password') || lowerMsg.includes('encrypt') || lowerMsg.includes('protegido') || lowerMsg.includes('contraseña')) {
     return { title: "Documento Protegido", message: "El documento tiene una **contraseña de apertura** o restricciones de lectura.\n\nPor favor, retira la protección de seguridad y vuelve a subir el archivo para que la Inteligencia Artificial pueda analizarlo." };
   }
-  if (lowerMsg.includes('corrupt') || lowerMsg.includes('eof') || lowerMsg.includes('bad zip') || lowerMsg.includes('unreadable') || lowerMsg.includes('dañado') || lowerMsg.includes('mupdf') || lowerMsg.includes('syntax error') || lowerMsg.includes('dict')) {
-    return { title: "Archivo Corrupto o Dañado", message: "No fue posible procesar el documento porque su estructura interna está dañada.\n\n**Solución:** Abre el documento en tu computadora, selecciona **'Imprimir'**, elige **'Guardar como PDF'** y sube esa nueva versión." };
+  
+  if (lowerMsg.includes('corrupt') || lowerMsg.includes('eof') || lowerMsg.includes('bad zip') || lowerMsg.includes('unreadable') || lowerMsg.includes('dañado') || lowerMsg.includes('mupdf') || lowerMsg.includes('syntax error')) {
+    return { title: "Archivo Corrupto o Dañado", message: "No fue posible leer el documento porque su estructura interna está **dañada** o malformada.\n\n**Solución rápida:** Abre el documento en tu computadora, selecciona la opción **'Imprimir'**, elige **'Guardar como PDF'** y vuelve a subir esta nueva versión." };
   }
+  
   if (lowerMsg.includes('empty') || lowerMsg.includes('vacío') || lowerMsg.includes('no text')) {
     return { title: "Documento Vacío o en Blanco", message: "El archivo parece estar **completamente vacío** o contiene solo páginas en blanco.\n\nVerifica que el archivo original contenga información visible antes de intentar subirlo nuevamente." };
   }
-  // 👇 AQUÍ ESTÁ LA MAGIA: Esto se atrapa ANTES de que lea la palabra "límite" sola.
+  
   if (lowerMsg.includes('excede_tamano') || lowerMsg.includes('tamaño') || lowerMsg.includes('pesa') || lowerMsg.includes('size') || lowerMsg.includes('large') || lowerMsg.includes('413')) {
     return { title: "Límite de Tamaño Excedido", message: "El documento supera el peso máximo permitido por tu plan actual.\n\nPor favor, revisa tu nivel de suscripción o divide el documento en partes más pequeñas para proceder con el análisis." };
   }
+  
+  // EL ERROR GENÉRICO 400 DE VERTEX AI (Desempate Inteligente de Corrupción vs Tokens)
   if (lowerMsg.includes('invalid argument') || lowerMsg.includes('400 request contains') || lowerMsg.includes('400')) {
-    return { title: "Error de Lectura o Complejidad", message: "El motor de análisis rechazó el documento. Esto suele ocurrir por dos motivos principales:\n\n1. El archivo presenta **corrupción en su estructura interna**.\n2. El documento supera la **capacidad máxima de procesamiento** (ej. más de 1,000 páginas o exceso de resolución visual).\n\n**Solución:** Verifica que el archivo sea válido y legible. Si el problema persiste, divídelo en secciones más cortas." };
+    let totalSizeMB = 0;
+    if (currentFiles && currentFiles.length > 0) {
+        totalSizeMB = currentFiles.reduce((acc, file) => acc + ((file.size || 0) / (1024 * 1024)), 0);
+    }
+    
+    // Si pesa menos de 10 MB, es imposible que sature a la IA por complejidad. Es 100% Corrupción.
+    if (currentFiles && currentFiles.length > 0 && totalSizeMB < 10) {
+        return { 
+            title: "Archivo Corrupto o Dañado", 
+            message: "El motor de Inteligencia Artificial no pudo procesar el documento porque presenta **corrupción oculta en su estructura interna**.\n\n**Solución rápida:** Abre el documento en tu computadora, selecciona la opción **'Imprimir'**, elige **'Guardar como PDF'** y vuelve a subir esta nueva versión generada." 
+        };
+    } else {
+        // Si es un archivo grande (> 10MB), mostramos ambas posibilidades.
+        return { 
+            title: "Error de Lectura o Complejidad", 
+            message: "El motor de análisis rechazó el documento. Esto suele ocurrir por dos motivos:\n\n1. El archivo presenta **corrupción en su estructura interna**.\n2. El documento supera la **capacidad máxima de procesamiento** (ej. exceso de resolución visual o miles de páginas).\n\n**Solución:** Verifica que el archivo sea válido. Si el problema persiste, intenta comprimirlo, dividirlo en secciones o guardarlo nuevamente como PDF ('Imprimir > Guardar como PDF')." 
+        };
+    }
   }
+
   if (lowerMsg.includes('format') || lowerMsg.includes('support') || lowerMsg.includes('formato')) {
     return { title: "Formato no Soportado", message: "El formato del archivo no es compatible con el motor de análisis.\n\nAsegúrate de subir únicamente archivos en formato **PDF** (`.pdf`) o documentos de **Word** (`.docx`)." };
   }
@@ -106,7 +128,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           setCurrentAnaId(loadAnaId);
           setFiles([]); 
         } catch (err) {
-          const mappedError = translateFileError(err.message);
+          const mappedError = translateFileError(err.message, []);
           setErrorModal({ show: true, ...mappedError });
         } finally {
           setIsAnalyzing(false);
@@ -128,7 +150,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       
       selectedFiles.forEach(file => {
         const fileSizeMB = file.size / (1024 * 1024);
-        // Protegemos a la plataforma de archivos superiores al hard-limit de 50MB
         if (fileSizeMB > 50) { 
           setErrorModal({ 
             show: true, 
@@ -202,7 +223,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
       files.forEach(f => {
           const sizeMB = f.size / (1024 * 1024);
-          // Si el archivo pesa entre 10MB y 50MB y es un PDF, lo mandamos a comprimir al backend
           if (sizeMB > 10 && sizeMB <= 50 && f.type === 'application/pdf') {
               largeFiles.push(f);
           } else {
@@ -355,7 +375,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       }
     } catch (err) {
       console.error("Error en Análisis:", err);
-      const mappedError = translateFileError(err.message);
+      // PASAMOS EL ARREGLO DE ARCHIVOS AL TRADUCTOR PARA EL DESEMPATE INTELIGENTE
+      const mappedError = translateFileError(err.message, files);
       setErrorModal({ show: true, ...mappedError });
       
       setMessages(prev => {
