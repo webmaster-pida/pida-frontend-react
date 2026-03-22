@@ -23,10 +23,10 @@ const translateFileError = (errMsg) => {
   if (lowerMsg.includes('corrupt') || lowerMsg.includes('eof') || lowerMsg.includes('bad zip') || lowerMsg.includes('unreadable') || lowerMsg.includes('dañado')) {
     return { title: "Archivo Corrupto", message: "No pudimos leer el documento. Puede que esté **dañado** o su descarga haya sido incompleta.\n\nIntenta guardarlo nuevamente o exportarlo a PDF/DOCX desde tu procesador de texto original.", icon: "⚠️" };
   }
+  // 👇 AQUÍ ESTÁ LA ACTUALIZACIÓN: Corregido para reflejar que la IA sí lee escaneos.
   if (lowerMsg.includes('empty') || lowerMsg.includes('vacío') || lowerMsg.includes('no text')) {
-    return { title: "Documento sin Texto", message: "El archivo parece estar vacío o es una **imagen escaneada sin texto reconocible (OCR)**.\n\nPIDA requiere documentos que contengan texto seleccionable para poder analizarlos adecuadamente.", icon: "📄" };
+    return { title: "Documento Vacío o en Blanco", message: "El archivo parece estar **completamente vacío** o contiene solo páginas en blanco.\n\nVerifica que el archivo original contenga información visible (ya sea texto o imágenes escaneadas) antes de volver a subirlo.", icon: "📄" };
   }
-  // 👇 AQUÍ ESTÁ LA ACTUALIZACIÓN: Incluimos la sugerencia de comprimir el PDF por temas de resolución.
   if (lowerMsg.includes('size') || lowerMsg.includes('large') || lowerMsg.includes('demasiado grande') || lowerMsg.includes('413') || lowerMsg.includes('invalid argument') || lowerMsg.includes('400 request contains') || lowerMsg.includes('400')) {
     return { title: "Límite de Complejidad Excedido", message: "El documento supera el límite de procesamiento de la IA.\n\nEsto ocurre si el archivo excede las **1,000 páginas**, tiene demasiado texto, o contiene **imágenes/escaneos de muy alta resolución**.\n\n**Solución:** Intenta **comprimir el PDF** (para reducir la calidad de las imágenes) o divídelo en partes más pequeñas.", icon: "⚖️" };
   }
@@ -40,7 +40,6 @@ const translateFileError = (errMsg) => {
     return { title: "Límite Alcanzado", message: "Has alcanzado tu límite de análisis diarios o tu suscripción no se encuentra activa.\n\nRevisa el estado de tu cuenta en el panel principal para continuar.", icon: "💳" };
   }
 
-  // Error genérico por defecto
   return { title: "Error de Análisis", message: `Ocurrió un problema durante el análisis:\n\n\`${errMsg}\``, icon: "❌" };
 };
 
@@ -56,7 +55,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [statusText, setStatusText] = useState(''); 
   
   const [errorModal, setErrorModal] = useState({ show: false, title: '', message: '', icon: '' });
-  
   const [showMissingFileModal, setShowMissingFileModal] = useState(false);
   
   const fileInputRef = useRef(null);
@@ -126,14 +124,13 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       const selectedFiles = Array.from(e.target.files);
       const validFiles = [];
       
-      // Validación estricta en el Frontend basada en los límites de Gemini 2.5 Pro
       selectedFiles.forEach(file => {
         const fileSizeMB = file.size / (1024 * 1024);
         if (fileSizeMB > 50) { 
           setErrorModal({ 
             show: true, 
             title: "Archivo demasiado pesado", 
-            message: `El archivo **${file.name}** pesa ${fileSizeMB.toFixed(2)} MB.\n\nEl límite máximo permitido es de **50 MB** por documento. Por favor, comprime tu archivo o divídelo.`, 
+            message: `El archivo **${file.name}** pesa ${fileSizeMB.toFixed(2)} MB.\n\nEl límite máximo absoluto es de **50 MB** por documento para evitar bloqueos del sistema. Por favor, comprime tu archivo o divídelo.`, 
             icon: "⚖️" 
           });
         } else {
@@ -185,10 +182,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     setMessages(newMessages);
     setInstructions('');
 
-    // =========================================================================
-    // OVERRIDE DE PROMPT PARA PREGUNTAS DE SEGUIMIENTO
-    // Si hay mensajes previos, obligamos a la IA a ir directo al grano.
-    // =========================================================================
     let promptToSend = currentInstruction;
     if (messages.length > 0) {
        const historyText = messages.map(m => `${m.role === 'user' ? 'Instrucción previa' : 'Análisis previo'}:\n${m.content}`).join('\n\n');
@@ -200,12 +193,26 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       let uploadedFilesData = [];
 
       // =========================================================================
-      // NUEVO FLUJO GCS: 1. SUBIR A GOOGLE CLOUD STORAGE DIRECTAMENTE
+      // CLASIFICACIÓN DE ARCHIVOS PARA OPTIMIZACIÓN INTELIGENTE
       // =========================================================================
-      if (files.length > 0) {
+      const smallFiles = [];
+      const largeFiles = [];
+
+      files.forEach(f => {
+          const sizeMB = f.size / (1024 * 1024);
+          // Si el archivo es > 10MB y es un PDF, lo mandamos a comprimir al backend
+          if (sizeMB > 10 && sizeMB <= 50 && f.type === 'application/pdf') {
+              largeFiles.push(f);
+          } else {
+              smallFiles.push(f);
+          }
+      });
+
+      // 1. FLUJO ARCHIVOS PEQUEÑOS (Subida directa GCS con URL firmada)
+      if (smallFiles.length > 0) {
         setStatusText('Generando rutas seguras...');
         
-        const fileMetadata = files.map(f => ({ name: f.name, type: f.type || 'application/pdf' }));
+        const fileMetadata = smallFiles.map(f => ({ name: f.name, type: f.type || 'application/pdf' }));
         const urlRes = await fetch(`${API_ANA}/generate-upload-urls/`, {
           method: 'POST',
           headers: {
@@ -224,7 +231,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         const { urls } = urlData;
 
         setStatusText('Subiendo documentos (esto puede tardar unos segundos)...');
-        const uploadPromises = files.map((file, i) => {
+        const uploadPromises = smallFiles.map((file, i) => {
           return fetch(urls[i].upload_url, {
             method: 'PUT',
             body: file,
@@ -234,15 +241,45 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
         await Promise.all(uploadPromises);
 
-        uploadedFilesData = urls.map(u => ({
-          gs_uri: u.gs_uri,
-          filename: u.filename,
-          mime_type: u.mime_type
-        }));
+        urls.forEach(u => {
+          uploadedFilesData.push({ gs_uri: u.gs_uri, filename: u.filename, mime_type: u.mime_type });
+        });
+      }
+
+      // 2. FLUJO ARCHIVOS GRANDES (Envío al Endpoint de Compresión FastAPI)
+      if (largeFiles.length > 0) {
+        setStatusText('Optimizando y reduciendo el peso de tus documentos para la IA...');
+        
+        const optimizePromises = largeFiles.map(async (file) => {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const optRes = await fetch(`${API_ANA}/compress-and-upload/`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            if (!optRes.ok) {
+                const errData = await optRes.json().catch(() => ({}));
+                throw new Error(errData.detail || `Error optimizando archivo ${file.name}`);
+            }
+
+            return await optRes.json();
+        });
+
+        const optimizedResults = await Promise.all(optimizePromises);
+        optimizedResults.forEach(res => {
+            uploadedFilesData.push({
+                gs_uri: res.gs_uri,
+                filename: res.filename,
+                mime_type: res.mime_type
+            });
+        });
       }
 
       // =========================================================================
-      // NUEVO FLUJO GCS: 2. INICIAR ANÁLISIS EN EL BACKEND
+      // 3. INICIAR ANÁLISIS EN EL BACKEND CON TODOS LOS gs_uris
       // =========================================================================
       setStatusText('Analizando documentos con IA...');
       const fd = new FormData();
@@ -316,11 +353,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       }
     } catch (err) {
       console.error("Error en Análisis:", err);
-      // Transformamos el error técnico en UX
       const mappedError = translateFileError(err.message);
       setErrorModal({ show: true, ...mappedError });
       
-      // Revertimos el prompt fallido
       setMessages(prev => {
         if(prev.length > 0 && prev[prev.length - 1].role === 'user') {
           return prev.slice(0, -1);
