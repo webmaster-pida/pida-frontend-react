@@ -17,22 +17,18 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
   const chatContainerRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
 
-  // Escucha el evento de scroll del usuario
   const handleScroll = () => {
     if (chatContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-      // Si el usuario está a menos de 80px del final, consideramos que está "abajo"
       const distanceToBottom = scrollHeight - scrollTop - clientHeight;
       setIsAtBottom(distanceToBottom < 80);
     }
   };
 
-  // Función para forzar el scroll
   const scrollToBottom = (behavior = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
-  // Efecto principal del Smart Scrolling (Solo baja si isAtBottom es true)
   useEffect(() => {
     if (isAtBottom) {
       scrollToBottom();
@@ -40,7 +36,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
   }, [messages, isTyping]);
 
 
-  // --- Interceptor para forzar que los links abran en nueva pestaña ---
   const markdownComponents = {
     a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />
   };
@@ -101,7 +96,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     setMessages(prev => [...prev, { role: 'user', content: textToSend }]);
     setIsTyping(true);
     
-    // Forzamos el scroll hacia abajo al enviar un mensaje
     setIsAtBottom(true);
     setTimeout(() => scrollToBottom(), 50);
 
@@ -208,18 +202,21 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
       for (const line of lines) {
         const trimmed = line.trim();
-        // Detecta si es lista O si empieza con signo de interrogación (incluso sin viñeta)
+        // 1. DETECTOR INTELIGENTE DE PREGUNTAS (Con viñeta O con signos de interrogación)
         const isQuestion = /^([-*•]|\d+[.)])\s*/.test(trimmed) || trimmed.startsWith('¿') || trimmed.endsWith('?');
         const isLinkOrSource = /\[.*\]\(http|\bhttps?:\/\//i.test(trimmed) || trimmed.toLowerCase().includes('fuente:') || trimmed.startsWith('-');
 
         if (isQuestion && questions.length < 3 && !isLinkOrSource && trimmed.length > 5) {
-          // Limpia viñetas o números al principio antes de guardar
           questions.push(trimmed.replace(/^[-*•0-9.)]+\s*/, '').replace(/["*]/g, '').trim());
+        } else {
+          // 2. RECUPERAMOS EL GUARDADO DE LAS "OTRAS FUENTES"
+          leftoverLines.push(line);
         }
       }
 
       let textAfterQuestions = leftoverLines.join('\n').trim();
       
+      // Renombramos el título automático de Google para que sea más claro
       textAfterQuestions = textAfterQuestions.replace(/Fuentes Consultadas/gi, "Otras Fuentes Consultadas");
       textAfterQuestions = textAfterQuestions.replace(/Fuentes y Jurisprudencia/gi, "Otras Fuentes Consultadas");
 
@@ -248,6 +245,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
             </div>
           )}
 
+          {/* 3. VOLVEMOS A RENDERIZAR LAS "OTRAS FUENTES" DEBAJO DE LOS BOTONES */}
           {textAfterQuestions && (
             <div className="markdown-content" style={{ marginTop: '20px' }}>
               <ReactMarkdown components={markdownComponents}>{textAfterQuestions}</ReactMarkdown>
@@ -267,7 +265,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
   return (
     <div className="pida-view" style={{ position: 'relative' }}>
       
-      {/* EL EVENTO ONSCROLL AHORA ESTÁ EN EL CONTENEDOR PRINCIPAL */}
       <div className="pida-view-content" ref={chatContainerRef} onScroll={handleScroll}>
         <div id="pida-chat-box">
           
@@ -299,12 +296,10 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
             </div>
           )}
           
-          {/* ANCLA INVISIBLE PARA EL SCROLL */}
           <div ref={messagesEndRef} style={{ height: '1px' }} />
         </div>
       </div>
 
-      {/* BOTÓN FLOTANTE PARA SMART SCROLLING */}
       {!isAtBottom && messages.length > 0 && (
         <button
           type="button"
@@ -315,7 +310,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
           }}
           style={{
             position: 'absolute',
-            bottom: '120px', // Ajustado para quedar encima de la caja de texto en el Chat
+            bottom: '120px',
             right: '25px',
             width: '42px',
             height: '42px',
