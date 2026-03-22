@@ -25,8 +25,9 @@ const translateFileError = (errMsg) => {
   if (lowerMsg.includes('empty') || lowerMsg.includes('vacío') || lowerMsg.includes('no text')) {
     return { title: "Documento Vacío o en Blanco", message: "El archivo parece estar **completamente vacío** o contiene solo páginas en blanco.\n\nVerifica que el archivo original contenga información visible antes de intentar subirlo nuevamente." };
   }
-  if (lowerMsg.includes('size') || lowerMsg.includes('large') || lowerMsg.includes('demasiado grande') || lowerMsg.includes('413')) {
-    return { title: "Límite de Tamaño Excedido", message: "El documento supera el tamaño máximo de 50 MB permitido por la plataforma.\n\nPor favor, divide el documento en partes más pequeñas para asegurar un análisis óptimo." };
+  // 👇 AQUÍ ESTÁ LA MAGIA: Esto se atrapa ANTES de que lea la palabra "límite" sola.
+  if (lowerMsg.includes('excede_tamano') || lowerMsg.includes('tamaño') || lowerMsg.includes('pesa') || lowerMsg.includes('size') || lowerMsg.includes('large') || lowerMsg.includes('413')) {
+    return { title: "Límite de Tamaño Excedido", message: "El documento supera el peso máximo permitido por tu plan actual.\n\nPor favor, revisa tu nivel de suscripción o divide el documento en partes más pequeñas para proceder con el análisis." };
   }
   if (lowerMsg.includes('invalid argument') || lowerMsg.includes('400 request contains') || lowerMsg.includes('400')) {
     return { title: "Error de Lectura o Complejidad", message: "El motor de análisis rechazó el documento. Esto suele ocurrir por dos motivos principales:\n\n1. El archivo presenta **corrupción en su estructura interna**.\n2. El documento supera la **capacidad máxima de procesamiento** (ej. más de 1,000 páginas o exceso de resolución visual).\n\n**Solución:** Verifica que el archivo sea válido y legible. Si el problema persiste, divídelo en secciones más cortas." };
@@ -127,6 +128,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       
       selectedFiles.forEach(file => {
         const fileSizeMB = file.size / (1024 * 1024);
+        // Protegemos a la plataforma de archivos superiores al hard-limit de 50MB
         if (fileSizeMB > 50) { 
           setErrorModal({ 
             show: true, 
