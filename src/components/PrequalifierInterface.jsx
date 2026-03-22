@@ -43,6 +43,11 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
     }
   }, [resultText, isAnalyzing]);
 
+  // --- INTERCEPTOR DE ENLACES PARA ABRIR EN NUEVA PESTAÑA ---
+  const markdownComponents = {
+    a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />
+  };
+
   const handleClear = () => {
     setTitle('');
     setCountry('');
@@ -199,7 +204,7 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
 
           {resultText && (
             <div className="pida-bubble pida-message-bubble markdown-content" style={{ marginTop: '20px', maxWidth: '100%', padding: '20px' }}>
-              <ReactMarkdown>{formatMarkdown(resultText)}</ReactMarkdown>
+              <ReactMarkdown components={markdownComponents}>{formatMarkdown(resultText)}</ReactMarkdown>
             </div>
           )}
 
