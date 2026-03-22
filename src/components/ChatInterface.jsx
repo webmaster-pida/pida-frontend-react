@@ -208,13 +208,13 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
       for (const line of lines) {
         const trimmed = line.trim();
-        const isListItem = /^([-*•]|\d+[.)])\s*/.test(trimmed);
-        const isLinkOrSource = /\[.*\]\(http|\bhttps?:\/\//i.test(trimmed) || trimmed.toLowerCase().includes('fuente:');
+        // Detecta si es lista O si empieza con signo de interrogación (incluso sin viñeta)
+        const isQuestion = /^([-*•]|\d+[.)])\s*/.test(trimmed) || trimmed.startsWith('¿') || trimmed.endsWith('?');
+        const isLinkOrSource = /\[.*\]\(http|\bhttps?:\/\//i.test(trimmed) || trimmed.toLowerCase().includes('fuente:') || trimmed.startsWith('-');
 
-        if (isListItem && questions.length < 3 && !isLinkOrSource && trimmed.length > 5) {
+        if (isQuestion && questions.length < 3 && !isLinkOrSource && trimmed.length > 5) {
+          // Limpia viñetas o números al principio antes de guardar
           questions.push(trimmed.replace(/^[-*•0-9.)]+\s*/, '').replace(/["*]/g, '').trim());
-        } else {
-          leftoverLines.push(line);
         }
       }
 
