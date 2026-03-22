@@ -19,8 +19,8 @@ const translateFileError = (errMsg) => {
   if (lowerMsg.includes('password') || lowerMsg.includes('encrypt') || lowerMsg.includes('protegido') || lowerMsg.includes('contraseña')) {
     return { title: "Documento Protegido", message: "El documento tiene una **contraseña de apertura** o restricciones de lectura.\n\nPor favor, retira la protección de seguridad y vuelve a subir el archivo para que la Inteligencia Artificial pueda analizarlo." };
   }
-  if (lowerMsg.includes('corrupt') || lowerMsg.includes('eof') || lowerMsg.includes('bad zip') || lowerMsg.includes('unreadable') || lowerMsg.includes('dañado')) {
-    return { title: "Archivo Corrupto", message: "No fue posible leer el documento. Es probable que esté **dañado** o su descarga haya sido incompleta.\n\nTe sugerimos guardarlo nuevamente o exportarlo a PDF/DOCX desde tu procesador de texto original." };
+  if (lowerMsg.includes('corrupt') || lowerMsg.includes('eof') || lowerMsg.includes('bad zip') || lowerMsg.includes('unreadable') || lowerMsg.includes('dañado') || lowerMsg.includes('mupdf') || lowerMsg.includes('syntax error') || lowerMsg.includes('dict')) {
+    return { title: "Archivo Corrupto o Dañado", message: "No fue posible procesar el documento porque su estructura interna está dañada.\n\n**Solución:** Abre el documento en tu computadora, selecciona **'Imprimir'**, elige **'Guardar como PDF'** y sube esa nueva versión." };
   }
   if (lowerMsg.includes('empty') || lowerMsg.includes('vacío') || lowerMsg.includes('no text')) {
     return { title: "Documento Vacío o en Blanco", message: "El archivo parece estar **completamente vacío** o contiene solo páginas en blanco.\n\nVerifica que el archivo original contenga información visible antes de intentar subirlo nuevamente." };
