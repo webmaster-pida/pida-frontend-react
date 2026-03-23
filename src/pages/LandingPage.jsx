@@ -7,8 +7,7 @@ export default function LandingPage({ onOpenAuth }) {
   const [currency, setCurrency] = useState('USD');     
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showNewsletter, setShowNewsletter] = useState(false);
-  const [isVideoOpen, setIsVideoOpen] = useState(false);
-  const [isUS, setIsUS] = useState(false); // <--- NUEVO: Estado para detectar si es EE.UU.
+  const [isUS, setIsUS] = useState(false);
 
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({
@@ -26,7 +25,7 @@ export default function LandingPage({ onOpenAuth }) {
         clearTimeout(timeoutId);
         
         if (data.country_code === 'US') {
-          setIsUS(true); // Bloqueo visual para EE.UU.
+          setIsUS(true); 
         } else if (data.country_code === 'MX') { 
           setCurrency('MXN'); 
         }
@@ -130,16 +129,24 @@ export default function LandingPage({ onOpenAuth }) {
 
       <main>
         <section id="pida"></section>
-        <section className="hero">
+        {/* Reducimos el padding superior del hero para pegarlo más arriba */}
+        <section className="hero" style={{ paddingTop: '20px' }}>
           <div className="wrapper hero-grid">
             <div className="hero-content">
-              <div><img src="/img/PIDA_logo-576.png" alt="Logo PIDA" /></div>
+              <div>
+                {/* Ajustamos el tamaño y alineación del logo */}
+                <img 
+                  src="/img/PIDA_logo-576.png" 
+                  alt="Logo PIDA" 
+                  style={{ maxWidth: '280px', width: '100%', marginBottom: '15px', marginLeft: '0', display: 'block' }} 
+                />
+              </div>
               <h1>
                 Inteligencia Aumentada para la Defensa de los <br />
                 <span className="text-gradient">Derechos Humanos</span>
               </h1>
               <p className="hero-desc">
-                Los asistentes de Inteligencia Artificial genéricos son un océano de información, pero sin un ancla, pueden llevarte a la deriva con datos imprecisos..
+                Los asistentes de Inteligencia Artificial genéricos son un océano de información, pero sin un ancla, pueden llevarte a la deriva con datos imprecisos.
               </p>
               
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
@@ -152,13 +159,35 @@ export default function LandingPage({ onOpenAuth }) {
               </div>
             </div>
             
-            <div className="hero-visual-column hide-on-mobile" style={{ textAlign: 'center' }}>
-              <img style={{ borderRadius: '8px', marginBottom: '20px' }} src="/img/PIDA-MASCOTA-576-trans.png" alt="Robot PIDA" />
-              
-              <button className="btn-video-play" onClick={() => setIsVideoOpen(true)}>
-                <span style={{ fontSize: '1.2rem' }}>▶</span> Ver PIDA en acción
-              </button>
+            {/* Contenedor del video incrustado con el robot de portada */}
+            <div className="hero-visual-column" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{
+                width: '100%',
+                maxWidth: '500px',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '16px',
+                overflow: 'hidden',
+                boxShadow: '0 20px 40px rgba(29, 53, 87, 0.1)',
+                border: '1px solid var(--pida-border)'
+              }}>
+                <video 
+                  controls 
+                  preload="metadata"
+                  poster="/img/PIDA-MASCOTA-576-trans.png"
+                  style={{ 
+                    width: '100%', 
+                    display: 'block', 
+                    aspectRatio: '16/9',
+                    objectFit: 'contain', 
+                    backgroundColor: '#FFFFFF' 
+                  }}
+                >
+                  <source src="https://storage.googleapis.com/img-pida/PIDA.mp4" type="video/mp4" />
+                  Tu navegador no soporta la reproducción de videos.
+                </video>
+              </div>
             </div>
+
           </div>
         </section>
 
@@ -254,7 +283,6 @@ export default function LandingPage({ onOpenAuth }) {
               </p>
             </div>
 
-            {/* === BLOQUE DE VERIFICACIÓN PARA ESTADOS UNIDOS === */}
             {isUS ? (
               <div style={{ textAlign: 'center', padding: '40px 20px', background: '#FEF2F2', borderRadius: '12px', border: '1px solid #FECACA', color: '#991B1B', maxWidth: '650px', margin: '0 auto 50px auto' }}>
                 <h3 style={{ marginBottom: '15px', color: '#991B1B', fontSize: '1.4rem' }}>Servicio no disponible en su región</h3>
@@ -264,7 +292,6 @@ export default function LandingPage({ onOpenAuth }) {
               </div>
             ) : (
               <>
-                {/* SI NO ES EE.UU., MUESTRA LOS PLANES NORMALMENTE */}
                 <div className="billing-toggle-wrapper">
                   <div className="billing-toggle-controls">
                     <span className={`billing-label ${interval === 'monthly' ? 'active' : 'inactive'}`}>Mensual</span>
@@ -336,8 +363,6 @@ export default function LandingPage({ onOpenAuth }) {
                 </div>
               </>
             )}
-            {/* === FIN DEL BLOQUE DE VERIFICACIÓN === */}
-
           </div>
         </section>
 
@@ -407,18 +432,6 @@ export default function LandingPage({ onOpenAuth }) {
             <br />&nbsp;
         </div>
       </main>
-
-      {isVideoOpen && (
-        <div className="modal-backdrop" onClick={() => setIsVideoOpen(false)}>
-          <div className="video-modal-card" onClick={e => e.stopPropagation()}>
-            <button className="video-close-btn" onClick={() => setIsVideoOpen(false)}>×</button>
-            <video id="pida-presentation-video" controls autoPlay style={{ width: '100%', display: 'block', maxHeight: '80vh' }}>
-              <source src="https://storage.googleapis.com/img-pida/PIDA.mp4" type="video/mp4" />
-              Tu navegador no soporta la reproducción de videos.
-            </video>
-          </div>
-        </div>
-      )}
 
       {isContactOpen && (
         <div className="modal-backdrop">
