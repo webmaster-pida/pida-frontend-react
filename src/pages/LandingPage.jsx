@@ -7,8 +7,8 @@ export default function LandingPage({ onOpenAuth }) {
   const [currency, setCurrency] = useState('USD');     
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showNewsletter, setShowNewsletter] = useState(false);
-  const [isVideoOpen, setIsVideoOpen] = useState(false); // Mantenemos el estado por integridad
-  const [isUS, setIsUS] = useState(false); 
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [isUS, setIsUS] = useState(false); // <--- NUEVO: Estado para detectar si es EE.UU.
 
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({
@@ -16,7 +16,6 @@ export default function LandingPage({ onOpenAuth }) {
   });
   const [contactStatus, setContactStatus] = useState({ text: '', type: '', isSubmitting: false });
 
-  // Mantenemos la lógica de geolocalización intacta
   useEffect(() => {
     const detectLocation = async () => {
       try {
@@ -27,7 +26,7 @@ export default function LandingPage({ onOpenAuth }) {
         clearTimeout(timeoutId);
         
         if (data.country_code === 'US') {
-          setIsUS(true); 
+          setIsUS(true); // Bloqueo visual para EE.UU.
         } else if (data.country_code === 'MX') { 
           setCurrency('MXN'); 
         }
@@ -43,7 +42,6 @@ export default function LandingPage({ onOpenAuth }) {
     detectLocation();
   }, []);
 
-  // Mantenemos el manejo de anclas URL
   useEffect(() => {
     if (window.location.hash) {
       const targetId = window.location.hash.substring(1);
@@ -54,7 +52,6 @@ export default function LandingPage({ onOpenAuth }) {
     }
   }, []);
 
-  // Mantenemos el timer del carrusel
   useEffect(() => {
     const timer = window.setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % 3); 
@@ -99,6 +96,7 @@ export default function LandingPage({ onOpenAuth }) {
       <header className="nav" id="navbar">
         <div className="wrapper nav-inner">
           <nav className="nav-menu" style={{ display: 'flex', alignItems: 'center' }}>
+            
             <a href="#pida" className="nav-link hide-on-mobile">PIDA</a>
             <a href="#diferencia" className="nav-link hide-on-mobile">Diferencia PIDA</a>
             <a href="#ecosistema" className="nav-link hide-on-mobile">Ecosistema</a>
@@ -154,44 +152,12 @@ export default function LandingPage({ onOpenAuth }) {
               </div>
             </div>
             
-            <div className="hero-visual-column hide-on-mobile">
-              {/* VIDEO INCRUSTADO CON ALTA JERARQUÍA VISUAL */}
-              <div className="video-embed-container" style={{
-                position: 'relative',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                boxShadow: '0 20px 50px rgba(29, 53, 87, 0.3)',
-                border: '1px solid #e2e8f0',
-                backgroundColor: '#000',
-                maxWidth: '520px',
-                margin: '0 auto'
-              }}>
-                <video 
-                  controls 
-                  poster="/img/PIDA-MASCOTA-576-trans.png"
-                  style={{ width: '100%', display: 'block', aspectRatio: '16/9', objectFit: 'cover' }}
-                >
-                  <source src="https://storage.googleapis.com/img-pida/PIDA.mp4" type="video/mp4" />
-                  Tu navegador no soporta la reproducción de videos.
-                </video>
-                
-                <div style={{
-                  position: 'absolute',
-                  top: '12px',
-                  left: '12px',
-                  background: 'rgba(29, 53, 87, 0.9)',
-                  padding: '4px 14px',
-                  borderRadius: '20px',
-                  color: 'white',
-                  fontSize: '0.7rem',
-                  fontWeight: '800',
-                  pointerEvents: 'none',
-                  zIndex: 2,
-                  letterSpacing: '0.5px'
-                }}>
-                  DEMOSTRACIÓN PIDA
-                </div>
-              </div>
+            <div className="hero-visual-column hide-on-mobile" style={{ textAlign: 'center' }}>
+              <img style={{ borderRadius: '8px', marginBottom: '20px' }} src="/img/PIDA-MASCOTA-576-trans.png" alt="Robot PIDA" />
+              
+              <button className="btn-video-play" onClick={() => setIsVideoOpen(true)}>
+                <span style={{ fontSize: '1.2rem' }}>▶</span> Ver PIDA en acción
+              </button>
             </div>
           </div>
         </section>
@@ -288,6 +254,7 @@ export default function LandingPage({ onOpenAuth }) {
               </p>
             </div>
 
+            {/* === BLOQUE DE VERIFICACIÓN PARA ESTADOS UNIDOS === */}
             {isUS ? (
               <div style={{ textAlign: 'center', padding: '40px 20px', background: '#FEF2F2', borderRadius: '12px', border: '1px solid #FECACA', color: '#991B1B', maxWidth: '650px', margin: '0 auto 50px auto' }}>
                 <h3 style={{ marginBottom: '15px', color: '#991B1B', fontSize: '1.4rem' }}>Servicio no disponible en su región</h3>
@@ -297,6 +264,7 @@ export default function LandingPage({ onOpenAuth }) {
               </div>
             ) : (
               <>
+                {/* SI NO ES EE.UU., MUESTRA LOS PLANES NORMALMENTE */}
                 <div className="billing-toggle-wrapper">
                   <div className="billing-toggle-controls">
                     <span className={`billing-label ${interval === 'monthly' ? 'active' : 'inactive'}`}>Mensual</span>
@@ -368,6 +336,8 @@ export default function LandingPage({ onOpenAuth }) {
                 </div>
               </>
             )}
+            {/* === FIN DEL BLOQUE DE VERIFICACIÓN === */}
+
           </div>
         </section>
 
@@ -392,6 +362,7 @@ export default function LandingPage({ onOpenAuth }) {
                 </div>
                 <div className="carousel-container" style={{ overflow: 'hidden' }}>
                     <div className="carousel-track" id="carouselTrack" style={{ display: 'flex', transform: `translateX(-${currentSlide * 100}%)`, transition: 'transform 0.5s ease-in-out' }}>
+                        
                         <div className="testimonial-slide" style={{ minWidth: '100%' }}>
                             <div className="testimonial-card">
                                 <span className="quote-icon">“</span>
@@ -399,6 +370,7 @@ export default function LandingPage({ onOpenAuth }) {
                                 <span className="testimonial-author">Carlos Urquilla</span>
                             </div>
                         </div>
+                        
                         <div className="testimonial-slide" style={{ minWidth: '100%' }}>
                             <div className="testimonial-card">
                                 <span className="quote-icon">“</span>
@@ -406,6 +378,7 @@ export default function LandingPage({ onOpenAuth }) {
                                 <span className="testimonial-author">Alexandra Esquivel</span>
                             </div>
                         </div>
+                        
                         <div className="testimonial-slide" style={{ minWidth: '100%' }}>
                             <div className="testimonial-card">
                                 <span className="quote-icon">“</span>
@@ -413,6 +386,7 @@ export default function LandingPage({ onOpenAuth }) {
                                 <span className="testimonial-author">Fabiola Galaviz</span>
                             </div>
                         </div>
+
                     </div>
                     <div className="carousel-dots" id="carouselDots">
                         <button className={`dot-btn ${currentSlide === 0 ? 'active' : ''}`} onClick={() => setCurrentSlide(0)}></button>
@@ -434,7 +408,6 @@ export default function LandingPage({ onOpenAuth }) {
         </div>
       </main>
 
-      {/* Mantenemos el modal por si se requiere activación manual, aunque el Hero ya tiene el video incrustado */}
       {isVideoOpen && (
         <div className="modal-backdrop" onClick={() => setIsVideoOpen(false)}>
           <div className="video-modal-card" onClick={e => e.stopPropagation()}>
