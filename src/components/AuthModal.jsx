@@ -207,11 +207,11 @@ function AuthFormContent({ onClose, initialMode }) {
     <>
       <h2 className="modal-title">
         {mode === 'login' && 'Bienvenido de nuevo'}
-        {mode === 'register' && 'Completar Suscripción'}
+        {mode === 'register' && 'Crea tu cuenta PIDA'} 
         {mode === 'reset' && 'Recuperar Contraseña'}
       </h2>
       <p className="modal-subtitle">
-        {mode === 'register' ? 'Configura tu plan final para activar la prueba.' : 'Accede para continuar tu investigación.'}
+        {mode === 'register' ? 'Ingresa tus datos y elige tu plan para comenzar tu prueba de 5 días.' : 'Accede para continuar tu investigación.'}
       </p>
 
       {mode === 'login' && (
@@ -261,93 +261,87 @@ function AuthFormContent({ onClose, initialMode }) {
         {mode === 'register' && (
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
             
-            {/* SECCIÓN DE PLANES COPIADA EXACTAMENTE DE DASHBOARD (INAPPCHECKOUT) */}
-            <div style={{ marginBottom: '20px', padding: '15px', border: '1px solid #E2E8F0', borderRadius: '10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--pida-primary)' }}>CONFIGURAR PLAN</span>
-              </div>
-              
-              <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Elige tu Plan</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
+            <div style={{ marginBottom: '20px', paddingTop: '10px', borderTop: '1px solid #E2E8F0' }}>
+              <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '8px', display: 'block' }}>Elige tu Plan</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '15px' }}>
                 {['basico', 'avanzado', 'premium'].map((p) => (
                   <button key={p} type="button" onClick={() => { setPlan(p); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} style={{
-                    padding: '12px 5px', borderRadius: '10px', border: `2px solid ${plan === p ? 'var(--pida-primary)' : '#E2E8F0'}`,
+                    padding: '10px 2px', borderRadius: '8px', border: `2px solid ${plan === p ? 'var(--pida-primary)' : '#E2E8F0'}`,
                     background: plan === p ? '#F0F7FF' : 'white', cursor: 'pointer', transition: '0.2s', fontWeight: plan === p ? '800' : '500',
-                    color: plan === p ? 'var(--pida-primary)' : '#64748B', fontSize: '0.85rem', textTransform: 'capitalize'
+                    color: plan === p ? 'var(--pida-primary)' : '#64748B', fontSize: '0.8rem', textTransform: 'capitalize', textAlign: 'center'
                   }}>
                     {p === 'basico' ? 'Básico' : p}
                   </button>
                 ))}
               </div>
 
-              <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Ciclo de facturación</label>
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '8px', display: 'block' }}>Ciclo de facturación</label>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
                 <button type="button" onClick={() => { setInterval('monthly'); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} style={{
-                  flex: 1, padding: '12px', borderRadius: '10px', border: `2px solid ${interval === 'monthly' ? 'var(--pida-primary)' : '#E2E8F0'}`,
-                  background: interval === 'monthly' ? '#F0F7FF' : 'white', cursor: 'pointer', fontWeight: interval === 'monthly' ? '700' : '500', color: interval === 'monthly' ? 'var(--pida-primary)' : '#64748B'
+                  flex: 1, padding: '10px', borderRadius: '8px', border: `2px solid ${interval === 'monthly' ? 'var(--pida-primary)' : '#E2E8F0'}`,
+                  background: interval === 'monthly' ? '#F0F7FF' : 'white', cursor: 'pointer', fontWeight: interval === 'monthly' ? '700' : '500', color: interval === 'monthly' ? 'var(--pida-primary)' : '#64748B', fontSize: '0.85rem'
                 }}>Mensual</button>
                 
                 <button type="button" onClick={() => { setInterval('annual'); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} style={{
-                  flex: 1, padding: '12px', borderRadius: '10px', border: `2px solid ${interval === 'annual' ? 'var(--pida-primary)' : '#E2E8F0'}`,
-                  background: interval === 'annual' ? '#F0F7FF' : 'white', cursor: 'pointer', position: 'relative', fontWeight: interval === 'annual' ? '700' : '500', color: interval === 'annual' ? 'var(--pida-primary)' : '#64748B'
+                  flex: 1, padding: '10px', borderRadius: '8px', border: `2px solid ${interval === 'annual' ? 'var(--pida-primary)' : '#E2E8F0'}`,
+                  background: interval === 'annual' ? '#F0F7FF' : 'white', cursor: 'pointer', position: 'relative', fontWeight: interval === 'annual' ? '700' : '500', color: interval === 'annual' ? 'var(--pida-primary)' : '#64748B', fontSize: '0.85rem'
                 }}>
                   Anual
                   <span style={{ 
                     position: 'absolute', top: '-10px', right: '-5px', background: '#10B981', color: 'white', 
-                    fontSize: '0.65rem', padding: '2px 8px', borderRadius: '10px', fontWeight: '800'
+                    fontSize: '0.55rem', padding: '2px 6px', borderRadius: '8px', fontWeight: '800', border: '1px solid white', whiteSpace: 'nowrap'
                   }}>AHORRA ~20%</span>
                 </button>
               </div>
             </div>
 
-            <div className="auth-summary-box" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-              <div className="auth-summary-row">
-                <span className="auth-summary-label" style={{ color: '#166534' }}>Total a pagar hoy:</span>
-                <span style={{ fontWeight: '800', color: '#166534', fontSize: '1.2rem' }}>$0.00 (Prueba 5 días)</span>
+            <div className="auth-summary-box" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', padding: '15px', borderRadius: '10px', marginBottom: '15px' }}>
+              <div className="auth-summary-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="auth-summary-label" style={{ color: '#166534', fontWeight: '600', fontSize: '0.9rem' }}>Total a pagar hoy:</span>
+                <span style={{ fontWeight: '800', color: '#166534', fontSize: '1.1rem' }}>$0.00 (Prueba 5 días)</span>
               </div>
               <p style={{ fontSize: '0.75rem', marginTop: '10px', color: '#15803d', lineHeight: '1.4' }}>
                 Después de la prueba se cobrarán <strong><span style={{ textDecoration: discountData ? 'line-through' : 'none', opacity: discountData ? 0.7 : 1 }}>{planDetails.text}</span> {discountData && <>{new Intl.NumberFormat(currency === 'MXN' ? 'es-MX' : 'en-US', { style: 'currency', currency }).format(discountData.final_amount / 100)}</>}</strong> cada {interval === 'monthly' ? 'mes' : 'año'}.
               </p>
               {discountData && (
-                <div className="auth-discount-badge" style={{ marginTop: '8px' }}>
+                <div className="auth-discount-badge" style={{ marginTop: '8px', background: '#DCFCE7', color: '#166534', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', display: 'inline-block', fontWeight: 'bold' }}>
                   Cupón: {discountData.description}
                 </div>
               )}
-              <div style={{ clear: 'both' }}></div>
             </div>
 
-            <label className="input-label">Datos de la tarjeta</label>
-            <div className="stripe-element-box">
+            <label className="input-label" style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '8px' }}>Datos de la tarjeta</label>
+            <div className="stripe-element-box" style={{ padding: '12px', border: '1px solid #CBD5E1', borderRadius: '8px', marginBottom: '15px' }}>
               <CardElement options={cardStyle} />
             </div>
 
-            <div className="promo-group">
-              <input type="text" className="promo-input" placeholder="CÓDIGO DE DESCUENTO" value={promoCode} onChange={e => setPromoCode(e.target.value)} disabled={!!discountData || isLoading} />
-              <button type="button" className={`promo-btn ${discountData ? 'applied' : ''}`} onClick={handleApplyPromo} disabled={!!discountData || !promoCode || isLoading}>
+            <div className="promo-group" style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+              <input type="text" className="promo-input pida-textarea" style={{ flex: 1, padding: '10px', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: 0 }} placeholder="CÓDIGO DE DESCUENTO" value={promoCode} onChange={e => setPromoCode(e.target.value)} disabled={!!discountData || isLoading} />
+              <button type="button" className="pida-button-secondary" style={{ padding: '0 15px', fontSize: '0.85rem', fontWeight: '600' }} onClick={handleApplyPromo} disabled={!!discountData || !promoCode || isLoading}>
                 {discountData ? '✓ Aplicado' : 'Aplicar'}
               </button>
             </div>
-            {promoMessage.text && <div className={`promo-msg ${promoMessage.type}`}>{promoMessage.text}</div>}
+            {promoMessage.text && <div style={{ fontSize: '0.8rem', color: promoMessage.type === 'error' ? '#EF4444' : '#10B981', marginBottom: '15px' }}>{promoMessage.text}</div>}
 
-            <div className="terms-group">
-              <input type="checkbox" className="terms-checkbox" required checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} />
-              <label className="terms-label" onClick={() => setTermsAccepted(!termsAccepted)}>
-                Acepto los <a href="/terminos.html" target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}>términos de uso</a> y la <a href="/privacidad.html" target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}>política de privacidad</a>.
+            <div className="terms-group" style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '15px', marginBottom: '15px' }}>
+              <input type="checkbox" style={{ marginTop: '4px' }} required checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} />
+              <label style={{ fontSize: '0.8rem', color: '#64748B', lineHeight: '1.4', cursor: 'pointer' }} onClick={() => setTermsAccepted(!termsAccepted)}>
+                Acepto los <a href="/terminos.html" target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{ color: 'var(--pida-primary)', textDecoration: 'underline' }}>términos de uso</a> y la <a href="/privacidad.html" target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{ color: 'var(--pida-primary)', textDecoration: 'underline' }}>política de privacidad</a>.
               </label>
             </div>
           </div>
         )}
 
-        {error && <div className="status-msg error">{error}</div>}
+        {error && <div className="status-msg error" style={{ color: '#EF4444', fontSize: '0.85rem', background: '#FEF2F2', padding: '10px', borderRadius: '6px', marginBottom: '15px' }}>{error}</div>}
 
-        <button type="submit" className="form-submit-btn" disabled={isLoading || (!stripe && mode === 'register')}>
+        <button type="submit" className="form-submit-btn pida-button-primary" style={{ width: '100%', padding: '14px', fontSize: '1rem' }} disabled={isLoading || (!stripe && mode === 'register')}>
           {isLoading ? loadingText : (mode === 'login' ? 'Ingresar' : mode === 'register' ? 'Activar cuenta y probar 5 días' : 'Enviar enlace')}
         </button>
       </form>
 
-      <div className="bottom-link">
-        {mode === 'reset' && <span onClick={() => { setMode('login'); setError(''); }}>← Volver al login</span>}
-        {mode === 'register' && <span onClick={() => { setMode('login'); setError(''); }}>← Ya tengo cuenta, iniciar sesión</span>}
+      <div className="bottom-link" style={{ textAlign: 'center', marginTop: '20px' }}>
+        {mode === 'reset' && <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); }}>← Volver al login</span>}
+        {mode === 'register' && <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); }}>← Ya tengo cuenta, iniciar sesión</span>}
       </div>
     </>
   );
@@ -356,10 +350,10 @@ function AuthFormContent({ onClose, initialMode }) {
 export default function AuthModal({ isOpen, initialMode = 'login', onClose }) {
   if (!isOpen) return null;
   return (
-    <div className="modal-backdrop">
-      <div className="modal-card">
-        <button className="modal-close-btn" onClick={onClose}>×</button>
-        <img src="/img/PIDA_logo-576.png" alt="PIDA Logo" style={{ width: '140px', marginBottom: '25px', margin: '0 auto' }} />
+    <div className="modal-backdrop" onClick={onClose} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px', width: '90%', padding: '30px', background: 'white', borderRadius: '16px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+        <button onClick={onClose} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748B' }}>×</button>
+        <img src="/img/PIDA_logo-576.png" alt="PIDA Logo" style={{ width: '140px', marginBottom: '25px', display: 'block', margin: '0 auto' }} />
         <Elements stripe={stripePromise}>
           <AuthFormContent onClose={onClose} initialMode={initialMode} />
         </Elements>
