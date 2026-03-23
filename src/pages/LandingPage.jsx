@@ -8,7 +8,7 @@ export default function LandingPage({ onOpenAuth }) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showNewsletter, setShowNewsletter] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
-  const [isUS, setIsUS] = useState(false); // <--- NUEVO: Estado para detectar si es EE.UU.
+  const [isUS, setIsUS] = useState(false);
 
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({
@@ -26,7 +26,7 @@ export default function LandingPage({ onOpenAuth }) {
         clearTimeout(timeoutId);
         
         if (data.country_code === 'US') {
-          setIsUS(true); // Bloqueo visual para EE.UU.
+          setIsUS(true); 
         } else if (data.country_code === 'MX') { 
           setCurrency('MXN'); 
         }
@@ -96,7 +96,6 @@ export default function LandingPage({ onOpenAuth }) {
       <header className="nav" id="navbar">
         <div className="wrapper nav-inner">
           <nav className="nav-menu" style={{ display: 'flex', alignItems: 'center' }}>
-            
             <a href="#pida" className="nav-link hide-on-mobile">PIDA</a>
             <a href="#diferencia" className="nav-link hide-on-mobile">Diferencia PIDA</a>
             <a href="#ecosistema" className="nav-link hide-on-mobile">Ecosistema</a>
@@ -152,16 +151,95 @@ export default function LandingPage({ onOpenAuth }) {
               </div>
             </div>
             
-            <div className="hero-visual-column hide-on-mobile" style={{ textAlign: 'center' }}>
-              <img style={{ borderRadius: '8px', marginBottom: '20px' }} src="/img/PIDA-MASCOTA-576-trans.png" alt="Robot PIDA" />
+            <div className="hero-visual-column hide-on-mobile">
+              {/* === NUEVA CARD DE VIDEO CON ALTA JERARQUÍA === */}
+              <div 
+                className="video-preview-card"
+                onClick={() => setIsVideoOpen(true)}
+                style={{
+                  position: 'relative',
+                  cursor: 'pointer',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 40px rgba(29, 53, 87, 0.2)',
+                  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                  background: '#f1f5f9',
+                  border: '1px solid #e2e8f0'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 25px 50px rgba(29, 53, 87, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 20px 40px rgba(29, 53, 87, 0.2)';
+                }}
+              >
+                {/* Imagen de fondo (el robot) */}
+                <img 
+                  src="/img/PIDA-MASCOTA-576-trans.png" 
+                  alt="Robot PIDA Video" 
+                  style={{ width: '100%', height: 'auto', display: 'block' }} 
+                />
+                
+                {/* Overlay oscuro para resaltar el Play */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0, left: 0, width: '100%', height: '100%',
+                  background: 'linear-gradient(to top, rgba(29, 53, 87, 0.4), transparent)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {/* Botón de Play Centralizado y Grande */}
+                  <div style={{
+                    width: '80px',
+                    height: '80px',
+                    backgroundColor: 'var(--pida-primary)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '2.5rem',
+                    boxShadow: '0 0 30px rgba(0, 86, 179, 0.6)',
+                    animation: 'pulse-blue 2s infinite'
+                  }}>
+                    ▶
+                  </div>
+                </div>
+
+                {/* Etiqueta inferior de la card */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: '20px',
+                  left: '0',
+                  right: '0',
+                  textAlign: 'center',
+                  color: 'white',
+                  fontWeight: '800',
+                  fontSize: '1.1rem',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+                  letterSpacing: '0.5px'
+                }}>
+                  VER PIDA EN ACCIÓN
+                </div>
+              </div>
               
-              <button className="btn-video-play" onClick={() => setIsVideoOpen(true)}>
-                <span style={{ fontSize: '1.2rem' }}>▶</span> Ver PIDA en acción
-              </button>
+              <style>
+                {`
+                  @keyframes pulse-blue {
+                    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 86, 179, 0.7); }
+                    70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(0, 86, 179, 0); }
+                    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 86, 179, 0); }
+                  }
+                `}
+              </style>
             </div>
           </div>
         </section>
 
+        {/* El resto de las secciones se mantienen igual... */}
         <section id="diferencia">
             <div className="wrapper">
                 <div className="section-intro">
@@ -171,6 +249,7 @@ export default function LandingPage({ onOpenAuth }) {
                 </div>
             </div>
         </section>
+        {/* ... (resto del código igual) ... */}
 
         <section id="bondades" style={{ background: '#FAFAFA' }}>
             <div className="wrapper">
@@ -234,7 +313,7 @@ export default function LandingPage({ onOpenAuth }) {
                             <span style={{ display: 'block', fontSize: '1rem', color: '#0284C7', fontWeight: '600', marginTop: '5px' }}>TU DIAGNÓSTICO INMEDIATO</span>
                         </h3>
                         <p style={{ fontSize: '1.05rem', color: '#374151', lineHeight: '1.7', marginBottom: '15px' }}>
-                            Una herramienta de encuadre jurídico diseñada para la etapa inicial de cualquier caso. Funciona como un puente inteligente entre los hechos fácticos y la tipificación legal.
+                            Una herramienta de encuadre jurídica diseñada para la etapa inicial de cualquier caso. Funciona como un puente inteligente entre los hechos fácticos y la tipificación legal.
                         </p>
                         <p style={{ fontSize: '1rem', color: '#4B5563', lineHeight: '1.6' }}>
                             <strong>Aplicación Práctica:</strong> Ideal para la primera entrevista con el cliente. Simplemente narra los hechos del caso y el sistema realizará un análisis preliminar instantáneo para identificar posibles <strong>delitos penales</strong> y <strong>violaciones a Derechos Humanos</strong> conforme a estándares internacionales. Esto te permite trazar una ruta de defensa clara desde el primer minuto.
@@ -254,7 +333,6 @@ export default function LandingPage({ onOpenAuth }) {
               </p>
             </div>
 
-            {/* === BLOQUE DE VERIFICACIÓN PARA ESTADOS UNIDOS === */}
             {isUS ? (
               <div style={{ textAlign: 'center', padding: '40px 20px', background: '#FEF2F2', borderRadius: '12px', border: '1px solid #FECACA', color: '#991B1B', maxWidth: '650px', margin: '0 auto 50px auto' }}>
                 <h3 style={{ marginBottom: '15px', color: '#991B1B', fontSize: '1.4rem' }}>Servicio no disponible en su región</h3>
@@ -264,7 +342,6 @@ export default function LandingPage({ onOpenAuth }) {
               </div>
             ) : (
               <>
-                {/* SI NO ES EE.UU., MUESTRA LOS PLANES NORMALMENTE */}
                 <div className="billing-toggle-wrapper">
                   <div className="billing-toggle-controls">
                     <span className={`billing-label ${interval === 'monthly' ? 'active' : 'inactive'}`}>Mensual</span>
@@ -336,8 +413,6 @@ export default function LandingPage({ onOpenAuth }) {
                 </div>
               </>
             )}
-            {/* === FIN DEL BLOQUE DE VERIFICACIÓN === */}
-
           </div>
         </section>
 
@@ -362,7 +437,6 @@ export default function LandingPage({ onOpenAuth }) {
                 </div>
                 <div className="carousel-container" style={{ overflow: 'hidden' }}>
                     <div className="carousel-track" id="carouselTrack" style={{ display: 'flex', transform: `translateX(-${currentSlide * 100}%)`, transition: 'transform 0.5s ease-in-out' }}>
-                        
                         <div className="testimonial-slide" style={{ minWidth: '100%' }}>
                             <div className="testimonial-card">
                                 <span className="quote-icon">“</span>
@@ -370,7 +444,6 @@ export default function LandingPage({ onOpenAuth }) {
                                 <span className="testimonial-author">Carlos Urquilla</span>
                             </div>
                         </div>
-                        
                         <div className="testimonial-slide" style={{ minWidth: '100%' }}>
                             <div className="testimonial-card">
                                 <span className="quote-icon">“</span>
@@ -378,7 +451,6 @@ export default function LandingPage({ onOpenAuth }) {
                                 <span className="testimonial-author">Alexandra Esquivel</span>
                             </div>
                         </div>
-                        
                         <div className="testimonial-slide" style={{ minWidth: '100%' }}>
                             <div className="testimonial-card">
                                 <span className="quote-icon">“</span>
@@ -386,7 +458,6 @@ export default function LandingPage({ onOpenAuth }) {
                                 <span className="testimonial-author">Fabiola Galaviz</span>
                             </div>
                         </div>
-
                     </div>
                     <div className="carousel-dots" id="carouselDots">
                         <button className={`dot-btn ${currentSlide === 0 ? 'active' : ''}`} onClick={() => setCurrentSlide(0)}></button>
