@@ -138,10 +138,10 @@ export default function LandingPage({ onOpenAuth }) {
                 <img 
                   src="/img/PIDA_logo-576.png" 
                   alt="Logo PIDA" 
-                  style={{ maxWidth: '280px', width: '100%', marginBottom: '15px', marginLeft: '0', display: 'block' }} 
+                  style={{ maxWidth: '320px', width: '100%', marginBottom: '35px', marginLeft: '0', display: 'block' }} 
                 />
               </div>
-              <h1>
+              <h1 style={{ fontSize: '2.8rem', lineHeight: '1.15', marginBottom: '15px' }}>
                 Inteligencia Aumentada para la Defensa de los <br />
                 <span className="text-gradient">Derechos Humanos</span>
               </h1>
