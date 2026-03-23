@@ -261,22 +261,42 @@ function AuthFormContent({ onClose, initialMode }) {
         {mode === 'register' && (
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
             
-            {/* NUEVA SECCIÓN DE SELECCIÓN DE ÚLTIMA HORA */}
+            {/* SECCIÓN DE PLANES COPIADA EXACTAMENTE DE DASHBOARD (INAPPCHECKOUT) */}
             <div style={{ marginBottom: '20px', padding: '15px', border: '1px solid #E2E8F0', borderRadius: '10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--pida-primary)' }}>CONFIGURAR PLAN</span>
               </div>
               
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '5px' }}>
-                <select value={plan} onChange={e => { setPlan(e.target.value); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} className="form-input no-margin" style={{ height: '40px', fontSize: '0.85rem' }}>
-                   <option value="basico">Plan Básico</option>
-                   <option value="avanzado">Plan Avanzado</option>
-                   <option value="premium">Plan Premium</option>
-                </select>
-                <select value={interval} onChange={e => { setInterval(e.target.value); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} className="form-input no-margin" style={{ height: '40px', fontSize: '0.85rem' }}>
-                   <option value="monthly">Mensual</option>
-                   <option value="annual">Anual (Ahorra ~20%)</option>
-                </select>
+              <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Elige tu Plan</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
+                {['basico', 'avanzado', 'premium'].map((p) => (
+                  <button key={p} type="button" onClick={() => { setPlan(p); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} style={{
+                    padding: '12px 5px', borderRadius: '10px', border: `2px solid ${plan === p ? 'var(--pida-primary)' : '#E2E8F0'}`,
+                    background: plan === p ? '#F0F7FF' : 'white', cursor: 'pointer', transition: '0.2s', fontWeight: plan === p ? '800' : '500',
+                    color: plan === p ? 'var(--pida-primary)' : '#64748B', fontSize: '0.85rem', textTransform: 'capitalize'
+                  }}>
+                    {p === 'basico' ? 'Básico' : p}
+                  </button>
+                ))}
+              </div>
+
+              <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Ciclo de facturación</label>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button type="button" onClick={() => { setInterval('monthly'); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} style={{
+                  flex: 1, padding: '12px', borderRadius: '10px', border: `2px solid ${interval === 'monthly' ? 'var(--pida-primary)' : '#E2E8F0'}`,
+                  background: interval === 'monthly' ? '#F0F7FF' : 'white', cursor: 'pointer', fontWeight: interval === 'monthly' ? '700' : '500', color: interval === 'monthly' ? 'var(--pida-primary)' : '#64748B'
+                }}>Mensual</button>
+                
+                <button type="button" onClick={() => { setInterval('annual'); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} style={{
+                  flex: 1, padding: '12px', borderRadius: '10px', border: `2px solid ${interval === 'annual' ? 'var(--pida-primary)' : '#E2E8F0'}`,
+                  background: interval === 'annual' ? '#F0F7FF' : 'white', cursor: 'pointer', position: 'relative', fontWeight: interval === 'annual' ? '700' : '500', color: interval === 'annual' ? 'var(--pida-primary)' : '#64748B'
+                }}>
+                  Anual
+                  <span style={{ 
+                    position: 'absolute', top: '-10px', right: '-5px', background: '#10B981', color: 'white', 
+                    fontSize: '0.65rem', padding: '2px 8px', borderRadius: '10px', fontWeight: '800'
+                  }}>AHORRA ~20%</span>
+                </button>
               </div>
             </div>
 
