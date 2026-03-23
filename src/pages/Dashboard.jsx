@@ -4,6 +4,7 @@ import ChatInterface from '../components/ChatInterface';
 import AnalyzerInterface from '../components/AnalyzerInterface';
 import PrequalifierInterface from '../components/PrequalifierInterface';
 import AccountInterface from '../components/AccountInterface';
+import SupportModal from '../components/SupportModal'; // <--- IMPORTAMOS EL MODAL DE AYUDA
 import { db, auth } from '../config/firebase'; 
 import { PIDA_CONFIG, STRIPE_PRICES } from '../config/constants';
 
@@ -272,6 +273,10 @@ export default function Dashboard({ user }) {
   const [isVip, setIsVip] = useState(false);
   const [isTrial, setIsTrial] = useState(false);
 
+  // 1. ESTADOS PARA EL MODAL DE SOPORTE
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [globalLastError, setGlobalLastError] = useState('');
+
   const [resetChat, setResetChat] = useState(0);
   const [resetAna, setResetAna] = useState(0);
   const [resetPre, setResetPre] = useState(0);
@@ -289,19 +294,16 @@ export default function Dashboard({ user }) {
     if (!user) return;
 
     // 🔐 SOLUCIÓN A LA CONDICIÓN DE CARRERA (Race Condition)
-    // Usamos variables de control para saber cuándo terminaron ambos procesos
     let isVipResolved = false;
     let isStripeResolved = false;
 
-    // Guardamos los resultados temporalmente
     let resolvedIsVip = false;
     let resolvedStripeStatus = null;
     let resolvedPlan = 'basico';
     let resolvedTrial = false;
 
-    // Función unificada que decide el acceso SOLO cuando ambos procesos han respondido
     const evaluateFinalAccess = () => {
-      if (!isVipResolved || !isStripeResolved) return; // Si falta uno, esperamos.
+      if (!isVipResolved || !isStripeResolved) return; 
 
       if (resolvedIsVip === true || resolvedStripeStatus === 'active' || resolvedStripeStatus === 'trialing') {
         setIsVip(resolvedIsVip);
@@ -311,10 +313,9 @@ export default function Dashboard({ user }) {
       } else {
         setHasValidAccess(false);
       }
-      setIsCheckingAccess(false); // Por fin ocultamos el loader de pantalla
+      setIsCheckingAccess(false); 
     };
 
-    // PROCESO 1: Chequeo VIP a la API
     const checkVip = async () => {
       try {
         const token = await user.getIdToken();
@@ -332,7 +333,6 @@ export default function Dashboard({ user }) {
     };
     checkVip();
 
-    // PROCESO 2: Chequeo de Stripe a Firestore
     const unsubscribe = db.collection('customers').doc(user.uid).onSnapshot((doc) => {
       isStripeResolved = true;
       if (doc.exists) {
@@ -515,7 +515,28 @@ export default function Dashboard({ user }) {
               Plan: <strong className={isVip ? 'vip-text' : ''}>{displayPlan}</strong>
             </div>
             
-            <img src="/img/PIDA-MASCOTA-menu.png" alt="PIDA Mascota" className="pida-header-mascot" />
+            {/* 2. NUEVO CONTENEDOR INTERACTIVO PARA AYUDA/MASCOTA */}
+            <div 
+              onClick={() => setIsSupportOpen(true)}
+              title="Solicitar Ayuda o Reportar un Fallo"
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px', 
+                cursor: 'pointer', 
+                padding: '4px 8px', 
+                borderRadius: '8px',
+                transition: 'background-color 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--pida-primary)' }}>
+                Ayuda
+              </span>
+              <img src="/img/PIDA-MASCOTA-menu.png" alt="PIDA Mascota" className="pida-header-mascot" />
+            </div>
+
           </div>
         </header>
 
@@ -524,6 +545,14 @@ export default function Dashboard({ user }) {
         {currentView === 'precalificador' && <PrequalifierInterface user={user} resetSignal={resetPre} loadPreData={loadPreData} />}
         {currentView === 'cuenta' && <AccountInterface user={user} isVip={isVip} />}
 
+        {/* 3. COLOCAMOS EL MODAL AL FINAL DEL MAIN */}
+        <SupportModal 
+          isOpen={isSupportOpen} 
+          onClose={() => setIsSupportOpen(false)} 
+          user={user} 
+          currentView={currentView} 
+          lastError={globalLastError} 
+        />
       </main>
     </div>
   );
