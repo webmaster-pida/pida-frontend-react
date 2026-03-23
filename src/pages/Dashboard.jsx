@@ -514,29 +514,26 @@ export default function Dashboard({ user }) {
             <div className={`plan-badge plan-${userPlan} ${isVip ? 'vip-active' : ''}`}>
               Plan: <strong className={isVip ? 'vip-text' : ''}>{displayPlan}</strong>
             </div>
-            
-            {/* 2. NUEVO CONTENEDOR INTERACTIVO PARA AYUDA/MASCOTA */}
-            <div 
+
+            {/* 2. BOTÓN AYUDA CON ESTILO NATIVO Y COLOR PRIMARIO */}
+            <button 
+              className="pida-header-btn" 
               onClick={() => setIsSupportOpen(true)}
               title="Solicitar Ayuda o Reportar un Fallo"
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px', 
-                cursor: 'pointer', 
-                padding: '4px 8px', 
-                borderRadius: '8px',
-                transition: 'background-color 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              style={{ color: 'var(--pida-primary)', fontWeight: '700', border: 'none', backgroundColor: 'transparent' }}
             >
-              <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--pida-primary)' }}>
-                Ayuda
-              </span>
-              <img src="/img/PIDA-MASCOTA-menu.png" alt="PIDA Mascota" className="pida-header-mascot" />
-            </div>
-
+              Ayuda
+            </button>
+            
+            {/* 3. MASCOTA ROBOT EN SU ESTRUCTURA Y LUGAR EXACTO ORIGINAL */}
+            <img 
+              src="/img/PIDA-MASCOTA-menu.png" 
+              alt="PIDA Mascota" 
+              className="pida-header-mascot" 
+              onClick={() => setIsSupportOpen(true)}
+              style={{ cursor: 'pointer' }}
+              title="Solicitar Ayuda o Reportar un Fallo"
+            />
           </div>
         </header>
 
@@ -545,7 +542,6 @@ export default function Dashboard({ user }) {
         {currentView === 'precalificador' && <PrequalifierInterface user={user} resetSignal={resetPre} loadPreData={loadPreData} />}
         {currentView === 'cuenta' && <AccountInterface user={user} isVip={isVip} />}
 
-        {/* 3. COLOCAMOS EL MODAL AL FINAL DEL MAIN */}
         <SupportModal 
           isOpen={isSupportOpen} 
           onClose={() => setIsSupportOpen(false)} 
