@@ -207,7 +207,7 @@ function AuthFormContent({ onClose, initialMode }) {
     <>
       <h2 className="modal-title">
         {mode === 'login' && 'Bienvenido de nuevo'}
-        {mode === 'register' && 'Crea tu cuenta PIDA'} 
+        {mode === 'register' && ''} 
         {mode === 'reset' && 'Recuperar Contraseña'}
       </h2>
       <p className="modal-subtitle">
@@ -315,9 +315,34 @@ function AuthFormContent({ onClose, initialMode }) {
               <CardElement options={cardStyle} />
             </div>
 
-            <div className="promo-group" style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-              <input type="text" className="promo-input pida-textarea" style={{ flex: 1, padding: '10px', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: 0 }} placeholder="CÓDIGO DE DESCUENTO" value={promoCode} onChange={e => setPromoCode(e.target.value)} disabled={!!discountData || isLoading} />
-              <button type="button" className="pida-button-secondary" style={{ padding: '0 15px', fontSize: '0.85rem', fontWeight: '600' }} onClick={handleApplyPromo} disabled={!!discountData || !promoCode || isLoading}>
+            <div className="promo-group" style={{ display: 'flex', flexDirection: 'row', gap: '8px', marginBottom: '10px', alignItems: 'stretch' }}>
+              <input 
+                type="text" 
+                className="form-input" 
+                style={{ flex: 1, padding: '10px 12px', fontSize: '0.85rem', textTransform: 'uppercase', margin: 0, minWidth: '0' }} 
+                placeholder="CÓDIGO DE DESCUENTO" 
+                value={promoCode} 
+                onChange={e => setPromoCode(e.target.value)} 
+                disabled={!!discountData || isLoading} 
+              />
+              <button 
+                type="button" 
+                style={{ 
+                  padding: '0 15px', 
+                  fontSize: '0.85rem', 
+                  fontWeight: '600', 
+                  width: 'auto', 
+                  margin: 0, 
+                  whiteSpace: 'nowrap', 
+                  background: 'transparent', 
+                  border: '1px solid #CBD5E1', 
+                  borderRadius: '6px', 
+                  color: 'var(--pida-text-muted)', 
+                  cursor: 'pointer' 
+                }} 
+                onClick={handleApplyPromo} 
+                disabled={!!discountData || !promoCode || isLoading}
+              >
                 {discountData ? '✓ Aplicado' : 'Aplicar'}
               </button>
             </div>
