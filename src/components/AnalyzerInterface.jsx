@@ -16,6 +16,11 @@ const translateFileError = (errMsg, currentFiles = []) => {
 
   const lowerMsg = errMsg.toLowerCase();
 
+  // NUEVO: Manejo amigable de errores de JSON y red
+  if (lowerMsg.includes('unterminated') || lowerMsg.includes('json') || lowerMsg.includes('parse')) {
+    return { title: "Interrupción de Red", message: "La respuesta del servidor se cortó o llegó incompleta debido a una interrupción temporal en la conexión.\n\nPor favor, presiona el botón **'Analizar'** nuevamente para reintentarlo." };
+  }
+
   if (lowerMsg.includes('password') || lowerMsg.includes('encrypt') || lowerMsg.includes('protegido') || lowerMsg.includes('contraseña')) {
     return { title: "Documento Protegido", message: "El documento tiene una **contraseña de apertura** o restricciones de lectura.\n\nPor favor, retira la protección de seguridad y vuelve a subir el archivo para que la Inteligencia Artificial pueda analizarlo." };
   }
@@ -86,29 +91,24 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const chatContainerRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
 
-  // Escucha el evento de scroll del usuario
   const handleScroll = () => {
     if (chatContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-      // Si el usuario está a menos de 80px del final, consideramos que está "abajo"
       const distanceToBottom = scrollHeight - scrollTop - clientHeight;
       setIsAtBottom(distanceToBottom < 80);
     }
   };
 
-  // Función para forzar el scroll
   const scrollToBottom = (behavior = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
-  // Efecto principal del Smart Scrolling (Solo baja si isAtBottom es true)
   useEffect(() => {
     if (isAtBottom) {
       scrollToBottom();
     }
   }, [messages, isAnalyzing]);
 
-  // Al reiniciar o limpiar, volvemos a activar el scroll
   useEffect(() => {
     if (resetSignal > 0) {
       handleClear();
@@ -123,7 +123,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         setErrorModal({ show: false, title: '', message: '' });
         setMessages([]);
         setCurrentAnaId(null);
-        setIsAtBottom(true); // Al cargar historial forzamos scroll abajo
+        setIsAtBottom(true); 
         
         try {
           const token = await user.getIdToken();
@@ -224,7 +224,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
 
     setIsAnalyzing(true);
-    setIsAtBottom(true); // Al enviar mensaje, siempre forzamos ir abajo
+    setIsAtBottom(true);
     setTimeout(() => scrollToBottom(), 50);
 
     setErrorModal({ show: false, title: '', message: '' });
@@ -346,21 +346,33 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       }
 
       const reader = res.body.getReader();
-      const decoder = new TextDecoder();
+      const decoder = new TextDecoder("utf-8");
       let fullText = "";
+      
+      // 🛡️ NUEVO: El Búfer que evita que el JSON se corte a la mitad
+      let streamBuffer = ""; 
+      
       setStatusText(''); 
 
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
         
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n\n');
+        // Usar { stream: true } asegura que caracteres especiales no se rompan
+        streamBuffer += decoder.decode(value, { stream: true });
         
-        for (const line of lines) {
-          if (line.startsWith('data:')) {
+        // Separamos por el delimitador de Server-Sent Events (\n\n)
+        const chunks = streamBuffer.split('\n\n');
+        
+        // El último elemento puede estar incompleto, lo dejamos en el búfer para la siguiente vuelta
+        streamBuffer = chunks.pop();
+        
+        for (const chunk of chunks) {
+          if (chunk.startsWith('data:')) {
             try {
-              const d = JSON.parse(line.substring(6));
+              // Limpiamos el 'data: ' del inicio para tener solo el JSON
+              const jsonStr = chunk.replace(/^data:\s*/, '');
+              const d = JSON.parse(jsonStr);
               
               if (d.error) throw new Error(d.error); 
               
@@ -388,7 +400,13 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               }
               
             } catch (e) {
-              if(e.message) throw e;
+              // 🛡️ NUEVO: En lugar de estallar y bloquear la pantalla, 
+              // simplemente ignoramos este paquete defectuoso y seguimos adelante.
+              if (e.message && !e.message.includes('JSON')) {
+                 throw e; // Si es un error del servidor, sí lo lanzamos
+              } else {
+                 console.warn("Se omitió un paquete de datos incompleto:", chunk);
+              }
             }
           }
         }
@@ -509,7 +527,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   return (
     <div className="pida-view" style={{ position: 'relative' }}>
       
-      {/* EL EVENTO ONSCROLL AHORA ESTÁ EN EL CONTENEDOR PRINCIPAL */}
       <div className="pida-view-content" ref={chatContainerRef} onScroll={handleScroll}>
         <div id="pida-chat-box"> 
           
@@ -547,12 +564,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             </div>
           )}
 
-          {/* ANCLA INVISIBLE PARA EL SCROLL */}
           <div ref={messagesEndRef} style={{ height: '1px' }} />
         </div>
       </div>
 
-      {/* BOTÓN FLOTANTE PARA SMART SCROLLING */}
       {!isAtBottom && messages.length > 0 && (
         <button
           onClick={() => {
@@ -561,7 +576,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           }}
           style={{
             position: 'absolute',
-            bottom: '180px', // Justo por encima de la caja de texto
+            bottom: '180px', 
             right: '25px',
             width: '42px',
             height: '42px',
@@ -664,7 +679,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         </div>
       </div>
 
-      {/* MODAL DE ADVERTENCIA: FALTA DOCUMENTO ORIGINAL */}
       {showMissingFileModal && (
         <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setShowMissingFileModal(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: '40px 30px', maxWidth: '420px', borderRadius: '16px' }}>
@@ -700,7 +714,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         </div>
       )}
 
-      {/* MODAL PROFESIONAL DE MANEJO DE ERRORES */}
       {errorModal.show && (
         <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setErrorModal({ show: false, title: '', message: '' })}>
           <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: '40px 30px', maxWidth: '440px', borderRadius: '16px', border: '1px solid #FECACA' }}>
