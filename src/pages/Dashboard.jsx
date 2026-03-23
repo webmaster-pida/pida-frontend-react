@@ -4,7 +4,7 @@ import ChatInterface from '../components/ChatInterface';
 import AnalyzerInterface from '../components/AnalyzerInterface';
 import PrequalifierInterface from '../components/PrequalifierInterface';
 import AccountInterface from '../components/AccountInterface';
-import SupportModal from '../components/SupportModal'; // <--- IMPORTAMOS EL MODAL DE AYUDA
+import SupportModal from '../components/SupportModal'; 
 import { db, auth } from '../config/firebase'; 
 import { PIDA_CONFIG, STRIPE_PRICES } from '../config/constants';
 
@@ -20,7 +20,6 @@ const InAppCheckout = ({ user }) => {
   const [plan, setPlan] = useState('avanzado');
   const [interval, setInterval] = useState('monthly');
   
-  // 🔐 PROTECCIÓN CONTRA CRASHES
   const rawCurrency = localStorage.getItem('pida_currency');
   const [currency] = useState(['USD', 'MXN'].includes(rawCurrency) ? rawCurrency : 'USD');
   
@@ -31,7 +30,6 @@ const InAppCheckout = ({ user }) => {
   const [discountData, setDiscountData] = useState(null);
   const [promoMsg, setPromoMsg] = useState({ text: '', type: '' });
 
-  // Lectura segura
   const planDetails = STRIPE_PRICES[plan]?.[interval]?.[currency] || STRIPE_PRICES['basico']['monthly']['USD'];
 
   const handleApplyPromo = async () => {
@@ -59,9 +57,6 @@ const InAppCheckout = ({ user }) => {
     setLoading(true); setError('');
 
     try {
-      // =========================================================
-      // 📊 EVENTO GA4: BEGIN CHECKOUT (Intento de pago)
-      // =========================================================
       try {
         if (typeof window !== "undefined" && window.gtag) {
           window.gtag("event", "begin_checkout", {
@@ -71,11 +66,9 @@ const InAppCheckout = ({ user }) => {
           });
         }
       } catch (gaError) { console.error("GA Error:", gaError); }
-      // =========================================================
 
       const cardElement = elements.getElement(CardElement);
       
-      // 🛡️ NUEVO FLUJO: 1. Creamos y validamos el Método de Pago PRIMERO
       const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
         type: 'card',
         card: cardElement,
@@ -86,7 +79,6 @@ const InAppCheckout = ({ user }) => {
         throw new Error(pmError.message);
       }
 
-      // 🛡️ 2. Solo si la tarjeta es real, llamamos al backend enviando el ID del Método de Pago
       const token = await user.getIdToken();
       const intentRes = await fetch(`${PIDA_CONFIG.API_CHAT}/create-payment-intent`, {
         method: 'POST',
@@ -97,14 +89,13 @@ const InAppCheckout = ({ user }) => {
           plan_key: plan,
           name: user.displayName || user.email,
           promotion_code: discountData ? promoCode : "",
-          paymentMethodId: paymentMethod.id // <-- Le pasamos la tarjeta validada
+          paymentMethodId: paymentMethod.id 
         })
       });
       
       const data = await intentRes.json();
       if (!intentRes.ok) throw new Error(data.detail || "Error al procesar pago");
 
-      // 🛡️ 3. Si el banco del cliente exige autorización extra (3D Secure)
       if (data.requiresAction) {
         let result;
         if (data.clientSecret.startsWith('seti_')) {
@@ -115,13 +106,10 @@ const InAppCheckout = ({ user }) => {
         if (result.error) throw new Error(result.error.message);
       }
 
-      // =========================================================
-      // 📊 EVENTO GA4: PURCHASE (Venta exitosa)
-      // =========================================================
       try {
         if (typeof window !== "undefined" && window.gtag) {
           window.gtag("event", "purchase", {
-            transaction_id: data.subscriptionId, // ID de la suscripción de Stripe
+            transaction_id: data.subscriptionId, 
             value: discountData ? (discountData.final_amount / 100) : (planDetails.amount / 100),
             currency: currency.toUpperCase(),
             items: [
@@ -135,9 +123,7 @@ const InAppCheckout = ({ user }) => {
           });
         }
       } catch (gaError) { console.error("GA Error:", gaError); }
-      // =========================================================
 
-      // Éxito Total
       sessionStorage.setItem('pida_is_onboarding', 'true');
       window.location.reload(); 
       
@@ -149,7 +135,6 @@ const InAppCheckout = ({ user }) => {
 
   return (
     <div style={{ maxWidth: '600px', background: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', textAlign: 'center', margin: '0 auto', width: '95%' }}>
-      {/* 1. GUÍA DE PASOS CLARA */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '35px', position: 'relative' }}>
         <div style={{ position: 'absolute', top: '15px', left: '15%', right: '15%', height: '2px', background: '#E2E8F0', zIndex: 0 }}></div>
         {[
@@ -176,7 +161,6 @@ const InAppCheckout = ({ user }) => {
 
       <form onSubmit={handlePay} style={{ textAlign: 'left' }}>
         
-        {/* 2. SELECTOR DE NIVEL DE PLAN (Botones en lugar de select) */}
         <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Elige tu Plan</label>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
           {['basico', 'avanzado', 'premium'].map((p) => (
@@ -190,7 +174,6 @@ const InAppCheckout = ({ user }) => {
           ))}
         </div>
 
-        {/* 3. SELECTOR DE INTERVALO CON RESALTE DE AHORRO */}
         <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Ciclo de facturación</label>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
           <button type="button" onClick={() => { setInterval('monthly'); setDiscountData(null); setPromoCode(''); setPromoMsg({text:'', type:''}); }} style={{
@@ -210,7 +193,6 @@ const InAppCheckout = ({ user }) => {
           </button>
         </div>
 
-        {/* 4. ACLARACIÓN DEL CICLO DE COBRO */}
         <div style={{ padding: '20px', background: '#F8FAFC', borderRadius: '12px', marginBottom: '20px', border: '1px solid #E2E8F0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
             <span style={{ color: '#64748B', fontWeight: '600' }}>Total a pagar hoy:</span>
@@ -273,7 +255,6 @@ export default function Dashboard({ user }) {
   const [isVip, setIsVip] = useState(false);
   const [isTrial, setIsTrial] = useState(false);
 
-  // 1. ESTADOS PARA EL MODAL DE SOPORTE
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [globalLastError, setGlobalLastError] = useState('');
 
@@ -293,7 +274,6 @@ export default function Dashboard({ user }) {
   useEffect(() => {
     if (!user) return;
 
-    // 🔐 SOLUCIÓN A LA CONDICIÓN DE CARRERA (Race Condition)
     let isVipResolved = false;
     let isStripeResolved = false;
 
@@ -515,29 +495,26 @@ export default function Dashboard({ user }) {
               Plan: <strong className={isVip ? 'vip-text' : ''}>{displayPlan}</strong>
             </div>
 
-            {/* CONTENEDOR ESTRICTAMENTE AGRUPADO: TEXTO "AYUDA" + MASCOTA */}
+            {/* CONTENEDOR CON MARGIN-LEFT AUTO PARA FORZARLO A LA DERECHA */}
             <div 
               onClick={() => setIsSupportOpen(true)}
               title="Solicitar Ayuda o Reportar un Fallo"
               style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: '6px', // Espacio perfecto entre la palabra y el robot
-                cursor: 'pointer' 
+                gap: '8px', 
+                cursor: 'pointer',
+                marginLeft: 'auto' // <--- ESTO EMPUJA EL ELEMENTO HACIA LA DERECHA
               }}
             >
-              <span style={{ 
-                color: 'var(--pida-primary)', 
-                fontWeight: '700', 
-                fontSize: '0.95rem' 
-              }}>
+              <span style={{ color: 'var(--pida-primary)', fontWeight: '700', fontSize: '0.95rem' }}>
                 Ayuda
               </span>
               <img 
                 src="/img/PIDA-MASCOTA-menu.png" 
                 alt="PIDA Mascota" 
                 className="pida-header-mascot" 
-                style={{ margin: 0 }} // Evita que CSS global desplace la imagen
+                style={{ marginLeft: 0 }} 
               />
             </div>
 
