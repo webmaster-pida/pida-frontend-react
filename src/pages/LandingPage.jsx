@@ -139,7 +139,7 @@ export default function LandingPage({ onOpenAuth }) {
                 <span className="text-gradient">Derechos Humanos</span>
               </h1>
               <p className="hero-desc">
-                Los asistentes de Inteligencia Artificial genéricos son un océano de información, pero sin un ancla, pueden llevarte a la deriva con datos imprecisos.
+                Los asistentes de Inteligencia Artificial genéricos son un océano de información, pero sin un ancla, pueden llevarte a la deriva con datos imprecisos..
               </p>
               
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
