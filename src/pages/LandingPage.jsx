@@ -7,8 +7,8 @@ export default function LandingPage({ onOpenAuth }) {
   const [currency, setCurrency] = useState('USD');     
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showNewsletter, setShowNewsletter] = useState(false);
-  const [isVideoOpen, setIsVideoOpen] = useState(false);
-  const [isUS, setIsUS] = useState(false);
+  const [isVideoOpen, setIsVideoOpen] = useState(false); // Mantenemos el estado por integridad
+  const [isUS, setIsUS] = useState(false); 
 
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({
@@ -16,6 +16,7 @@ export default function LandingPage({ onOpenAuth }) {
   });
   const [contactStatus, setContactStatus] = useState({ text: '', type: '', isSubmitting: false });
 
+  // Mantenemos la lógica de geolocalización intacta
   useEffect(() => {
     const detectLocation = async () => {
       try {
@@ -42,6 +43,7 @@ export default function LandingPage({ onOpenAuth }) {
     detectLocation();
   }, []);
 
+  // Mantenemos el manejo de anclas URL
   useEffect(() => {
     if (window.location.hash) {
       const targetId = window.location.hash.substring(1);
@@ -52,6 +54,7 @@ export default function LandingPage({ onOpenAuth }) {
     }
   }, []);
 
+  // Mantenemos el timer del carrusel
   useEffect(() => {
     const timer = window.setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % 3); 
@@ -152,94 +155,47 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
             
             <div className="hero-visual-column hide-on-mobile">
-              {/* === NUEVA CARD DE VIDEO CON ALTA JERARQUÍA === */}
-              <div 
-                className="video-preview-card"
-                onClick={() => setIsVideoOpen(true)}
-                style={{
-                  position: 'relative',
-                  cursor: 'pointer',
-                  borderRadius: '16px',
-                  overflow: 'hidden',
-                  boxShadow: '0 20px 40px rgba(29, 53, 87, 0.2)',
-                  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                  background: '#f1f5f9',
-                  border: '1px solid #e2e8f0'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 25px 50px rgba(29, 53, 87, 0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 20px 40px rgba(29, 53, 87, 0.2)';
-                }}
-              >
-                {/* Imagen de fondo (el robot) */}
-                <img 
-                  src="/img/PIDA-MASCOTA-576-trans.png" 
-                  alt="Robot PIDA Video" 
-                  style={{ width: '100%', height: 'auto', display: 'block' }} 
-                />
+              {/* VIDEO INCRUSTADO CON ALTA JERARQUÍA VISUAL */}
+              <div className="video-embed-container" style={{
+                position: 'relative',
+                borderRadius: '16px',
+                overflow: 'hidden',
+                boxShadow: '0 20px 50px rgba(29, 53, 87, 0.3)',
+                border: '1px solid #e2e8f0',
+                backgroundColor: '#000',
+                maxWidth: '520px',
+                margin: '0 auto'
+              }}>
+                <video 
+                  controls 
+                  poster="/img/PIDA-MASCOTA-576-trans.png"
+                  style={{ width: '100%', display: 'block', aspectRatio: '16/9', objectFit: 'cover' }}
+                >
+                  <source src="https://storage.googleapis.com/img-pida/PIDA.mp4" type="video/mp4" />
+                  Tu navegador no soporta la reproducción de videos.
+                </video>
                 
-                {/* Overlay oscuro para resaltar el Play */}
                 <div style={{
                   position: 'absolute',
-                  top: 0, left: 0, width: '100%', height: '100%',
-                  background: 'linear-gradient(to top, rgba(29, 53, 87, 0.4), transparent)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  {/* Botón de Play Centralizado y Grande */}
-                  <div style={{
-                    width: '80px',
-                    height: '80px',
-                    backgroundColor: 'var(--pida-primary)',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontSize: '2.5rem',
-                    boxShadow: '0 0 30px rgba(0, 86, 179, 0.6)',
-                    animation: 'pulse-blue 2s infinite'
-                  }}>
-                    ▶
-                  </div>
-                </div>
-
-                {/* Etiqueta inferior de la card */}
-                <div style={{
-                  position: 'absolute',
-                  bottom: '20px',
-                  left: '0',
-                  right: '0',
-                  textAlign: 'center',
+                  top: '12px',
+                  left: '12px',
+                  background: 'rgba(29, 53, 87, 0.9)',
+                  padding: '4px 14px',
+                  borderRadius: '20px',
                   color: 'white',
+                  fontSize: '0.7rem',
                   fontWeight: '800',
-                  fontSize: '1.1rem',
-                  textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+                  pointerEvents: 'none',
+                  zIndex: 2,
                   letterSpacing: '0.5px'
                 }}>
-                  VER PIDA EN ACCIÓN
+                  DEMOSTRACIÓN PIDA
                 </div>
               </div>
-              
-              <style>
-                {`
-                  @keyframes pulse-blue {
-                    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 86, 179, 0.7); }
-                    70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(0, 86, 179, 0); }
-                    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 86, 179, 0); }
-                  }
-                `}
-              </style>
             </div>
           </div>
         </section>
 
-        {/* El resto de las secciones se mantienen igual... */}
         <section id="diferencia">
             <div className="wrapper">
                 <div className="section-intro">
@@ -249,7 +205,6 @@ export default function LandingPage({ onOpenAuth }) {
                 </div>
             </div>
         </section>
-        {/* ... (resto del código igual) ... */}
 
         <section id="bondades" style={{ background: '#FAFAFA' }}>
             <div className="wrapper">
@@ -313,7 +268,7 @@ export default function LandingPage({ onOpenAuth }) {
                             <span style={{ display: 'block', fontSize: '1rem', color: '#0284C7', fontWeight: '600', marginTop: '5px' }}>TU DIAGNÓSTICO INMEDIATO</span>
                         </h3>
                         <p style={{ fontSize: '1.05rem', color: '#374151', lineHeight: '1.7', marginBottom: '15px' }}>
-                            Una herramienta de encuadre jurídica diseñada para la etapa inicial de cualquier caso. Funciona como un puente inteligente entre los hechos fácticos y la tipificación legal.
+                            Una herramienta de encuadre jurídico diseñada para la etapa inicial de cualquier caso. Funciona como un puente inteligente entre los hechos fácticos y la tipificación legal.
                         </p>
                         <p style={{ fontSize: '1rem', color: '#4B5563', lineHeight: '1.6' }}>
                             <strong>Aplicación Práctica:</strong> Ideal para la primera entrevista con el cliente. Simplemente narra los hechos del caso y el sistema realizará un análisis preliminar instantáneo para identificar posibles <strong>delitos penales</strong> y <strong>violaciones a Derechos Humanos</strong> conforme a estándares internacionales. Esto te permite trazar una ruta de defensa clara desde el primer minuto.
@@ -479,6 +434,7 @@ export default function LandingPage({ onOpenAuth }) {
         </div>
       </main>
 
+      {/* Mantenemos el modal por si se requiere activación manual, aunque el Hero ya tiene el video incrustado */}
       {isVideoOpen && (
         <div className="modal-backdrop" onClick={() => setIsVideoOpen(false)}>
           <div className="video-modal-card" onClick={e => e.stopPropagation()}>
