@@ -147,38 +147,90 @@ const InAppCheckout = ({ user }) => {
   };
 
   return (
-    <div style={{ maxWidth: '550px', background: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)', textAlign: 'center', margin: '0 auto', width: '95%' }}>
-      <h2 style={{ color: 'var(--pida-primary)', marginBottom: '10px' }}>Completa tu Suscripción</h2>
-      <p style={{ color: '#4B5563', marginBottom: '25px', fontSize: '0.95rem', lineHeight: '1.5' }}>
-        Has iniciado sesión como <strong>{user.email}</strong>, pero necesitas activar un plan para acceder a las herramientas.
+    <div style={{ maxWidth: '600px', background: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', textAlign: 'center', margin: '0 auto', width: '95%' }}>
+      {/* 1. GUÍA DE PASOS CLARA */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '35px', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '15px', left: '15%', right: '15%', height: '2px', background: '#E2E8F0', zIndex: 0 }}></div>
+        {[
+          { step: 1, label: 'Cuenta', done: true },
+          { step: 2, label: 'Activación', active: true },
+          { step: 3, label: 'Acceso' }
+        ].map((s, i) => (
+          <div key={i} style={{ zIndex: 1, position: 'relative', width: '80px' }}>
+            <div style={{ 
+              width: '32px', height: '32px', borderRadius: '50%', background: s.active || s.done ? 'var(--pida-primary)' : '#E2E8F0', 
+              color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', fontWeight: 'bold'
+            }}>
+              {s.done ? '✓' : s.step}
+            </div>
+            <span style={{ fontSize: '0.75rem', fontWeight: s.active ? '800' : '500', color: s.active ? 'var(--pida-primary)' : '#94A3B8' }}>{s.label}</span>
+          </div>
+        ))}
+      </div>
+
+      <h2 style={{ color: 'var(--pida-primary)', marginBottom: '10px', fontSize: '1.6rem' }}>Activa tus 5 días gratis</h2>
+      <p style={{ color: '#64748B', marginBottom: '30px', fontSize: '0.95rem' }}>
+        Has iniciado sesión como <strong>{user.email}</strong>. Configura tu plan final. No se realizará ningún cobro hoy.
       </p>
 
       <form onSubmit={handlePay} style={{ textAlign: 'left' }}>
+        
+        {/* 2. SELECTOR DE NIVEL DE PLAN (Botones en lugar de select) */}
         <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Elige tu Plan</label>
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-          <select className="pida-textarea" style={{ flex: 1, padding: '12px', marginBottom: 0, fontWeight: 'bold' }} value={plan} onChange={e => {setPlan(e.target.value); setDiscountData(null); setPromoCode(''); setPromoMsg({text:'', type:''});}}>
-            <option value="basico">Plan Básico</option>
-            <option value="avanzado">Plan Avanzado (Recomendado)</option>
-            <option value="premium">Plan Premium</option>
-          </select>
-          <select className="pida-textarea" style={{ width: '130px', padding: '12px', marginBottom: 0 }} value={interval} onChange={e => {setInterval(e.target.value); setDiscountData(null); setPromoCode(''); setPromoMsg({text:'', type:''});}}>
-            <option value="monthly">Mensual</option>
-            <option value="annual">Anual</option>
-          </select>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
+          {['basico', 'avanzado', 'premium'].map((p) => (
+            <button key={p} type="button" onClick={() => { setPlan(p); setDiscountData(null); setPromoCode(''); setPromoMsg({text:'', type:''}); }} style={{
+              padding: '12px 5px', borderRadius: '10px', border: `2px solid ${plan === p ? 'var(--pida-primary)' : '#E2E8F0'}`,
+              background: plan === p ? '#F0F7FF' : 'white', cursor: 'pointer', transition: '0.2s', fontWeight: plan === p ? '800' : '500',
+              color: plan === p ? 'var(--pida-primary)' : '#64748B', fontSize: '0.85rem', textTransform: 'capitalize'
+            }}>
+              {p === 'basico' ? 'Básico' : p}
+            </button>
+          ))}
         </div>
 
-        <div style={{ padding: '15px', background: '#F8FAFC', borderRadius: '8px', marginBottom: '20px', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: '600', color: 'var(--pida-text-muted)' }}>Total a pagar:</span>
-          <div style={{ textAlign: 'right' }}>
-            <span style={{ fontSize: '1.3rem', fontWeight: '800', color: 'var(--pida-primary)', textDecoration: discountData ? 'line-through' : 'none', opacity: discountData ? 0.5 : 1 }}>
-              {planDetails.text}
-            </span>
-            {discountData && (
-              <div style={{ color: '#10B981', fontWeight: '800', fontSize: '1.2rem' }}>
-                {new Intl.NumberFormat(currency === 'MXN' ? 'es-MX' : 'en-US', { style: 'currency', currency }).format(discountData.final_amount / 100)}
-              </div>
-            )}
+        {/* 3. SELECTOR DE INTERVALO CON RESALTE DE AHORRO */}
+        <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Ciclo de facturación</label>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+          <button type="button" onClick={() => { setInterval('monthly'); setDiscountData(null); setPromoCode(''); setPromoMsg({text:'', type:''}); }} style={{
+            flex: 1, padding: '12px', borderRadius: '10px', border: `2px solid ${interval === 'monthly' ? 'var(--pida-primary)' : '#E2E8F0'}`,
+            background: interval === 'monthly' ? '#F0F7FF' : 'white', cursor: 'pointer', fontWeight: interval === 'monthly' ? '700' : '500', color: interval === 'monthly' ? 'var(--pida-primary)' : '#64748B'
+          }}>Mensual</button>
+          
+          <button type="button" onClick={() => { setInterval('annual'); setDiscountData(null); setPromoCode(''); setPromoMsg({text:'', type:''}); }} style={{
+            flex: 1, padding: '12px', borderRadius: '10px', border: `2px solid ${interval === 'annual' ? 'var(--pida-primary)' : '#E2E8F0'}`,
+            background: interval === 'annual' ? '#F0F7FF' : 'white', cursor: 'pointer', position: 'relative', fontWeight: interval === 'annual' ? '700' : '500', color: interval === 'annual' ? 'var(--pida-primary)' : '#64748B'
+          }}>
+            Anual
+            <span style={{ 
+              position: 'absolute', top: '-10px', right: '-5px', background: '#10B981', color: 'white', 
+              fontSize: '0.65rem', padding: '2px 8px', borderRadius: '10px', fontWeight: '800'
+            }}>AHORRA ~20%</span>
+          </button>
+        </div>
+
+        {/* 4. ACLARACIÓN DEL CICLO DE COBRO */}
+        <div style={{ padding: '20px', background: '#F8FAFC', borderRadius: '12px', marginBottom: '20px', border: '1px solid #E2E8F0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <span style={{ color: '#64748B', fontWeight: '600' }}>Total a pagar hoy:</span>
+            <span style={{ color: '#10B981', fontWeight: '800' }}>$0.00 (Prueba 5 días)</span>
           </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #E2E8F0', paddingTop: '10px' }}>
+            <span style={{ color: '#1D3557', fontWeight: '600' }}>Después de la prueba:</span>
+            <div style={{ textAlign: 'right' }}>
+              <span style={{ color: '#1D3557', fontWeight: '800', textDecoration: discountData ? 'line-through' : 'none', opacity: discountData ? 0.5 : 1 }}>
+                {planDetails.text} / {interval === 'monthly' ? 'mes' : 'año'}
+              </span>
+              {discountData && (
+                <div style={{ color: '#10B981', fontWeight: '800', fontSize: '1.1rem' }}>
+                  {new Intl.NumberFormat(currency === 'MXN' ? 'es-MX' : 'en-US', { style: 'currency', currency }).format(discountData.final_amount / 100)} / {interval === 'monthly' ? 'mes' : 'año'}
+                </div>
+              )}
+            </div>
+          </div>
+          <p style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '12px', lineHeight: '1.4' }}>
+            * Al ingresar tu tarjeta activas el periodo de prueba. El cobro se realizará automáticamente al finalizar los 5 días a menos que canceles antes desde tu perfil.
+          </p>
         </div>
 
         <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Datos de la tarjeta</label>
@@ -197,7 +249,7 @@ const InAppCheckout = ({ user }) => {
         {error && <div style={{ color: '#EF4444', fontSize: '0.9rem', marginTop: '15px', padding: '12px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', fontWeight: '500' }}>{error}</div>}
 
         <button type="submit" className="pida-button-primary" style={{ width: '100%', padding: '16px', fontSize: '1.05rem', marginTop: '20px' }} disabled={loading}>
-          {loading ? 'Procesando pago...' : 'Activar mi cuenta y probar 5 días'}
+          {loading ? 'Procesando pago...' : 'Confirmar y empezar prueba gratuita'}
         </button>
       </form>
 

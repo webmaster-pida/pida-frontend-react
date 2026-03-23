@@ -33,12 +33,14 @@ function AuthFormContent({ onClose, initialMode }) {
   const [promoMessage, setPromoMessage] = useState({ text: '', type: '' });
   const [discountData, setDiscountData] = useState(null);
 
-  const planKey = sessionStorage.getItem('pida_pending_plan') || 'basico';
-  const intervalKey = sessionStorage.getItem('pida_pending_interval') || 'monthly';
+  // Convertimos en estados para permitir cambios de última hora
+  const [plan, setPlan] = useState(sessionStorage.getItem('pida_pending_plan') || 'basico');
+  const [interval, setInterval] = useState(sessionStorage.getItem('pida_pending_interval') || 'monthly');
+  
   const rawCurrency = localStorage.getItem('pida_currency');
   const currency = ['USD', 'MXN'].includes(rawCurrency) ? rawCurrency : 'USD';
   
-  const planDetails = STRIPE_PRICES[planKey]?.[intervalKey]?.[currency] || STRIPE_PRICES['basico']['monthly']['USD'];
+  const planDetails = STRIPE_PRICES[plan]?.[interval]?.[currency] || STRIPE_PRICES['basico']['monthly']['USD'];
 
   const handleGoogleLogin = async () => {
     setError('');
@@ -112,7 +114,7 @@ function AuthFormContent({ onClose, initialMode }) {
 
         // --- INICIO: EVENTOS GOOGLE ANALYTICS ---
         const numericValue = discountData ? (discountData.final_amount / 100) : parseFloat(planDetails.text.replace(/[^0-9.-]+/g,""));
-        const itemName = `Plan ${planKey.toUpperCase()} - ${intervalKey.toUpperCase()}`;
+        const itemName = `Plan ${plan.toUpperCase()} - ${interval.toUpperCase()}`;
 
         if (typeof window !== 'undefined' && window.gtag) {
           window.gtag('event', 'begin_checkout', {
@@ -135,7 +137,7 @@ function AuthFormContent({ onClose, initialMode }) {
           body: JSON.stringify({ 
             priceId: planDetails.id, 
             currency: currency.toLowerCase(),
-            plan_key: planKey,
+            plan_key: plan,
             trial_period_days: 5,
             name: fullName,
             promotion_code: discountData ? promoCode : ""
@@ -209,7 +211,7 @@ function AuthFormContent({ onClose, initialMode }) {
         {mode === 'reset' && 'Recuperar Contraseña'}
       </h2>
       <p className="modal-subtitle">
-        {mode === 'register' ? 'Ingresa tus datos de pago para activar tu plan.' : 'Accede para continuar tu investigación.'}
+        {mode === 'register' ? 'Configura tu plan final para activar la prueba.' : 'Accede para continuar tu investigación.'}
       </p>
 
       {mode === 'login' && (
@@ -258,26 +260,37 @@ function AuthFormContent({ onClose, initialMode }) {
 
         {mode === 'register' && (
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
-            <div className="auth-summary-box">
-              <div className="auth-summary-header">
-                Plan {planKey.charAt(0).toUpperCase() + planKey.slice(1)} ({intervalKey === 'monthly' ? 'Mensual' : 'Anual'})
+            
+            {/* NUEVA SECCIÓN DE SELECCIÓN DE ÚLTIMA HORA */}
+            <div style={{ marginBottom: '20px', padding: '15px', border: '1px solid #E2E8F0', borderRadius: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--pida-primary)' }}>CONFIGURAR PLAN</span>
               </div>
+              
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '5px' }}>
+                <select value={plan} onChange={e => { setPlan(e.target.value); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} className="form-input no-margin" style={{ height: '40px', fontSize: '0.85rem' }}>
+                   <option value="basico">Plan Básico</option>
+                   <option value="avanzado">Plan Avanzado</option>
+                   <option value="premium">Plan Premium</option>
+                </select>
+                <select value={interval} onChange={e => { setInterval(e.target.value); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} className="form-input no-margin" style={{ height: '40px', fontSize: '0.85rem' }}>
+                   <option value="monthly">Mensual</option>
+                   <option value="annual">Anual (Ahorra ~20%)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="auth-summary-box" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
               <div className="auth-summary-row">
-                <span className="auth-summary-label">Total a pagar:</span>
-                <div style={{ textAlign: 'right' }}>
-                  <span className={`auth-summary-price ${discountData ? 'discounted' : ''}`}>
-                    {planDetails.text}
-                  </span>
-                  {discountData && (
-                    <div className="auth-summary-final-price">
-                      {new Intl.NumberFormat(currency === 'MXN' ? 'es-MX' : 'en-US', { style: 'currency', currency }).format(discountData.final_amount / 100)}
-                    </div>
-                  )}
-                </div>
+                <span className="auth-summary-label" style={{ color: '#166534' }}>Total a pagar hoy:</span>
+                <span style={{ fontWeight: '800', color: '#166534', fontSize: '1.2rem' }}>$0.00 (Prueba 5 días)</span>
               </div>
+              <p style={{ fontSize: '0.75rem', marginTop: '10px', color: '#15803d', lineHeight: '1.4' }}>
+                Después de la prueba se cobrarán <strong><span style={{ textDecoration: discountData ? 'line-through' : 'none', opacity: discountData ? 0.7 : 1 }}>{planDetails.text}</span> {discountData && <>{new Intl.NumberFormat(currency === 'MXN' ? 'es-MX' : 'en-US', { style: 'currency', currency }).format(discountData.final_amount / 100)}</>}</strong> cada {interval === 'monthly' ? 'mes' : 'año'}.
+              </p>
               {discountData && (
-                <div className="auth-discount-badge">
-                  Ahorras: {discountData.description}
+                <div className="auth-discount-badge" style={{ marginTop: '8px' }}>
+                  Cupón: {discountData.description}
                 </div>
               )}
               <div style={{ clear: 'both' }}></div>
