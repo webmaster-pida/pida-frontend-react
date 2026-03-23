@@ -515,25 +515,32 @@ export default function Dashboard({ user }) {
               Plan: <strong className={isVip ? 'vip-text' : ''}>{displayPlan}</strong>
             </div>
 
-            {/* 2. BOTÓN AYUDA CON ESTILO NATIVO Y COLOR PRIMARIO */}
-            <button 
-              className="pida-header-btn" 
+            {/* CONTENEDOR ESTRICTAMENTE AGRUPADO: TEXTO "AYUDA" + MASCOTA */}
+            <div 
               onClick={() => setIsSupportOpen(true)}
               title="Solicitar Ayuda o Reportar un Fallo"
-              style={{ color: 'var(--pida-primary)', fontWeight: '700', border: 'none', backgroundColor: 'transparent' }}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', // Espacio perfecto entre la palabra y el robot
+                cursor: 'pointer' 
+              }}
             >
-              Ayuda
-            </button>
-            
-            {/* 3. MASCOTA ROBOT EN SU ESTRUCTURA Y LUGAR EXACTO ORIGINAL */}
-            <img 
-              src="/img/PIDA-MASCOTA-menu.png" 
-              alt="PIDA Mascota" 
-              className="pida-header-mascot" 
-              onClick={() => setIsSupportOpen(true)}
-              style={{ cursor: 'pointer' }}
-              title="Solicitar Ayuda o Reportar un Fallo"
-            />
+              <span style={{ 
+                color: 'var(--pida-primary)', 
+                fontWeight: '700', 
+                fontSize: '0.95rem' 
+              }}>
+                Ayuda
+              </span>
+              <img 
+                src="/img/PIDA-MASCOTA-menu.png" 
+                alt="PIDA Mascota" 
+                className="pida-header-mascot" 
+                style={{ margin: 0 }} // Evita que CSS global desplace la imagen
+              />
+            </div>
+
           </div>
         </header>
 
