@@ -148,15 +148,48 @@ const InAppCheckout = ({ user }) => {
 
   return (
     <div style={{ maxWidth: '600px', background: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', textAlign: 'center', margin: '0 auto', width: '95%' }}>
-      {/* 1. ELIMINADOS PASOS ANTERIORES - TITULARES PROFESIONALES */}
-      <h2 style={{ color: 'var(--pida-primary)', marginBottom: '10px', fontSize: '1.6rem', fontWeight: '800' }}>Activa tu cuenta PIDA</h2>
+      {/* 1. GUÍA DE PASOS CLARA */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '35px', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '15px', left: '15%', right: '15%', height: '2px', background: '#E2E8F0', zIndex: 0 }}></div>
+        {[
+          { step: 1, label: 'Cuenta', done: true },
+          { step: 2, label: 'Activación', active: true },
+          { step: 3, label: 'Acceso' }
+        ].map((s, i) => (
+          <div key={i} style={{ zIndex: 1, position: 'relative', width: '80px' }}>
+            <div style={{ 
+              width: '32px', height: '32px', borderRadius: '50%', background: s.active || s.done ? 'var(--pida-primary)' : '#E2E8F0', 
+              color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', fontWeight: 'bold'
+            }}>
+              {s.done ? '✓' : s.step}
+            </div>
+            <span style={{ fontSize: '0.75rem', fontWeight: s.active ? '800' : '500', color: s.active ? 'var(--pida-primary)' : '#94A3B8' }}>{s.label}</span>
+          </div>
+        ))}
+      </div>
+
+      <h2 style={{ color: 'var(--pida-primary)', marginBottom: '10px', fontSize: '1.6rem' }}>Activa tus 5 días gratis</h2>
       <p style={{ color: '#64748B', marginBottom: '30px', fontSize: '0.95rem' }}>
-        Configura tu plan final para el usuario <strong>{user.email}</strong>. No se realizará ningún cobro hoy (5 días gratis).
+        Has iniciado sesión como <strong>{user.email}</strong>. Configura tu plan final. No se realizará ningún cobro hoy.
       </p>
 
       <form onSubmit={handlePay} style={{ textAlign: 'left' }}>
         
-        {/* 2. SELECTOR DE INTERVALO CON RESALTE DE AHORRO (Horizontal Toggle) */}
+        {/* 2. SELECTOR DE NIVEL DE PLAN (Botones en lugar de select) */}
+        <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Elige tu Plan</label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
+          {['basico', 'avanzado', 'premium'].map((p) => (
+            <button key={p} type="button" onClick={() => { setPlan(p); setDiscountData(null); setPromoCode(''); setPromoMsg({text:'', type:''}); }} style={{
+              padding: '12px 5px', borderRadius: '10px', border: `2px solid ${plan === p ? 'var(--pida-primary)' : '#E2E8F0'}`,
+              background: plan === p ? '#F0F7FF' : 'white', cursor: 'pointer', transition: '0.2s', fontWeight: plan === p ? '800' : '500',
+              color: plan === p ? 'var(--pida-primary)' : '#64748B', fontSize: '0.85rem', textTransform: 'capitalize'
+            }}>
+              {p === 'basico' ? 'Básico' : p}
+            </button>
+          ))}
+        </div>
+
+        {/* 3. SELECTOR DE INTERVALO CON RESALTE DE AHORRO */}
         <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Ciclo de facturación</label>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
           <button type="button" onClick={() => { setInterval('monthly'); setDiscountData(null); setPromoCode(''); setPromoMsg({text:'', type:''}); }} style={{
@@ -171,63 +204,13 @@ const InAppCheckout = ({ user }) => {
             Anual
             <span style={{ 
               position: 'absolute', top: '-10px', right: '-5px', background: '#10B981', color: 'white', 
-              fontSize: '0.65rem', padding: '2px 8px', borderRadius: '10px', fontWeight: '800', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              fontSize: '0.65rem', padding: '2px 8px', borderRadius: '10px', fontWeight: '800'
             }}>AHORRA ~20%</span>
           </button>
         </div>
 
-        {/* 3. SELECTOR DE NIVEL DE PLAN (Vertical para Celulares - Diseño de cajas estructuradas) */}
-        <label className="input-label" style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--pida-primary)', marginBottom: '8px', display: 'block' }}>Elige tu Plan (Clic para seleccionar)</label>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '25px' }}>
-          {[
-            { key: 'basico', name: 'Básico', description: '5 consultas/día • 3 análisis doc/día' },
-            { key: 'avanzado', name: 'Avanzado', description: '20 consultas/día • 15 análisis doc/día • Precalificador ✅' },
-            { key: 'premium', name: 'Premium', description: '100 consultas/día • 25 análisis doc/día • Precalificador ✅' }
-          ].map((p) => (
-            <button key={p.key} type="button" onClick={() => { setPlan(p.key); setDiscountData(null); setPromoCode(''); setPromoMsg({text:'', type:''}); }} style={{
-              display: 'flex', flexDirection: 'column', textAlign: 'left', padding: '15px', borderRadius: '12px', cursor: 'pointer', transition: '0.2s', border: `2px solid ${plan === p.key ? 'var(--pida-primary)' : '#E2E8F0'}`, background: plan === p.key ? '#F0F7FF' : 'white'
-            }}>
-              <strong style={{ fontSize: '1rem', color: plan === p.key ? 'var(--pida-primary)' : 'var(--navy)', marginBottom: '3px' }}>{p.name}</strong>
-              <span style={{ fontSize: '0.8rem', color: plan === p.key ? '#0284C7' : '#64748B' }}>{p.description}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* NUEVO: RESUMEN DETALLADO DEL PLAN SELECCIONADO (Checks verdes de Landing Page) */}
-        <div style={{ background: '#F8FAFC', padding: '20px', borderRadius: '12px', marginBottom: '20px', border: '1px solid #E2E8F0' }}>
-           <strong style={{ display: 'block', marginBottom: '12px', color: 'var(--pida-primary)', fontSize: '0.9rem' }}>
-             Qué incluye el plan {plan === 'basico' ? 'Básico' : plan.charAt(0).toUpperCase() + plan.slice(1)}:
-           </strong>
-           <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem', color: '#475569' }}>
-              {plan === 'basico' && (
-                <>
-                  <li>✅ 5 consultas por día</li>
-                  <li>✅ 3 análisis de documentos por día</li>
-                  <li>✅ 15 Mb por archivo máximo</li>
-                  <li style={{ color: '#94A3B8' }}>❌ No incluye precalificador</li>
-                </>
-              )}
-              {plan === 'avanzado' && (
-                <>
-                  <li>✅ 20 consultas por día</li>
-                  <li>✅ 15 análisis de documentos por día</li>
-                  <li>✅ 40 Mb por archivo máximo</li>
-                  <li>✅ 20 precalificaciones por día</li>
-                </>
-              )}
-              {plan === 'premium' && (
-                <>
-                  <li>✅ 100 consultas por día</li>
-                  <li>✅ 25 análisis de documentos por día</li>
-                  <li>✅ 40 Mb por archivo máximo</li>
-                  <li>✅ 100 precalificaciones por día</li>
-                </>
-              )}
-           </ul>
-        </div>
-
         {/* 4. ACLARACIÓN DEL CICLO DE COBRO */}
-        <div style={{ padding: '20px', background: '#F1F5F9', borderRadius: '12px', marginBottom: '20px', border: '1px solid #E2E8F0' }}>
+        <div style={{ padding: '20px', background: '#F8FAFC', borderRadius: '12px', marginBottom: '20px', border: '1px solid #E2E8F0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
             <span style={{ color: '#64748B', fontWeight: '600' }}>Total a pagar hoy:</span>
             <span style={{ color: '#10B981', fontWeight: '800' }}>$0.00 (Prueba 5 días)</span>
