@@ -108,6 +108,9 @@ export default function LandingPage({ onOpenAuth }) {
               <a href="https://www.facebook.com/profile.php?id=61585131920269" target="_blank" rel="noreferrer" aria-label="Facebook PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pida-accent)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
                 <svg width="26" height="26" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" /></svg>
               </a>
+              <a href="https://www.tiktok.com/@pida.solucion" target="_blank" rel="noreferrer" aria-label="TikTok PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pida-accent)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
+                <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M19.589 6.686a4.793 4.793 0 0 1-3.976-4.686h-3.868v11.52a4.11 4.11 0 1 1-4.11-4.111c.287 0 .565.031.834.084v-3.9a7.978 7.978 0 1 0 7.142 7.927V9.752a8.683 8.683 0 0 0 3.978 1.054V6.686z"/></svg>
+              </a>
             </div>
 
             {/* Fila 2: Enlaces del Menú */}
@@ -393,7 +396,7 @@ export default function LandingPage({ onOpenAuth }) {
 
         <section id="testimonios">
             <div className="wrapper">
-                <div className="section-intro" style={{ marginBottom: '30px' }}>
+                <div className="section-intro" style={{ marginBottom: '10px' }}>
                     <h2>Lo que dicen nuestros usuarios</h2>
                 </div>
                 <div className="carousel-container" style={{ overflow: 'hidden' }}>
