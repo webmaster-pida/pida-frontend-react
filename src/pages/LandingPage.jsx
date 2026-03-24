@@ -9,6 +9,9 @@ export default function LandingPage({ onOpenAuth }) {
   const [showNewsletter, setShowNewsletter] = useState(false);
   const [isUS, setIsUS] = useState(false);
 
+  // NUEVO ESTADO: Controla si el menú móvil está abierto
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({
       name: '', company: '', email: '', confirmEmail: '', countryCode: '+503', phone: '', message: ''
@@ -58,6 +61,16 @@ export default function LandingPage({ onOpenAuth }) {
     return () => window.clearInterval(timer);
   }, []);
 
+  // Bloquear el scroll del cuerpo si el menú móvil está abierto
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isMenuOpen]);
+
   const handleSelectPlan = (planKey) => {
     sessionStorage.setItem('pida_pending_plan', planKey);
     sessionStorage.setItem('pida_pending_interval', interval);
@@ -90,21 +103,68 @@ export default function LandingPage({ onOpenAuth }) {
       }
   };
 
+  // Función auxiliar para navegar y cerrar el menú móvil
+  const handleNavClick = (targetId) => {
+    setIsMenuOpen(false);
+    setTimeout(() => {
+      const element = document.getElementById(targetId);
+      if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
   return (
     <div id="landing-page-root">
-      <header className="nav" id="navbar" style={{ padding: '12px 0' }}>
+      
+      {/* OVERLAY PARA CERRAR EL MENÚ MÓVIL (Oscurece el fondo) */}
+      {isMenuOpen && (
+        <div 
+          onClick={() => setIsMenuOpen(false)}
+          style={{
+            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+            backgroundColor: 'rgba(29, 53, 87, 0.5)', backdropFilter: 'blur(3px)',
+            zIndex: 998
+          }}
+        ></div>
+      )}
+
+      <header className="nav" id="navbar" style={{ padding: '12px 0', zIndex: 1000 }}>
         <div className="wrapper nav-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           
-          {/* LADO IZQUIERDO: Logo integrado en el menú */}
-          <a href="/" style={{ display: 'flex', alignItems: 'center' }}>
-            <img src="/img/PIDA_logo-576.png" alt="Logo PIDA" style={{ height: '65px', width: 'auto' }} />
+          {/* LADO IZQUIERDO: Logo integrado en el menú (con flexShrink: 0 añadido) */}
+          <a href="/" style={{ display: 'flex', alignItems: 'center', flexShrink: 0, zIndex: 1001 }}>
+            <img src="/img/PIDA_logo-576.png" alt="Logo PIDA" style={{ height: '65px', width: 'auto', flexShrink: 0 }} />
           </a>
 
+          {/* BOTÓN HAMBURGUESA (Móvil) */}
+          <button 
+            className="mobile-menu-toggle"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            style={{
+              display: 'none', background: 'none', border: 'none', color: 'var(--pida-primary)',
+              cursor: 'pointer', zIndex: 1001, padding: '5px'
+            }}
+          >
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              {isMenuOpen ? (
+                <>
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </>
+              ) : (
+                <>
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
+                </>
+              )}
+            </svg>
+          </button>
+
           {/* LADO DERECHO: Redes sociales + Enlaces de navegación */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+          <div className={`nav-right-container ${isMenuOpen ? 'open' : ''}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
             
             {/* Fila 1: Redes Sociales */}
-            <div style={{ display: 'flex', gap: '15px', paddingRight: '8px' }}>
+            <div className="social-links-row" style={{ display: 'flex', gap: '15px', paddingRight: '8px' }}>
               <a href="https://www.facebook.com/profile.php?id=61585131920269" target="_blank" rel="noreferrer" aria-label="Facebook PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pida-accent)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
                 <svg width="26" height="26" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" /></svg>
               </a>
@@ -115,9 +175,9 @@ export default function LandingPage({ onOpenAuth }) {
 
             {/* Fila 2: Enlaces del Menú */}
             <nav className="nav-menu" style={{ display: 'flex', alignItems: 'center' }}>
-              <a href="#diferencia" className="nav-link hide-on-mobile">Diferencia PIDA</a>
-              <a href="#ecosistema" className="nav-link hide-on-mobile">Ecosistema</a>
-              <a href="#planes" className="nav-link hide-on-mobile">Planes</a>
+              <a href="#diferencia" onClick={(e) => { e.preventDefault(); handleNavClick('diferencia'); }} className="nav-link hide-on-mobile">Diferencia PIDA</a>
+              <a href="#ecosistema" onClick={(e) => { e.preventDefault(); handleNavClick('ecosistema'); }} className="nav-link hide-on-mobile">Ecosistema</a>
+              <a href="#planes" onClick={(e) => { e.preventDefault(); handleNavClick('planes'); }} className="nav-link hide-on-mobile">Planes</a>
 
               <div 
                 style={{ position: 'relative', display: 'inline-block' }}
@@ -138,18 +198,81 @@ export default function LandingPage({ onOpenAuth }) {
                 )}
               </div>
 
-              <button className="nav-login-btn" onClick={() => onOpenAuth('login')}>
+              <button className="nav-login-btn" onClick={() => { setIsMenuOpen(false); onOpenAuth('login'); }}>
                 Login
               </button>
             </nav>
           </div>
         </div>
+
+        {/* --- ESTILOS INTERNOS PARA EL MENÚ MÓVIL --- */}
+        <style>
+          {`
+            @media (max-width: 850px) {
+              .mobile-menu-toggle {
+                display: block !important;
+              }
+              .hide-on-mobile { display: block !important; } /* Mostrar enlaces dentro del menú móvil */
+              
+              /* El contenedor derecho se convierte en un panel lateral */
+              .nav-right-container {
+                position: fixed;
+                top: 0;
+                right: -100%; /* Oculto por defecto */
+                width: 260px;
+                height: 100vh;
+                background-color: #ffffff;
+                box-shadow: -5px 0 25px rgba(0,0,0,0.15);
+                display: flex !important;
+                flex-direction: column;
+                align-items: flex-start !important;
+                padding: 90px 25px 20px 25px;
+                transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                z-index: 999;
+                gap: 25px !important;
+              }
+              /* Clase que lo desliza hacia adentro */
+              .nav-right-container.open {
+                right: 0;
+              }
+              /* Ajustes para los enlaces en móvil */
+              .nav-right-container .nav-menu {
+                flex-direction: column;
+                align-items: flex-start !important;
+                width: 100%;
+                gap: 20px;
+              }
+              .nav-right-container .nav-link {
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: var(--pida-primary) !important;
+                width: 100%;
+                padding: 5px 0;
+                border-bottom: 1px solid #f1f5f9;
+              }
+              .nav-right-container .nav-login-btn {
+                margin-left: 0;
+                width: 100%;
+                text-align: center;
+                margin-top: 15px;
+                padding: 12px;
+                font-size: 1rem;
+              }
+              /* Ajuste de redes sociales en el menú */
+              .social-links-row {
+                width: 100%;
+                justify-content: flex-start;
+                padding-bottom: 15px;
+                border-bottom: 2px solid #e2e8f0;
+              }
+            }
+          `}
+        </style>
       </header>
 
       <main>
         <section id="pida"></section>
         
-        {/* Agregamos paddingTop de 120px para compensar la altura extra del nuevo menú */}
         <section className="hero" style={{ paddingTop: '30px' }}>
           <div className="wrapper hero-grid">
             <div className="hero-content">
