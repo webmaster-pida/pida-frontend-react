@@ -2,18 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { STRIPE_PRICES } from '../config/constants';
 import { db } from '../config/firebase'; 
 
-// Importaciones de Material-UI para el formulario de contacto
-import { Box, TextField, Button } from '@mui/material';
+// Importaciones de Material-UI
+import { Box, TextField, Button, Menu, MenuItem } from '@mui/material';
 
 export default function LandingPage({ onOpenAuth }) {
   const [interval, setInterval] = useState('monthly'); 
   const [currency, setCurrency] = useState('USD');     
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [showNewsletter, setShowNewsletter] = useState(false);
   const [isUS, setIsUS] = useState(false);
 
   // ESTADO: Controla si el menú móvil está abierto
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // ESTADOS MUI: Controlan el menú desplegable del Newsletter
+  const [anchorEl, setAnchorEl] = useState(null);
+  const openNewsletter = Boolean(anchorEl);
 
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({
@@ -74,6 +77,14 @@ export default function LandingPage({ onOpenAuth }) {
     return () => { document.body.style.overflow = 'unset'; };
   }, [isMenuOpen]);
 
+  // Funciones para manejar el menú de Newsletter de MUI
+  const handleNewsletterClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleNewsletterClose = () => {
+    setAnchorEl(null);
+  };
+
   const handleSelectPlan = (planKey) => {
     sessionStorage.setItem('pida_pending_plan', planKey);
     sessionStorage.setItem('pida_pending_interval', interval);
@@ -106,7 +117,6 @@ export default function LandingPage({ onOpenAuth }) {
       }
   };
 
-  // Función auxiliar para navegar y cerrar el menú móvil
   const handleNavClick = (targetId) => {
     setIsMenuOpen(false);
     setTimeout(() => {
@@ -115,10 +125,44 @@ export default function LandingPage({ onOpenAuth }) {
     }, 100);
   };
 
+  // --- Estilos reutilizables de MUI para los botones ---
+  const muiPrimaryBtnStyle = {
+    backgroundColor: 'var(--navy)',
+    color: 'var(--white)',
+    textTransform: 'none',
+    fontWeight: 600,
+    fontSize: '0.95rem',
+    borderRadius: '8px',
+    padding: '10px 24px',
+    boxShadow: '0 2px 10px rgba(29, 53, 87, 0.2)',
+    fontFamily: 'var(--font-body)',
+    '&:hover': {
+      backgroundColor: 'var(--cyan)',
+      color: 'var(--navy-dark)',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 5px 20px rgba(0, 195, 255, 0.3)',
+    }
+  };
+
+  const muiGhostBtnStyle = {
+    backgroundColor: 'white',
+    color: 'var(--navy)',
+    border: '1px solid var(--navy)',
+    textTransform: 'none',
+    fontWeight: 600,
+    fontSize: '0.95rem',
+    borderRadius: '8px',
+    padding: '10px 24px',
+    fontFamily: 'var(--font-body)',
+    '&:hover': {
+      backgroundColor: '#f8fafc',
+      borderColor: 'var(--navy)',
+    }
+  };
+
   return (
     <div id="landing-page-root">
       
-      {/* OVERLAY PARA CERRAR EL MENÚ MÓVIL (Oscurece el fondo) */}
       {isMenuOpen && (
         <div 
           onClick={() => setIsMenuOpen(false)}
@@ -133,12 +177,10 @@ export default function LandingPage({ onOpenAuth }) {
       <header className="nav" id="navbar" style={{ padding: '12px 0', zIndex: 1000 }}>
         <div className="wrapper nav-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           
-          {/* LADO IZQUIERDO: Logo integrado en el menú */}
           <a href="/" style={{ display: 'flex', alignItems: 'center', flexShrink: 0, zIndex: 1001 }}>
             <img src="/img/PIDA_logo-576.png" alt="Logo PIDA" style={{ height: '65px', width: 'auto', flexShrink: 0 }} />
           </a>
 
-          {/* BOTÓN HAMBURGUESA (Móvil) */}
           <button 
             className="mobile-menu-toggle"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -163,10 +205,8 @@ export default function LandingPage({ onOpenAuth }) {
             </svg>
           </button>
 
-          {/* LADO DERECHO: Redes sociales + Enlaces de navegación */}
           <div className={`nav-right-container ${isMenuOpen ? 'open' : ''}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
             
-            {/* Fila 1: Redes Sociales */}
             <div className="social-links-row" style={{ display: 'flex', gap: '15px', paddingRight: '8px' }}>
               <a href="https://www.facebook.com/ia.pida" target="_blank" rel="noreferrer" aria-label="Facebook PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pidared)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
                 <svg width="26" height="26" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" /></svg>
@@ -179,52 +219,85 @@ export default function LandingPage({ onOpenAuth }) {
               </a>
             </div>
 
-            {/* Fila 2: Enlaces del Menú */}
             <nav className="nav-menu" style={{ display: 'flex', alignItems: 'center' }}>
               <a href="#diferencia" onClick={(e) => { e.preventDefault(); handleNavClick('diferencia'); }} className="nav-link hide-on-mobile">Diferencia PIDA</a>
               <a href="#ecosistema" onClick={(e) => { e.preventDefault(); handleNavClick('ecosistema'); }} className="nav-link hide-on-mobile">Ecosistema</a>
               <a href="#planes" onClick={(e) => { e.preventDefault(); handleNavClick('planes'); }} className="nav-link hide-on-mobile">Planes</a>
 
-              <div 
-                style={{ position: 'relative', display: 'inline-block' }}
-                onMouseEnter={() => setShowNewsletter(true)}
-                onMouseLeave={() => setShowNewsletter(false)}
-              >
-                <span className="nav-link" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                  Newsletter <span style={{ fontSize: '0.7em' }}>▼</span>
-                </span>
+              <div style={{ display: 'inline-block' }}>
+                <Button
+                  id="newsletter-button"
+                  aria-controls={openNewsletter ? 'newsletter-menu' : undefined}
+                  aria-haspopup="true"
+                  aria-expanded={openNewsletter ? 'true' : undefined}
+                  onClick={handleNewsletterClick}
+                  className="nav-link"
+                  disableRipple
+                  sx={{
+                    textTransform: 'none',
+                    backgroundColor: 'transparent',
+                    p: 0,
+                    minWidth: 'auto',
+                    fontFamily: 'inherit',
+                    fontSize: 'inherit',
+                    fontWeight: 'inherit',
+                    '&:hover': { backgroundColor: 'transparent' }
+                  }}
+                >
+                  Newsletter <span style={{ fontSize: '0.7em', marginLeft: '5px' }}>▼</span>
+                </Button>
                 
-                {showNewsletter && (
-                  <div className="newsletter-dropdown-content">
-                    <div style={{ position: 'absolute', top: '-10px', left: 0, width: '100%', height: '15px' }}></div>
-                    <a href="/newsletter-001.pdf" target="_blank" rel="noreferrer">📄 Enero 2026</a>
-                    <a href="/newsletter-002.pdf" target="_blank" rel="noreferrer">📄 Febrero 2026</a>
-                    <a href="/newsletter-003.pdf" target="_blank" rel="noreferrer">📄 Marzo 2026</a>
-                  </div>
-                )}
+                <Menu
+                  id="newsletter-menu"
+                  anchorEl={anchorEl}
+                  open={openNewsletter}
+                  onClose={handleNewsletterClose}
+                  MenuListProps={{ 'aria-labelledby': 'newsletter-button' }}
+                  PaperProps={{
+                    sx: {
+                      mt: 1,
+                      boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb',
+                      minWidth: '160px'
+                    }
+                  }}
+                >
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-001.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Enero 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-002.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Febrero 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-003.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Marzo 2026</MenuItem>
+                </Menu>
               </div>
 
-              <button className="nav-login-btn" onClick={() => { setIsMenuOpen(false); onOpenAuth('login'); }}>
+              {/* Botón LOGIN - Actualizado con estilos directos MUI para no romper el layout */}
+              <Button 
+                onClick={() => { setIsMenuOpen(false); onOpenAuth('login'); }}
+                sx={{
+                  ...muiGhostBtnStyle,
+                  padding: { xs: '12px', sm: '6px 18px' }, // Ajuste responsive
+                  width: { xs: '100%', sm: 'auto' },
+                  mt: { xs: '15px', sm: '0' },
+                  ml: { xs: '0', sm: '15px' },
+                }}
+              >
                 Login
-              </button>
+              </Button>
             </nav>
           </div>
         </div>
 
-        {/* --- ESTILOS INTERNOS PARA EL MENÚ MÓVIL --- */}
         <style>
           {`
             @media (max-width: 850px) {
               .mobile-menu-toggle {
                 display: block !important;
               }
-              .hide-on-mobile { display: block !important; } /* Mostrar enlaces dentro del menú móvil */
+              .hide-on-mobile { display: block !important; }
               
-              /* El contenedor derecho se convierte en un panel lateral */
               .nav-right-container {
                 position: fixed;
                 top: 0;
-                right: -100%; /* Oculto por defecto */
+                right: -100%;
                 width: 260px;
                 height: 100vh;
                 background-color: #ffffff;
@@ -237,11 +310,9 @@ export default function LandingPage({ onOpenAuth }) {
                 z-index: 999;
                 gap: 25px !important;
               }
-              /* Clase que lo desliza hacia adentro */
               .nav-right-container.open {
                 right: 0;
               }
-              /* Ajustes para los enlaces en móvil */
               .nav-right-container .nav-menu {
                 flex-direction: column;
                 align-items: flex-start !important;
@@ -249,22 +320,14 @@ export default function LandingPage({ onOpenAuth }) {
                 gap: 20px;
               }
               .nav-right-container .nav-link {
-                font-size: 1.1rem;
-                font-weight: 600;
+                font-size: 1.1rem !important;
+                font-weight: 600 !important;
                 color: var(--pida-primary) !important;
                 width: 100%;
                 padding: 5px 0;
                 border-bottom: 1px solid #f1f5f9;
+                justify-content: flex-start;
               }
-              .nav-right-container .nav-login-btn {
-                margin-left: 0;
-                width: 100%;
-                text-align: center;
-                margin-top: 15px;
-                padding: 12px;
-                font-size: 1rem;
-              }
-              /* Ajuste de redes sociales en el menú */
               .social-links-row {
                 width: 100%;
                 justify-content: flex-start;
@@ -291,16 +354,22 @@ export default function LandingPage({ onOpenAuth }) {
               </p>
               
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
-                <button className="btn btn-primary" onClick={() => document.getElementById('planes').scrollIntoView({ behavior: 'smooth' })}>
+                {/* BOTONES HERO - Actualizados a MUI */}
+                <Button 
+                  onClick={() => document.getElementById('planes').scrollIntoView({ behavior: 'smooth' })}
+                  sx={muiPrimaryBtnStyle}
+                >
                   Ver Planes
-                </button>
-                <button className="btn btn-ghost" onClick={() => onOpenAuth('login')} style={{ backgroundColor: 'white', border: '1px solid var(--pida-primary)', color: 'var(--pida-primary)' }}>
+                </Button>
+                <Button 
+                  onClick={() => onOpenAuth('login')}
+                  sx={muiGhostBtnStyle}
+                >
                   Login PIDA
-                </button>
+                </Button>
               </div>
             </div>
             
-            {/* Contenedor del video incrustado con el robot de portada */}
             <div className="hero-visual-column" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <div style={{
                 width: '100%',
@@ -462,7 +531,13 @@ export default function LandingPage({ onOpenAuth }) {
                       <li>✅ 15 Mb por archivo</li>
                       <li>❌ Sin precalificador</li>
                     </ul>
-                    <button className="btn btn-primary plan-cta" onClick={() => handleSelectPlan('basico')}>Elegir Básico</button>
+                    {/* BOTÓN TARJETA BÁSICA - Actualizado a MUI */}
+                    <Button 
+                      onClick={() => handleSelectPlan('basico')}
+                      sx={{ ...muiPrimaryBtnStyle, width: '100%', mt: 'auto' }}
+                    >
+                      Elegir Básico
+                    </Button>
                   </div>
 
                   <div className="pricing-card featured">
@@ -481,7 +556,13 @@ export default function LandingPage({ onOpenAuth }) {
                       <li>✅ 20 precalificaciones diarias</li>
                       <li>✅ Descuentos en productos IIRESODH</li>
                     </ul>
-                    <button className="btn btn-primary plan-cta" onClick={() => handleSelectPlan('avanzado')}>Elegir Avanzado</button>
+                    {/* BOTÓN TARJETA AVANZADA - Actualizado a MUI */}
+                    <Button 
+                      onClick={() => handleSelectPlan('avanzado')}
+                      sx={{ ...muiPrimaryBtnStyle, width: '100%', mt: 'auto' }}
+                    >
+                      Elegir Avanzado
+                    </Button>
                   </div>
 
                   <div className="pricing-card">
@@ -499,7 +580,13 @@ export default function LandingPage({ onOpenAuth }) {
                       <li>✅ 100 precalificaciones diarias</li>
                       <li>✅ Descuentos en productos IIRESODH</li>
                     </ul>
-                    <button className="btn btn-primary plan-cta" onClick={() => handleSelectPlan('premium')}>Elegir Premium</button>
+                    {/* BOTÓN TARJETA PREMIUM - Actualizado a MUI */}
+                    <Button 
+                      onClick={() => handleSelectPlan('premium')}
+                      sx={{ ...muiPrimaryBtnStyle, width: '100%', mt: 'auto' }}
+                    >
+                      Elegir Premium
+                    </Button>
                   </div>
                 </div>
               </>
@@ -515,9 +602,13 @@ export default function LandingPage({ onOpenAuth }) {
                     <br /><br />
                     Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario.
                 </p>
-                <button className="btn btn-primary" onClick={() => setIsContactOpen(true)}>
-                    Contactar con Soporte Corporativo
-                </button>
+                {/* BOTÓN CORPORATIVO - Actualizado a MUI */}
+                <Button 
+                  onClick={() => setIsContactOpen(true)}
+                  sx={muiPrimaryBtnStyle}
+                >
+                  Contactar con Soporte Corporativo
+                </Button>
             </div>
         </section>
 
@@ -574,7 +665,6 @@ export default function LandingPage({ onOpenAuth }) {
         </div>
       </main>
 
-      {/* --- FORMULARIO DE CONTACTO MEJORADO CON MATERIAL-UI --- */}
       {isContactOpen && (
         <div className="modal-backdrop">
             <div className="modal-card">
