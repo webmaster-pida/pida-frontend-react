@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
+// Importaciones de Material-UI añadidas
+import { Box, TextField, Button, ButtonGroup, Fab } from '@mui/material';
+
 const API_ANA = "https://analize-v20-strong-465781488910.us-central1.run.app";
 
 const markdownComponents = {
@@ -400,10 +403,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               }
               
             } catch (e) {
-              // 🛡️ NUEVO: En lugar de estallar y bloquear la pantalla, 
-              // simplemente ignoramos este paquete defectuoso y seguimos adelante.
               if (e.message && !e.message.includes('JSON')) {
-                 throw e; // Si es un error del servidor, sí lo lanzamos
+                 throw e; 
               } else {
                  console.warn("Se omitió un paquete de datos incompleto:", chunk);
               }
@@ -568,30 +569,24 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         </div>
       </div>
 
+      {/* FAB de MUI para Scroll To Bottom */}
       {!isAtBottom && messages.length > 0 && (
-        <button
-          onClick={() => {
+        <Fab
+          color="primary"
+          size="medium"
+          onClick={(e) => {
+            e.preventDefault();
             setIsAtBottom(true);
             scrollToBottom();
           }}
-          style={{
+          sx={{
             position: 'absolute',
             bottom: '180px', 
             right: '25px',
-            width: '42px',
-            height: '42px',
-            borderRadius: '50%',
-            backgroundColor: '#0056B3',
-            color: 'white',
-            border: 'none',
-            boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
             zIndex: 900,
             opacity: 0.9,
-            transition: 'opacity 0.2s ease-in-out'
+            backgroundColor: '#0056B3',
+            '&:hover': { backgroundColor: '#004494', opacity: 1 }
           }}
           title="Ir al último mensaje"
         >
@@ -599,17 +594,20 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <polyline points="19 12 12 19 5 12"></polyline>
           </svg>
-        </button>
+        </Fab>
       )}
 
-      <div className="pida-view-form">
+      <form className="pida-view-form" onSubmit={(e) => handleAnalyze(e)}>
         
+        {/* Controles de Descarga agrupados con ButtonGroup de MUI */}
         {messages.length > 0 && (
-          <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '8px' }}>
-            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>TXT</button>
-            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>DOCX</button>
-            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>PDF</button>
-          </div>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+            <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>TXT</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>DOCX</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>PDF</Button>
+            </ButtonGroup>
+          </Box>
         )}
 
         {files.length > 0 && messages.length === 0 && !isAnalyzing && (
@@ -640,6 +638,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
           <button 
+            type="button"
             className="pida-header-btn primary" 
             style={{ width: 'auto' }}
             onClick={() => fileInputRef.current.click()}
@@ -654,31 +653,56 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             {files.map((file, idx) => (
               <div key={idx} className="active-file-chip">
                 <span>{file.name}</span> 
-                <button onClick={() => removeFile(idx)} disabled={isAnalyzing}>×</button>
+                <button type="button" onClick={() => removeFile(idx)} disabled={isAnalyzing}>×</button>
               </div>
             ))}
           </div>
         )}
 
-        <textarea 
-          id="user-instructions" 
-          rows="2" 
-          className="pida-textarea" 
+        {/* Input con TextField de MUI, auto-crecimiento hasta 5 líneas */}
+        <TextField 
+          id="user-instructions"
+          multiline
+          minRows={2}
+          maxRows={5}
+          fullWidth
           placeholder="Instrucciones para el análisis..."
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) handleAnalyze(e); }}
           disabled={isAnalyzing}
+          sx={{ 
+            mb: 2, 
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: '#FAFAFA',
+              borderRadius: 2,
+            }
+          }}
         />
         
-        <div className="pida-form-actions">
-          <button type="button" className="pida-button-secondary" onClick={handleClear} disabled={isAnalyzing}>Limpiar</button>
-          <button type="button" className="pida-button-primary" onClick={handleAnalyze} disabled={isAnalyzing}>
+        {/* Botones de Limpiar y Analizar de MUI */}
+        <Box className="pida-form-actions" sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Button 
+            variant="text" 
+            onClick={handleClear} 
+            disabled={isAnalyzing}
+            sx={{ color: 'text.secondary', fontWeight: 500, '&:hover': { textDecoration: 'underline', backgroundColor: 'transparent' } }}
+          >
+            Limpiar
+          </Button>
+          <Button 
+            type="submit" 
+            variant="contained" 
+            color="primary" 
+            disabled={isAnalyzing}
+            sx={{ px: 4, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-accent)', '&:hover': { bgcolor: '#004494' } }}
+          >
             Analizar
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Box>
+      </form>
 
+      {/* --- MODALES INTACTOS --- */}
       {showMissingFileModal && (
         <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setShowMissingFileModal(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: '40px 30px', maxWidth: '420px', borderRadius: '16px' }}>
