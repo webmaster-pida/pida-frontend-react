@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
+// Importaciones de Material-UI añadidas
+import { Box, TextField, Button, ButtonGroup, Fab } from '@mui/material';
+
 const API_CHAT = "https://chat-v20-strong-465781488910.us-central1.run.app";
 
 export default function ChatInterface({ user, resetSignal, loadChatId, refreshHistory }) {
@@ -202,21 +205,17 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
       for (const line of lines) {
         const trimmed = line.trim();
-        // 1. DETECTOR INTELIGENTE DE PREGUNTAS (Con viñeta O con signos de interrogación)
         const isQuestion = /^([-*•]|\d+[.)])\s*/.test(trimmed) || trimmed.startsWith('¿') || trimmed.endsWith('?');
         const isLinkOrSource = /\[.*\]\(http|\bhttps?:\/\//i.test(trimmed) || trimmed.toLowerCase().includes('fuente:') || trimmed.startsWith('-');
 
         if (isQuestion && questions.length < 3 && !isLinkOrSource && trimmed.length > 5) {
           questions.push(trimmed.replace(/^[-*•0-9.)]+\s*/, '').replace(/["*]/g, '').trim());
         } else {
-          // 2. RECUPERAMOS EL GUARDADO DE LAS "OTRAS FUENTES"
           leftoverLines.push(line);
         }
       }
 
       let textAfterQuestions = leftoverLines.join('\n').trim();
-      
-      // Renombramos el título automático de Google para que sea más claro
       textAfterQuestions = textAfterQuestions.replace(/Fuentes Consultadas/gi, "Otras Fuentes Consultadas");
       textAfterQuestions = textAfterQuestions.replace(/Fuentes y Jurisprudencia/gi, "Otras Fuentes Consultadas");
 
@@ -245,7 +244,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
             </div>
           )}
 
-          {/* 3. VOLVEMOS A RENDERIZAR LAS "OTRAS FUENTES" DEBAJO DE LOS BOTONES */}
           {textAfterQuestions && (
             <div className="markdown-content" style={{ marginTop: '20px' }}>
               <ReactMarkdown components={markdownComponents}>{textAfterQuestions}</ReactMarkdown>
@@ -300,32 +298,24 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
         </div>
       </div>
 
+      {/* FAB de MUI para Scroll To Bottom */}
       {!isAtBottom && messages.length > 0 && (
-        <button
-          type="button"
+        <Fab
+          color="primary"
+          size="medium"
           onClick={(e) => {
             e.preventDefault();
             setIsAtBottom(true);
             scrollToBottom();
           }}
-          style={{
+          sx={{
             position: 'absolute',
             bottom: '120px',
             right: '25px',
-            width: '42px',
-            height: '42px',
-            borderRadius: '50%',
-            backgroundColor: '#0056B3',
-            color: 'white',
-            border: 'none',
-            boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
             zIndex: 900,
             opacity: 0.9,
-            transition: 'opacity 0.2s ease-in-out'
+            backgroundColor: '#0056B3',
+            '&:hover': { backgroundColor: '#004494', opacity: 1 }
           }}
           title="Ir al último mensaje"
         >
@@ -333,30 +323,61 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <polyline points="19 12 12 19 5 12"></polyline>
           </svg>
-        </button>
+        </Fab>
       )}
 
+      {/* Mantenemos tu clase original <form className="pida-view-form"> para conservar los márgenes exactos */}
       <form className="pida-view-form" onSubmit={(e) => handleSend(e)}>
+        
+        {/* Controles de Descarga agrupados con ButtonGroup de MUI */}
         {messages.length > 0 && (
-          <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '8px' }}>
-            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>TXT</button>
-            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>DOCX</button>
-            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>PDF</button>
-          </div>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
+            <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>TXT</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>DOCX</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>PDF</Button>
+            </ButtonGroup>
+          </Box>
         )}
 
-        <textarea 
-          className="pida-textarea" 
-          rows="2" 
+        {/* Input con TextField de MUI, auto-crecimiento hasta 5 líneas */}
+        <TextField 
+          multiline
+          minRows={2}
+          maxRows={5}
+          fullWidth
           placeholder="Consulta a PIDA..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) handleSend(e); }}
+          sx={{ 
+            mb: 2, 
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: '#FAFAFA',
+              borderRadius: 2,
+            }
+          }}
         />
-        <div className="pida-form-actions">
-          <button type="button" className="pida-button-secondary" onClick={() => { setMessages([]); setChatId(null); setInput(''); setIsAtBottom(true); }}>Limpiar</button>
-          <button type="submit" className="pida-button-primary" disabled={isTyping}>Enviar</button>
-        </div>
+        
+        {/* Botones de Limpiar y Enviar de MUI */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Button 
+            variant="text" 
+            onClick={() => { setMessages([]); setChatId(null); setInput(''); setIsAtBottom(true); }}
+            sx={{ color: 'text.secondary', fontWeight: 500, '&:hover': { textDecoration: 'underline', backgroundColor: 'transparent' } }}
+          >
+            Limpiar
+          </Button>
+          <Button 
+            type="submit" 
+            variant="contained" 
+            color="primary" 
+            disabled={isTyping}
+            sx={{ px: 4, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-accent)', '&:hover': { bgcolor: '#004494' } }}
+          >
+            Enviar
+          </Button>
+        </Box>
       </form>
     </div>
   );
