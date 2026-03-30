@@ -85,11 +85,22 @@ export default function AccountInterface({ user, isVip }) {
   };
 
   return (
-    <Box className="pida-view" sx={{ p: { xs: 2, sm: 4 }, display: 'flex', justifyContent: 'center' }}>
-      <Box className="pida-view-content" sx={{ width: '100%', maxWidth: '600px' }}>
+    // CAMBIO AQUÍ: Contenedor principal a pantalla completa para centrado vertical y horizontal
+    <Box 
+      sx={{ 
+        width: '100%',
+        minHeight: '100vh', // Ocupa todo el alto de la ventana
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', // Centrado vertical
+        backgroundColor: '#f9fafb', // Fondo suave para resaltar la tarjeta
+        p: { xs: 2, sm: 4, md: 6 }, // Padding generoso para el enmarcado
+      }}
+    >
+      <Box sx={{ width: '100%', maxWidth: '600px' }}>
         
-        {/* Contenedor Principal MUI */}
-        <Paper elevation={3} sx={{ p: { xs: 3, sm: 5 }, borderRadius: 3 }}>
+        {/* Contenedor Principal MUI con sombra */}
+        <Paper elevation={3} sx={{ p: { xs: 3, sm: 5 }, borderRadius: 3, background: 'white' }}>
           
           {/* Cabecera */}
           <Box sx={{ textAlign: 'center', mb: 4 }}>
