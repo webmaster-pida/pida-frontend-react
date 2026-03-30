@@ -85,21 +85,22 @@ export default function AccountInterface({ user, isVip }) {
   };
 
   return (
-    // CAMBIO AQUÍ: Contenedor principal a pantalla completa para centrado vertical y horizontal
+    // CAMBIO AQUÍ: Contenedor alineado arriba (flex-start) y con padding superior específico
     <Box 
       sx={{ 
         width: '100%',
-        minHeight: '100vh', // Ocupa todo el alto de la ventana
+        minHeight: '100vh',
         display: 'flex', 
         justifyContent: 'center', 
-        alignItems: 'center', // Centrado vertical
-        backgroundColor: '#f9fafb', // Fondo suave para resaltar la tarjeta
-        p: { xs: 2, sm: 4, md: 6 }, // Padding generoso para el enmarcado
+        alignItems: 'flex-start', // Alineación hacia arriba, no al centro
+        backgroundColor: '#f9fafb',
+        p: { xs: 2, sm: 4 }, // Padding lateral y general
+        pt: { xs: 6, sm: 8, md: 10 }, // Aumento el padding superior para controlar la posición inicial
       }}
     >
       <Box sx={{ width: '100%', maxWidth: '600px' }}>
         
-        {/* Contenedor Principal MUI con sombra */}
+        {/* Contenedor Principal MUI */}
         <Paper elevation={3} sx={{ p: { xs: 3, sm: 5 }, borderRadius: 3, background: 'white' }}>
           
           {/* Cabecera */}
@@ -233,7 +234,7 @@ export default function AccountInterface({ user, isVip }) {
         </Paper>
       </Box>
 
-      {/* Notificación Flotante (MUI Snackbar) */}
+      {/* Notificación Flotante */}
       <Snackbar 
         open={message.open} 
         autoHideDuration={5000} 
