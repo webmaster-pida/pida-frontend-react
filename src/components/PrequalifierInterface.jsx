@@ -28,25 +28,21 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
   const handleScroll = () => {
     if (chatContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-      // Si el usuario está a menos de 80px del final, consideramos que está "abajo"
       const distanceToBottom = scrollHeight - scrollTop - clientHeight;
       setIsAtBottom(distanceToBottom < 80);
     }
   };
 
-  // Función para forzar el scroll
   const scrollToBottom = (behavior = 'smooth') => {
     resultEndRef.current?.scrollIntoView({ behavior });
   };
 
-  // Efecto principal del Smart Scrolling (Solo baja si isAtBottom es true)
   useEffect(() => {
     if (isAtBottom) {
       scrollToBottom();
     }
   }, [resultText, isAnalyzing]);
 
-  // --- INTERCEPTOR DE ENLACES PARA ABRIR EN NUEVA PESTAÑA ---
   const markdownComponents = {
     a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />
   };
@@ -91,12 +87,10 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
     setError('');
     setStatusMsg('Conectando con PIDA...');
     
-    // Forzamos el scroll hacia abajo al iniciar el análisis
     setIsAtBottom(true);
     setTimeout(() => scrollToBottom(), 50);
 
     const finalTitle = title.trim() || `Caso ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
-    // Ajuste para el valor "OTRO" del select de MUI
     const finalCountry = (country === 'OTRO' || country === '') ? null : country;
 
     try {
@@ -181,11 +175,9 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
   return (
     <div className="pida-view" style={{ position: 'relative' }}>
       
-      {/* EL EVENTO ONSCROLL ESTÁ EN EL CONTENEDOR PRINCIPAL */}
       <div className="pida-view-content" ref={chatContainerRef} onScroll={handleScroll}>
         <div id="pida-chat-box">
           
-          {/* Bienvenida Uniforme con el Robot */}
           {!isAnalyzing && !resultText && !error && (
             <div className="pida-bubble pida-message-bubble">
               <div className="pida-welcome-content">
@@ -218,13 +210,11 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
             </div>
           )}
 
-          {/* ANCLA INVISIBLE PARA EL SCROLL */}
           <div ref={resultEndRef} style={{ height: '1px' }} />
 
         </div>
       </div>
 
-      {/* FAB de MUI para Scroll To Bottom */}
       {!isAtBottom && resultText && (
         <Fab
           color="primary"
@@ -236,7 +226,7 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
           }}
           sx={{
             position: 'absolute',
-            bottom: '240px', // Ajustado a la altura del formulario del precalificador
+            bottom: '240px',
             right: '25px',
             zIndex: 900,
             opacity: 0.9,
@@ -254,7 +244,6 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
 
       <div className="pida-view-form">
         
-        {/* Controles de Descarga agrupados con ButtonGroup de MUI */}
         {resultText && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
             <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
@@ -265,7 +254,6 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
           </Box>
         )}
 
-        {/* Inputs superiores: Título y Select de País */}
         <Box sx={{ display: 'flex', gap: 1.5, mb: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}>
           <TextField 
             label="Título del caso (Opcional)"
@@ -276,8 +264,10 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
             onChange={e => setTitle(e.target.value)}
             disabled={isAnalyzing}
             sx={{ bgcolor: '#FAFAFA' }}
+            InputLabelProps={{ shrink: true }}
           />
           
+          {/* FIX AQUÍ: InputLabelProps añadido para evitar sobreposición visual */}
           <TextField
             select
             label="País (Código Penal)"
@@ -287,7 +277,11 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
             onChange={e => setCountry(e.target.value)}
             disabled={isAnalyzing}
             sx={{ bgcolor: '#FAFAFA', minWidth: { xs: '100%', sm: '220px' } }}
-            SelectProps={{ displayEmpty: true }}
+            InputLabelProps={{ shrink: true }}
+            SelectProps={{ 
+              displayEmpty: true,
+              MenuProps: { style: { zIndex: 999999 } } // Refuerzo para asegurar que despliegue
+            }}
           >
             <MenuItem value="" disabled><em>Selecciona un país...</em></MenuItem>
             <MenuItem value="AR">Argentina</MenuItem>
@@ -312,7 +306,6 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
           </TextField>
         </Box>
 
-        {/* Input de Hechos con TextField de MUI, auto-crecimiento hasta 8 líneas */}
         <TextField 
           multiline
           minRows={3}
@@ -337,7 +330,6 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
           }}
         />
 
-        {/* Botones de Limpiar y Analizar de MUI */}
         <Box className="pida-form-actions" sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button 
             variant="text" 
