@@ -1,12 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from '../config/firebase';
 
+// Importamos los componentes de Material-UI
+import { 
+  Box, 
+  TextField, 
+  Button, 
+  Typography, 
+  Paper, 
+  Divider, 
+  Snackbar, 
+  Alert 
+} from '@mui/material';
+
 const API_CHAT = "https://chat-v20-stripe-elements-465781488910.us-central1.run.app";
 
 export default function AccountInterface({ user, isVip }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [message, setMessage] = useState({ text: '', type: '' });
+  const [message, setMessage] = useState({ text: '', type: 'success', open: false });
 
   useEffect(() => {
     if (user && user.displayName) {
@@ -17,8 +29,12 @@ export default function AccountInterface({ user, isVip }) {
   }, [user]);
 
   const showMessage = (text, type = 'success') => {
-    setMessage({ text, type });
-    setTimeout(() => setMessage({ text: '', type: '' }), 4000);
+    setMessage({ text, type, open: true });
+  };
+
+  const handleCloseMessage = (event, reason) => {
+    if (reason === 'clickaway') return;
+    setMessage({ ...message, open: false });
   };
 
   const handleUpdateName = async () => {
@@ -33,7 +49,6 @@ export default function AccountInterface({ user, isVip }) {
   };
 
   const handleBillingPortal = async () => {
-    // Si por alguna razón el botón no se bloqueó visualmente, esta función aborta si es VIP
     if (isVip) return;
 
     try {
@@ -70,66 +85,159 @@ export default function AccountInterface({ user, isVip }) {
   };
 
   return (
-    <div className="pida-view">
-      <div className="pida-view-content">
-        <div className="account-container" style={{ maxWidth: '600px', margin: '0 auto', background: 'white', borderRadius: '12px', border: '1px solid var(--pida-border)', padding: '40px' }}>
+    <Box className="pida-view" sx={{ p: { xs: 2, sm: 4 }, display: 'flex', justifyContent: 'center' }}>
+      <Box className="pida-view-content" sx={{ width: '100%', maxWidth: '600px' }}>
+        
+        {/* Contenedor Principal MUI */}
+        <Paper elevation={3} sx={{ p: { xs: 3, sm: 5 }, borderRadius: 3 }}>
           
-          {message.text && (
-            <div style={{ padding: '10px', borderRadius: '6px', color: 'white', textAlign: 'center', marginBottom: '15px', fontSize: '0.9rem', background: message.type === 'error' ? '#EF4444' : '#10B981' }}>
-              {message.text}
-            </div>
-          )}
-
-          <div className="account-header" style={{ textAlign: 'center', marginBottom: '30px' }}>
-            <h2 style={{ color: 'var(--pida-primary)', marginBottom: '5px', marginTop: 0 }}>Mi Cuenta</h2>
-            <p style={{ color: '#666', margin: 0 }}>Gestiona tu perfil y suscripción.</p>
-          </div>
+          {/* Cabecera */}
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 700, mb: 1 }}>
+              Mi Cuenta
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Gestiona tu perfil y suscripción.
+            </Typography>
+          </Box>
           
-          <div className="account-section" style={{ marginBottom: '30px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
-            <h3 style={{ fontSize: '1rem', color: 'var(--pida-text-muted)', marginBottom: '15px', textTransform: 'uppercase' }}>Perfil Personal</h3>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-              <input type="text" className="pida-textarea" style={{ padding: '10px', marginBottom: 0 }} placeholder="Nombre" value={firstName} onChange={e => setFirstName(e.target.value)} />
-              <input type="text" className="pida-textarea" style={{ padding: '10px', marginBottom: 0 }} placeholder="Apellido" value={lastName} onChange={e => setLastName(e.target.value)} />
-            </div>
-            <button className="pida-button-primary" style={{ width: '100%' }} onClick={handleUpdateName}>Actualizar Nombre</button>
-          </div>
+          {/* Sección: Perfil Personal */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="overline" sx={{ color: 'text.secondary', display: 'block', mb: 2, fontWeight: 600 }}>
+              Perfil Personal
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, mb: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+              <TextField
+                label="Nombre"
+                variant="outlined"
+                size="small"
+                fullWidth
+                value={firstName}
+                onChange={e => setFirstName(e.target.value)}
+              />
+              <TextField
+                label="Apellido"
+                variant="outlined"
+                size="small"
+                fullWidth
+                value={lastName}
+                onChange={e => setLastName(e.target.value)}
+              />
+            </Box>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              fullWidth 
+              onClick={handleUpdateName}
+              sx={{ py: 1.2, fontWeight: 'bold', borderRadius: 2 }}
+            >
+              Actualizar Nombre
+            </Button>
+          </Box>
 
-          <div className="account-section" style={{ marginBottom: '30px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
-            <h3 style={{ fontSize: '1rem', color: 'var(--pida-text-muted)', marginBottom: '15px', textTransform: 'uppercase' }}>Suscripción</h3>
+          <Divider sx={{ my: 4 }} />
+
+          {/* Sección: Suscripción */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="overline" sx={{ color: 'text.secondary', display: 'block', mb: 2, fontWeight: 600 }}>
+              Suscripción
+            </Typography>
             
-            {/* LÓGICA VIP REFORZADA */}
             {isVip === true ? (
-              <button 
-                className="pida-button-primary" 
+              <Button 
+                variant="contained" 
                 disabled 
-                style={{ 
-                  width: '100%', 
-                  backgroundColor: '#9ca3af', 
-                  cursor: 'not-allowed',
-                  opacity: 0.8,
-                  border: 'none'
+                fullWidth 
+                sx={{ 
+                  py: 1.2, 
+                  fontWeight: 'bold', 
+                  borderRadius: 2,
+                  '&.Mui-disabled': {
+                    bgcolor: '#9ca3af',
+                    color: 'white',
+                    opacity: 0.8
+                  }
                 }}
               >
                 VIP: No posee facturación
-              </button>
+              </Button>
             ) : (
-              <button 
-                className="pida-button-primary" 
-                style={{ width: '100%', backgroundColor: '#2A4B7C' }} 
+              <Button 
+                variant="contained" 
+                fullWidth 
                 onClick={handleBillingPortal}
+                sx={{ 
+                  py: 1.2, 
+                  fontWeight: 'bold', 
+                  borderRadius: 2,
+                  bgcolor: '#2A4B7C', 
+                  '&:hover': { bgcolor: '#1D3557' }
+                }}
               >
                 Portal de Facturación
-              </button>
+              </Button>
             )}
-          </div>
+          </Box>
 
-          <div className="account-section" style={{ borderTop: '1px solid #eee', paddingTop: '20px' }}>
-            <h3 style={{ fontSize: '1rem', color: 'var(--pida-text-muted)', marginBottom: '15px', textTransform: 'uppercase' }}>Seguridad</h3>
-            <button className="pida-button-secondary" style={{ border: '1px solid #ccc', width: '100%', padding: '10px', borderRadius: '6px' }} onClick={handlePasswordReset}>Restablecer contraseña</button>
-          </div>
+          <Divider sx={{ my: 4 }} />
 
-        </div>
-      </div>
-    </div>
+          {/* Sección: Seguridad */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="overline" sx={{ color: 'text.secondary', display: 'block', mb: 2, fontWeight: 600 }}>
+              Seguridad
+            </Typography>
+            <Button 
+              variant="outlined" 
+              color="inherit"
+              fullWidth 
+              onClick={handlePasswordReset}
+              sx={{ py: 1.2, borderRadius: 2, color: 'text.secondary', borderColor: '#ccc' }}
+            >
+              Restablecer contraseña
+            </Button>
+          </Box>
+
+          {/* Código de descuento */}
+          <Box sx={{ textAlign: 'center', mt: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              Código de descuento IIRESODH:{' '}
+              <Box 
+                component="span" 
+                sx={{ 
+                  color: 'primary.main', 
+                  background: '#F0F7FF', 
+                  padding: '4px 10px', 
+                  borderRadius: 2, 
+                  border: '1px solid #BAE6FD', 
+                  fontWeight: 'bold',
+                  display: 'inline-block',
+                  ml: 1
+                }}
+              >
+                PIDA33
+              </Box>
+            </Typography>
+          </Box>
+
+        </Paper>
+      </Box>
+
+      {/* Notificación Flotante (MUI Snackbar) */}
+      <Snackbar 
+        open={message.open} 
+        autoHideDuration={5000} 
+        onClose={handleCloseMessage}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleCloseMessage} 
+          severity={message.type} 
+          variant="filled"
+          sx={{ width: '100%', borderRadius: 2, fontWeight: 500 }}
+        >
+          {message.text}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 }
