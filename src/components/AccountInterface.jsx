@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from '../config/firebase';
 
-// Importamos los componentes de Material-UI
+// Importamos los componentes de Material-UI (eliminamos Paper)
 import { 
   Box, 
   TextField, 
   Button, 
   Typography, 
-  Paper, 
   Divider, 
   Snackbar, 
   Alert 
@@ -85,55 +84,51 @@ export default function AccountInterface({ user, isVip }) {
   };
 
   return (
-    // CAMBIO AQUÍ: Contenedor alineado arriba (flex-start) y con padding superior específico
-    <Box 
-      sx={{ 
-        width: '100%',
-        minHeight: '100vh',
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'flex-start', // Alineación hacia arriba, no al centro
-        backgroundColor: '#f9fafb',
-        p: { xs: 2, sm: 4 }, // Padding lateral y general
-        pt: { xs: 6, sm: 8, md: 10 }, // Aumento el padding superior para controlar la posición inicial
-      }}
-    >
-      <Box sx={{ width: '100%', maxWidth: '600px' }}>
-        
-        {/* Contenedor Principal MUI */}
-        <Paper elevation={3} sx={{ p: { xs: 3, sm: 5 }, borderRadius: 3, background: 'white' }}>
+    // Utilizamos las clases nativas de PIDA para que el scroll funcione perfectamente
+    <Box className="pida-view" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box 
+        className="pida-view-content" 
+        sx={{ 
+          flex: 1, 
+          overflowY: 'auto', // Permite el scroll interno sin cortar la pantalla
+          p: { xs: 3, sm: 5, md: 8 } 
+        }}
+      >
+        <Box sx={{ width: '100%', maxWidth: '600px', mx: 'auto', pb: 6 }}>
           
           {/* Cabecera */}
-          <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 700, mb: 1 }}>
+          <Box sx={{ textAlign: 'center', mb: 5 }}>
+            <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 800, mb: 1 }}>
               Mi Cuenta
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body1" color="text.secondary">
               Gestiona tu perfil y suscripción.
             </Typography>
           </Box>
           
           {/* Sección: Perfil Personal */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="overline" sx={{ color: 'text.secondary', display: 'block', mb: 2, fontWeight: 600 }}>
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="overline" sx={{ color: 'text.secondary', display: 'block', mb: 2, fontWeight: 600, fontSize: '0.85rem' }}>
               Perfil Personal
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2, mb: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+            <Box sx={{ display: 'flex', gap: 2, mb: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
               <TextField
                 label="Nombre"
                 variant="outlined"
-                size="small"
+                size="medium"
                 fullWidth
                 value={firstName}
                 onChange={e => setFirstName(e.target.value)}
+                sx={{ bgcolor: 'white' }} // Fondo blanco solo para el input
               />
               <TextField
                 label="Apellido"
                 variant="outlined"
-                size="small"
+                size="medium"
                 fullWidth
                 value={lastName}
                 onChange={e => setLastName(e.target.value)}
+                sx={{ bgcolor: 'white' }}
               />
             </Box>
             <Button 
@@ -141,17 +136,17 @@ export default function AccountInterface({ user, isVip }) {
               color="primary" 
               fullWidth 
               onClick={handleUpdateName}
-              sx={{ py: 1.2, fontWeight: 'bold', borderRadius: 2 }}
+              sx={{ py: 1.5, fontWeight: 'bold', fontSize: '1rem', borderRadius: 2 }}
             >
               Actualizar Nombre
             </Button>
           </Box>
 
-          <Divider sx={{ my: 4 }} />
+          <Divider sx={{ my: 5 }} />
 
           {/* Sección: Suscripción */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="overline" sx={{ color: 'text.secondary', display: 'block', mb: 2, fontWeight: 600 }}>
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="overline" sx={{ color: 'text.secondary', display: 'block', mb: 2, fontWeight: 600, fontSize: '0.85rem' }}>
               Suscripción
             </Typography>
             
@@ -161,8 +156,9 @@ export default function AccountInterface({ user, isVip }) {
                 disabled 
                 fullWidth 
                 sx={{ 
-                  py: 1.2, 
+                  py: 1.5, 
                   fontWeight: 'bold', 
+                  fontSize: '1rem',
                   borderRadius: 2,
                   '&.Mui-disabled': {
                     bgcolor: '#9ca3af',
@@ -179,8 +175,9 @@ export default function AccountInterface({ user, isVip }) {
                 fullWidth 
                 onClick={handleBillingPortal}
                 sx={{ 
-                  py: 1.2, 
-                  fontWeight: 'bold', 
+                  py: 1.5, 
+                  fontWeight: 'bold',
+                  fontSize: '1rem',
                   borderRadius: 2,
                   bgcolor: '#2A4B7C', 
                   '&:hover': { bgcolor: '#1D3557' }
@@ -191,11 +188,11 @@ export default function AccountInterface({ user, isVip }) {
             )}
           </Box>
 
-          <Divider sx={{ my: 4 }} />
+          <Divider sx={{ my: 5 }} />
 
           {/* Sección: Seguridad */}
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="overline" sx={{ color: 'text.secondary', display: 'block', mb: 2, fontWeight: 600 }}>
+          <Box sx={{ mb: 5 }}>
+            <Typography variant="overline" sx={{ color: 'text.secondary', display: 'block', mb: 2, fontWeight: 600, fontSize: '0.85rem' }}>
               Seguridad
             </Typography>
             <Button 
@@ -203,22 +200,22 @@ export default function AccountInterface({ user, isVip }) {
               color="inherit"
               fullWidth 
               onClick={handlePasswordReset}
-              sx={{ py: 1.2, borderRadius: 2, color: 'text.secondary', borderColor: '#ccc' }}
+              sx={{ py: 1.5, borderRadius: 2, fontSize: '1rem', color: 'text.secondary', borderColor: '#ccc', bgcolor: 'white' }}
             >
               Restablecer contraseña
             </Button>
           </Box>
 
           {/* Código de descuento */}
-          <Box sx={{ textAlign: 'center', mt: 2 }}>
-            <Typography variant="body2" color="text.secondary">
+          <Box sx={{ textAlign: 'center', mt: 4 }}>
+            <Typography variant="body1" color="text.secondary">
               Código de descuento IIRESODH:{' '}
               <Box 
                 component="span" 
                 sx={{ 
                   color: 'primary.main', 
                   background: '#F0F7FF', 
-                  padding: '4px 10px', 
+                  padding: '6px 12px', 
                   borderRadius: 2, 
                   border: '1px solid #BAE6FD', 
                   fontWeight: 'bold',
@@ -231,10 +228,10 @@ export default function AccountInterface({ user, isVip }) {
             </Typography>
           </Box>
 
-        </Paper>
+        </Box>
       </Box>
 
-      {/* Notificación Flotante */}
+      {/* Notificación Flotante (MUI Snackbar) */}
       <Snackbar 
         open={message.open} 
         autoHideDuration={5000} 
