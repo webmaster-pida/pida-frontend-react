@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
+// Importaciones de Material-UI añadidas
+import { Box, TextField, Button, ButtonGroup, Fab, MenuItem } from '@mui/material';
+
 const API_PRE = "https://precalifier-v20-stripe-elements-465781488910.us-central1.run.app";
 
 export default function PrequalifierInterface({ user, resetSignal, loadPreData }) {
@@ -93,6 +96,8 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
     setTimeout(() => scrollToBottom(), 50);
 
     const finalTitle = title.trim() || `Caso ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
+    // Ajuste para el valor "OTRO" del select de MUI
+    const finalCountry = (country === 'OTRO' || country === '') ? null : country;
 
     try {
       const token = await user.getIdToken();
@@ -105,7 +110,7 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
         body: JSON.stringify({ 
             title: finalTitle, 
             facts: trimmedFacts, 
-            country_code: country || null 
+            country_code: finalCountry 
         })
       });
 
@@ -184,7 +189,6 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
           {!isAnalyzing && !resultText && !error && (
             <div className="pida-bubble pida-message-bubble">
               <div className="pida-welcome-content">
-                <img src="/img/PIDA-Productos_Stripe.png" alt="PIDA Robot" className="pida-welcome-robot" />
                 <div className="pida-welcome-text">
                   <h3>Precalificador Penal y de Derechos Humanos</h3>
                   <p>
@@ -220,33 +224,24 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
         </div>
       </div>
 
-      {/* BOTÓN FLOTANTE PARA SMART SCROLLING */}
+      {/* FAB de MUI para Scroll To Bottom */}
       {!isAtBottom && resultText && (
-        <button
-          type="button"
+        <Fab
+          color="primary"
+          size="medium"
           onClick={(e) => {
             e.preventDefault();
             setIsAtBottom(true);
             scrollToBottom();
           }}
-          style={{
+          sx={{
             position: 'absolute',
             bottom: '240px', // Ajustado a la altura del formulario del precalificador
             right: '25px',
-            width: '42px',
-            height: '42px',
-            borderRadius: '50%',
-            backgroundColor: '#0056B3',
-            color: 'white',
-            border: 'none',
-            boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
             zIndex: 900,
             opacity: 0.9,
-            transition: 'opacity 0.2s ease-in-out'
+            backgroundColor: '#0056B3',
+            '&:hover': { backgroundColor: '#004494', opacity: 1 }
           }}
           title="Ir al final del análisis"
         >
@@ -254,64 +249,75 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <polyline points="19 12 12 19 5 12"></polyline>
           </svg>
-        </button>
+        </Fab>
       )}
 
       <div className="pida-view-form">
         
+        {/* Controles de Descarga agrupados con ButtonGroup de MUI */}
         {resultText && (
-          <div className="pida-download-controls" style={{ display: 'flex', justifyContent: 'flex-end', gap: '5px', marginBottom: '10px' }}>
-            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Precalificador-PIDA"), "Precalificación de Caso", resultText)}>TXT</button>
-            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Precalificador-PIDA"), "Precalificación de Caso", resultText)}>DOCX</button>
-            <button type="button" className="pida-header-btn" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Precalificador-PIDA"), "Precalificación de Caso", resultText)}>PDF</button>
-          </div>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
+            <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Precalificador-PIDA"), "Precalificación de Caso", resultText)}>TXT</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Precalificador-PIDA"), "Precalificación de Caso", resultText)}>DOCX</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Precalificador-PIDA"), "Precalificación de Caso", resultText)}>PDF</Button>
+            </ButtonGroup>
+          </Box>
         )}
 
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-          <input 
-            type="text" 
-            className="pida-textarea" 
-            placeholder="Título del caso (Opcional)" 
-            style={{ flex: 1, height: '45px', marginBottom: 0, padding: '0 10px' }}
+        {/* Inputs superiores: Título y Select de País */}
+        <Box sx={{ display: 'flex', gap: 1.5, mb: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}>
+          <TextField 
+            label="Título del caso (Opcional)"
+            variant="outlined"
+            size="small"
+            fullWidth
             value={title}
             onChange={e => setTitle(e.target.value)}
             disabled={isAnalyzing}
+            sx={{ bgcolor: '#FAFAFA' }}
           />
           
-          <select 
-            className="pida-textarea" 
-            style={{ flex: 1, height: '45px', padding: '0 10px', width: 'auto' }}
+          <TextField
+            select
+            label="País (Código Penal)"
+            variant="outlined"
+            size="small"
             value={country}
             onChange={e => setCountry(e.target.value)}
             disabled={isAnalyzing}
+            sx={{ bgcolor: '#FAFAFA', minWidth: { xs: '100%', sm: '220px' } }}
+            SelectProps={{ displayEmpty: true }}
           >
-            <option value="" disabled>País (Código Penal)</option>
-            <option value="AR">Argentina</option>
-            <option value="BO">Bolivia</option>
-            <option value="CL">Chile</option>
-            <option value="CO">Colombia</option>
-            <option value="CR">Costa Rica</option>
-            <option value="CU">Cuba</option>
-            <option value="EC">Ecuador</option>
-            <option value="SV">El Salvador</option>
-            <option value="GT">Guatemala</option>
-            <option value="HN">Honduras</option>
-            <option value="MX">México</option>
-            <option value="NI">Nicaragua</option>
-            <option value="PA">Panamá</option>
-            <option value="PY">Paraguay</option>
-            <option value="PE">Perú</option>
-            <option value="DO">Rep. Dominicana</option>
-            <option value="UY">Uruguay</option>
-            <option value="VE">Venezuela</option>
-            <option value="">Otro / Internacional</option>
-          </select>
-        </div>
+            <MenuItem value="" disabled><em>Selecciona un país...</em></MenuItem>
+            <MenuItem value="AR">Argentina</MenuItem>
+            <MenuItem value="BO">Bolivia</MenuItem>
+            <MenuItem value="CL">Chile</MenuItem>
+            <MenuItem value="CO">Colombia</MenuItem>
+            <MenuItem value="CR">Costa Rica</MenuItem>
+            <MenuItem value="CU">Cuba</MenuItem>
+            <MenuItem value="EC">Ecuador</MenuItem>
+            <MenuItem value="SV">El Salvador</MenuItem>
+            <MenuItem value="GT">Guatemala</MenuItem>
+            <MenuItem value="HN">Honduras</MenuItem>
+            <MenuItem value="MX">México</MenuItem>
+            <MenuItem value="NI">Nicaragua</MenuItem>
+            <MenuItem value="PA">Panamá</MenuItem>
+            <MenuItem value="PY">Paraguay</MenuItem>
+            <MenuItem value="PE">Perú</MenuItem>
+            <MenuItem value="DO">Rep. Dominicana</MenuItem>
+            <MenuItem value="UY">Uruguay</MenuItem>
+            <MenuItem value="VE">Venezuela</MenuItem>
+            <MenuItem value="OTRO">Otro / Internacional</MenuItem>
+          </TextField>
+        </Box>
 
-        {/* Soporte de Enter añadido aquí (con shift+enter para saltos de línea) */}
-        <textarea 
-          rows="4" 
-          className="pida-textarea" 
+        {/* Input de Hechos con TextField de MUI, auto-crecimiento hasta 8 líneas */}
+        <TextField 
+          multiline
+          minRows={3}
+          maxRows={8}
+          fullWidth
           placeholder="Narra los hechos detalladamente para identificar posibles delitos y violaciones..."
           value={facts}
           onChange={e => setFacts(e.target.value)}
@@ -322,14 +328,36 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
             } 
           }}
           disabled={isAnalyzing}
+          sx={{ 
+            mb: 2, 
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: '#FAFAFA',
+              borderRadius: 2,
+            }
+          }}
         />
 
-        <div className="pida-form-actions">
-          <button type="button" className="pida-button-secondary" onClick={handleClear} disabled={isAnalyzing}>Limpiar</button>
-          <button type="button" className="pida-button-primary" onClick={handleAnalyze} disabled={isAnalyzing}>
+        {/* Botones de Limpiar y Analizar de MUI */}
+        <Box className="pida-form-actions" sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Button 
+            variant="text" 
+            onClick={handleClear} 
+            disabled={isAnalyzing}
+            sx={{ color: 'text.secondary', fontWeight: 500, '&:hover': { textDecoration: 'underline', backgroundColor: 'transparent' } }}
+          >
+            Limpiar
+          </Button>
+          <Button 
+            type="button" 
+            variant="contained" 
+            color="primary" 
+            onClick={handleAnalyze} 
+            disabled={isAnalyzing}
+            sx={{ px: 4, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-accent)', '&:hover': { bgcolor: '#004494' } }}
+          >
             Precalificar Caso
-          </button>
-        </div>
+          </Button>
+        </Box>
       </div>
     </div>
   );
