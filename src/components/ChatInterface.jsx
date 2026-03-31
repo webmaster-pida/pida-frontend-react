@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw'; // NUEVO: Importación del plugin para procesar HTML dentro de tablas y markdown
+import rehypeRaw from 'rehype-raw'; 
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
-// Importaciones de Material-UI añadidas
 import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 
 const API_CHAT = "https://chat-v20-strong-465781488910.us-central1.run.app";
@@ -15,9 +14,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
   const [isTyping, setIsTyping] = useState(false);
   const [chatId, setChatId] = useState(null);
   
-  // =========================================================================
-  // REFS Y ESTADOS PARA EL SMART SCROLLING
-  // =========================================================================
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -39,7 +35,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
       scrollToBottom();
     }
   }, [messages, isTyping]);
-
 
   const markdownComponents = {
     a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
@@ -216,77 +211,61 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     }
   };
 
+  // =========================================================================
+  // RENDERIZADO PROFESIONAL (PARSER ESTRUCTURADO)
+  // =========================================================================
   const renderMessageContent = (msg, index) => {
     if (msg.role === 'user') {
       return <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{msg.content}</ReactMarkdown>;
     }
 
-    const regex = /(?:#{2,3}\s*|\*\*\s*)?Preguntas de Seguimiento\s*(?:\*\*|:)?/i;
-    const match = msg.content.match(regex);
     const isCurrentlyTypingThis = isTyping && index === messages.length - 1;
+    let displayContent = msg.content;
+    let questions = [];
 
-    if (match && !isCurrentlyTypingThis) {
-      const mainContent = msg.content.substring(0, match.index);
-      const afterHeading = msg.content.substring(match.index + match[0].length);
-      
-      const lines = afterHeading.split('\n');
-      const questions = [];
-      const leftoverLines = [];
+    // Buscamos la etiqueta estructurada
+    const tagStart = "<pida_questions>";
+    const tagEnd = "</pida_questions>";
 
-      for (const line of lines) {
-        const trimmed = line.trim();
-        const isQuestion = /^([-*•]|\d+[.)])\s*/.test(trimmed) || trimmed.startsWith('¿') || trimmed.endsWith('?');
-        const isLinkOrSource = /\[.*\]\(http|\bhttps?:\/\//i.test(trimmed) || trimmed.toLowerCase().includes('fuente:') || trimmed.startsWith('-');
+    if (displayContent.includes(tagStart)) {
+      const parts = displayContent.split(tagStart);
+      displayContent = parts[0]; // Todo lo que está antes de la etiqueta es el markdown normal
 
-        if (isQuestion && questions.length < 3 && !isLinkOrSource && trimmed.length > 5) {
-          questions.push(trimmed.replace(/^[-*•0-9.)]+\s*/, '').replace(/["*]/g, '').trim());
-        } else {
-          leftoverLines.push(line);
-        }
+      // Solo extraemos y mostramos los botones si ya terminó de escribir
+      if (!isCurrentlyTypingThis && parts[1]) {
+        const qString = parts[1].replace(tagEnd, '').trim();
+        // Separamos las preguntas por el delimitador |
+        questions = qString.split('|').map(q => q.trim()).filter(q => q.length > 0);
       }
-
-      let textAfterQuestions = leftoverLines.join('\n').trim();
-      textAfterQuestions = textAfterQuestions.replace(/Fuentes Consultadas/gi, "Otras Fuentes Consultadas");
-      textAfterQuestions = textAfterQuestions.replace(/Fuentes y Jurisprudencia/gi, "Otras Fuentes Consultadas");
-
-      return (
-        <>
-          <div className="markdown-content">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{mainContent}</ReactMarkdown>
-          </div>
-          
-          {questions.length > 0 && (
-            <div className="follow-up-section">
-              <strong style={{ display: 'block', marginTop: '15px', marginBottom: '10px', color: 'var(--pida-primary)' }}>
-                Preguntas de seguimiento sugeridas:
-              </strong>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {questions.map((q, i) => (
-                  <button 
-                    key={i} 
-                    className="follow-up-btn"
-                    onClick={(e) => handleSend(e, q)}
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {textAfterQuestions && (
-            <div className="markdown-content" style={{ marginTop: '20px' }}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{textAfterQuestions}</ReactMarkdown>
-            </div>
-          )}
-        </>
-      );
     }
 
     return (
-      <div className="markdown-content">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{msg.content}</ReactMarkdown>
-      </div>
+      <>
+        <div className="markdown-content">
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+            {displayContent}
+          </ReactMarkdown>
+        </div>
+        
+        {questions.length > 0 && (
+          <div className="follow-up-section">
+            <strong style={{ display: 'block', marginTop: '15px', marginBottom: '10px', color: 'var(--pida-primary)' }}>
+              Preguntas de seguimiento sugeridas:
+            </strong>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {questions.map((q, i) => (
+                <button 
+                  key={i} 
+                  className="follow-up-btn"
+                  onClick={(e) => handleSend(e, q)}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
     );
   };
 
@@ -356,10 +335,8 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
         </Fab>
       )}
 
-      {/* Mantenemos tu clase original <form className="pida-view-form"> para conservar los márgenes exactos */}
       <form className="pida-view-form" onSubmit={(e) => handleSend(e)}>
         
-        {/* Controles de Descarga agrupados con ButtonGroup de MUI */}
         {messages.length > 0 && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
             <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
@@ -370,7 +347,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
           </Box>
         )}
 
-        {/* Input con TextField de MUI, auto-crecimiento hasta 5 líneas */}
         <TextField 
           multiline
           minRows={2}
@@ -389,7 +365,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
           }}
         />
         
-        {/* Botones de Limpiar y Enviar de MUI */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button 
             variant="text" 
