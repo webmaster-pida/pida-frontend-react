@@ -4,10 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
 // Importaciones de Material-UI añadidas
-import { 
-  Box, TextField, Button, ButtonGroup, Fab, 
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper 
-} from '@mui/material';
+import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 
 const API_CHAT = "https://chat-v20-strong-465781488910.us-central1.run.app";
 
@@ -42,9 +39,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     }
   }, [messages, isTyping]);
 
-  // =========================================================================
-  // COMPONENTES DE MARKDOWN (ENLACES Y TABLAS MUI)
-  // =========================================================================
+
   const markdownComponents = {
     a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
     table: ({ node, ...props }) => (
@@ -75,36 +70,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
         {...props} 
       />
     )
-  };
-
-  // =========================================================================
-  // FORMATEADOR PARA CORREGIR TABLAS APLASTADAS Y MARKDOWN ROTO
-  // =========================================================================
-  const formatMarkdown = (text) => {
-    if (!text) return "";
-    let clean = text;
-
-    // 1. FIX TABLAS APLASTADAS: Si la IA junta filas de tabla en una sola línea ("| | :--- |")
-    clean = clean.replace(/\|\s*\|/g, '|\n|');
-    
-    // 2. Asegurar que la tabla empiece en una nueva línea si viene pegada al texto (Ej. **Texto:" | )
-    clean = clean.replace(/(Texto[:*"\s]*)(\|)/gi, '$1\n\n$2');
-
-    // 3. Limpieza de títulos y negritas huérfanas
-    clean = clean.replace(/([^\n])\s*\n*(#{1,6}\s+)/g, '$1\n\n$2');
-    clean = clean.replace(/^\s*\*\*\s*$/gm, '');
-
-    const lines = clean.split('\n');
-    const fixedLines = lines.map(line => {
-      const count = (line.match(/\*\*/g) || []).length;
-      if (count % 2 !== 0) {
-        if (line.trim().startsWith('**')) return line.replace(/^\s*\*\*/, '');
-        if (line.trim().endsWith('**')) return line.replace(/\*\*\s*$/, '');
-      }
-      return line;
-    });
-    
-    return fixedLines.join('\n');
   };
 
   useEffect(() => {
@@ -252,7 +217,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
   const renderMessageContent = (msg, index) => {
     if (msg.role === 'user') {
-      return <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{formatMarkdown(msg.content)}</ReactMarkdown>;
+      return <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown>;
     }
 
     const regex = /(?:#{2,3}\s*|\*\*\s*)?Preguntas de Seguimiento\s*(?:\*\*|:)?/i;
@@ -286,7 +251,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
       return (
         <>
           <div className="markdown-content">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{formatMarkdown(mainContent)}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{mainContent}</ReactMarkdown>
           </div>
           
           {questions.length > 0 && (
@@ -310,7 +275,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
           {textAfterQuestions && (
             <div className="markdown-content" style={{ marginTop: '20px' }}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{formatMarkdown(textAfterQuestions)}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{textAfterQuestions}</ReactMarkdown>
             </div>
           )}
         </>
@@ -319,7 +284,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
     return (
       <div className="markdown-content">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{formatMarkdown(msg.content)}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown>
       </div>
     );
   };
