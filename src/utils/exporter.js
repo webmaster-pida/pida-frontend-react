@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import autoTable from 'jspdf-autotable'; // <-- IMPORTANTE AÑADIR ESTO
 import * as docx from "docx";
 
 export const Exporter = {
@@ -9,6 +10,16 @@ export const Exporter = {
         } else {
             return [{ role: 'model', content: content }];
         }
+    },
+
+    // Función auxiliar para convertir líneas Markdown en datos de tabla
+    parseTable(lines) {
+        const rows = lines.map(l => l.split('|').map(c => c.trim()).slice(1, -1));
+        if (rows.length < 3) return { headers: [], body: [] };
+        
+        const headers = rows[0];
+        const body = rows.slice(2); // Saltamos la fila 1 que suele ser |---|---|
+        return { headers, body };
     },
 
     // ==========================================
@@ -25,7 +36,7 @@ export const Exporter = {
         // --- ENCABEZADO CORPORATIVO ---
         doc.setFont("helvetica", "bold");
         doc.setFontSize(22);
-        doc.setTextColor(29, 53, 87); // Azul PIDA
+        doc.setTextColor(29, 53, 87);
         doc.text("PIDA", margin, y);
         
         doc.setFontSize(12);
@@ -66,12 +77,46 @@ export const Exporter = {
             doc.text(roleName, margin, y);
             y += 6;
 
-            // Procesar línea por línea para aplicar estilos básicos (Títulos, Citas)
             const lines = msg.content.split('\n');
+            let tableBuffer = []; // <-- BUFFER PARA TABLAS
 
-            lines.forEach(line => {
+            lines.forEach((line, index) => {
                 let text = line.trim();
-                if (!text) { y += 3; return; } // Espacio para saltos de línea
+
+                // DETECCIÓN DE TABLAS
+                if (text.startsWith('|') && text.endsWith('|')) {
+                    tableBuffer.push(text);
+                    // Si es la última línea del mensaje y tenemos una tabla, la renderizamos
+                    if (index === lines.length - 1) {
+                        const tableData = this.parseTable(tableBuffer);
+                        autoTable(doc, {
+                            startY: y,
+                            head: [tableData.headers],
+                            body: tableData.body,
+                            theme: 'grid',
+                            headStyles: { fillColor: [29, 53, 87] },
+                            margin: { left: margin, right: margin }
+                        });
+                        y = doc.lastAutoTable.finalY + 5;
+                        tableBuffer = [];
+                    }
+                    return; 
+                } else if (tableBuffer.length > 0) {
+                    // Si encontramos texto normal pero teníamos una tabla en memoria, la dibujamos
+                    const tableData = this.parseTable(tableBuffer);
+                    autoTable(doc, {
+                        startY: y,
+                        head: [tableData.headers],
+                        body: tableData.body,
+                        theme: 'grid',
+                        headStyles: { fillColor: [29, 53, 87] },
+                        margin: { left: margin, right: margin }
+                    });
+                    y = doc.lastAutoTable.finalY + 5;
+                    tableBuffer = [];
+                }
+
+                if (!text) { y += 3; return; }
 
                 let isQuote = false;
                 if (text.startsWith('>')) {
@@ -85,12 +130,9 @@ export const Exporter = {
                     text = text.replace(/^#+\s/, '');
                 }
 
-                // MAGIA PDF: Eliminar URLs largas y dejar solo el título del enlace
                 text = text.replace(/\[(.*?)\]\((.*?)\)/g, '$1');
-                // Quitar los asteriscos de las negritas
                 text = text.replace(/\*\*/g, ''); 
 
-                // Aplicar fuentes según el tipo de línea
                 if (isHeader) {
                     doc.setFont("helvetica", "bold");
                     doc.setTextColor(29, 53, 87);
@@ -111,7 +153,6 @@ export const Exporter = {
                     if (y > pageHeight - 15) { doc.addPage(); y = 20; }
                     
                     if (isQuote) {
-                        // Dibujar línea azul decorativa para las fuentes
                         doc.setDrawColor(29, 53, 87);
                         doc.setLineWidth(0.8);
                         doc.line(margin, y - 3, margin, y + 1); 
@@ -121,9 +162,9 @@ export const Exporter = {
                     }
                     y += 5; 
                 });
-                y += 2; // Espaciado entre párrafos
+                y += 2; 
             });
-            y += 10; // Espaciado entre mensajes
+            y += 10; 
         });
 
         doc.save(fname + ".pdf"); 
@@ -133,12 +174,12 @@ export const Exporter = {
     // EXPORTACIÓN A DOCX (Word Rico y Formateado)
     // ==========================================
     async downloadDOCX(fname, title, rawContent) { 
-        const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ExternalHyperlink, ShadingType } = docx; 
+        // IMPORTANTE: Añadidos Table, TableRow, TableCell y WidthType
+        const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ExternalHyperlink, ShadingType, Table, TableRow, TableCell, WidthType } = docx; 
         
         const docChildren = [];
         const messages = this.normalizeContent(rawContent);
 
-        // Título Principal
         docChildren.push(
             new Paragraph({
                 text: title || "Documento PIDA",
@@ -153,7 +194,6 @@ export const Exporter = {
             const roleName = isPida ? "PIDA" : "INVESTIGADOR";
             const roleColor = isPida ? "1D3557" : "666666"; 
 
-            // Separador de Burbuja
             docChildren.push(
                 new Paragraph({
                     children: [ new TextRun({ text: roleName, bold: true, color: roleColor, size: 24 }) ],
@@ -163,9 +203,27 @@ export const Exporter = {
             );
 
             const lines = msg.content.split('\n');
+            let tableBuffer = []; // <-- BUFFER PARA TABLAS
 
-            lines.forEach(line => {
+            lines.forEach((line, index) => {
                 const trimmed = line.trim();
+
+                // DETECCIÓN DE TABLAS
+                if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+                    tableBuffer.push(trimmed);
+                    if (index === lines.length - 1) {
+                        const tableData = this.parseTable(tableBuffer);
+                        docChildren.push(this._createDocxTable(tableData, docx));
+                        tableBuffer = [];
+                    }
+                    return;
+                } else if (tableBuffer.length > 0) {
+                    const tableData = this.parseTable(tableBuffer);
+                    docChildren.push(this._createDocxTable(tableData, docx));
+                    docChildren.push(new Paragraph({ text: "", spacing: { after: 100 } })); // Espacio post-tabla
+                    tableBuffer = [];
+                }
+
                 if (!trimmed) {
                     docChildren.push(new Paragraph({ text: "", spacing: { after: 100 } }));
                     return;
@@ -174,36 +232,30 @@ export const Exporter = {
                 let isQuote = false;
                 let textToProcess = trimmed;
                 
-                // Detectar Fuentes (Blockquotes)
                 if (trimmed.startsWith('>')) {
                     isQuote = true;
                     textToProcess = textToProcess.substring(1).trim();
                 }
 
-                // Detectar Títulos
                 let headingLevel = null;
                 if (textToProcess.startsWith('### ')) { headingLevel = HeadingLevel.HEADING_3; textToProcess = textToProcess.substring(4); }
                 else if (textToProcess.startsWith('## ')) { headingLevel = HeadingLevel.HEADING_2; textToProcess = textToProcess.substring(3); }
                 else if (textToProcess.startsWith('# ')) { headingLevel = HeadingLevel.HEADING_1; textToProcess = textToProcess.substring(2); }
 
                 const runs = [];
-                // Expresión regular para separar **negritas** y [enlaces](urls) del texto normal
                 const regex = /(\*\*.*?\*\*|\[.*?\]\(.*?\))/g;
                 let lastIndex = 0;
                 let match;
 
                 while ((match = regex.exec(textToProcess)) !== null) {
-                    // Texto normal antes de la coincidencia
                     if (match.index > lastIndex) {
                         runs.push(new TextRun({ text: textToProcess.substring(lastIndex, match.index), size: 22 }));
                     }
 
                     const token = match[0];
                     if (token.startsWith('**')) {
-                        // Es Negrita
                         runs.push(new TextRun({ text: token.substring(2, token.length - 2), bold: true, color: "1D3557", size: 22 }));
                     } else if (token.startsWith('[')) {
-                        // Es un Enlace
                         const linkMatch = token.match(/\[(.*?)\]\((.*?)\)/);
                         if (linkMatch) {
                             runs.push(new ExternalHyperlink({
@@ -215,19 +267,16 @@ export const Exporter = {
                     lastIndex = regex.lastIndex;
                 }
                 
-                // Añadir el texto restante
                 if (lastIndex < textToProcess.length) {
                     runs.push(new TextRun({ text: textToProcess.substring(lastIndex), size: 22 }));
                 }
 
-                // Construir el párrafo con estilos
                 const pOptions = { children: runs, spacing: { after: 120 } };
                 if (headingLevel) pOptions.heading = headingLevel;
                 
-                // MAGIA DOCX: Darle formato de caja a las fuentes
                 if (isQuote) {
-                    pOptions.shading = { type: ShadingType.CLEAR, color: "auto", fill: "F8FAFC" }; // Fondo gris claro
-                    pOptions.border = { left: { color: "1D3557", space: 1, value: "single", size: 12 } }; // Línea azul izquierda
+                    pOptions.shading = { type: ShadingType.CLEAR, color: "auto", fill: "F8FAFC" }; 
+                    pOptions.border = { left: { color: "1D3557", space: 1, value: "single", size: 12 } }; 
                     pOptions.indent = { left: 300, right: 100 };
                 }
 
@@ -246,6 +295,36 @@ export const Exporter = {
         }); 
     },
 
+    // Constructor privado para las tablas de Word
+    _createDocxTable(tableData, docxLib) {
+        const { Table, TableRow, TableCell, Paragraph, TextRun, WidthType, ShadingType } = docxLib;
+
+        // Crear Fila de Encabezados
+        const headerRow = new TableRow({
+            children: tableData.headers.map(header => new TableCell({
+                children: [new Paragraph({ 
+                    children: [new TextRun({ text: header, bold: true, color: "FFFFFF" })],
+                    alignment: docxLib.AlignmentType.CENTER
+                })],
+                shading: { type: ShadingType.CLEAR, color: "auto", fill: "1D3557" }, // Fondo azul PIDA
+                margins: { top: 100, bottom: 100, left: 100, right: 100 }
+            }))
+        });
+
+        // Crear Filas de Datos
+        const dataRows = tableData.body.map(row => new TableRow({
+            children: row.map(cell => new TableCell({
+                children: [new Paragraph({ text: cell })],
+                margins: { top: 100, bottom: 100, left: 100, right: 100 }
+            }))
+        }));
+
+        return new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [headerRow, ...dataRows],
+        });
+    },
+
     // ==========================================
     // EXPORTACIÓN A TXT (Limpio)
     // ==========================================
@@ -257,11 +336,9 @@ export const Exporter = {
         
         messages.forEach(c => {
             const role = c.role === 'model' ? "PIDA" : "INVESTIGADOR";
-            
-            // Limpiar Markdown pero dejar URLs legibles (Ej: Título del documento: https://...)
             let clean = c.content.replace(/\[(.*?)\]\((.*?)\)/g, '$1: $2');
-            clean = clean.replace(/\*\*/g, ''); // Quitar negritas para el TXT
-            clean = clean.replace(/^#+\s/gm, ''); // Quitar # de títulos
+            clean = clean.replace(/\*\*/g, ''); 
+            clean = clean.replace(/^#+\s/gm, ''); 
             
             t += `[${role}]:\n${clean}\n\n------------------------------------\n\n`;
         });
@@ -275,7 +352,6 @@ export const Exporter = {
     }
 };
 
-// Generador de nombres de archivo
 export const getTimestampedName = (prefix) => {
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
