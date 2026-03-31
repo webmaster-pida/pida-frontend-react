@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw'; // NUEVO: Importación del plugin para procesar HTML dentro de tablas y markdown
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
 // Importaciones de Material-UI añadidas
@@ -217,7 +218,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
   const renderMessageContent = (msg, index) => {
     if (msg.role === 'user') {
-      return <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown>;
+      return <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{msg.content}</ReactMarkdown>;
     }
 
     const regex = /(?:#{2,3}\s*|\*\*\s*)?Preguntas de Seguimiento\s*(?:\*\*|:)?/i;
@@ -251,7 +252,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
       return (
         <>
           <div className="markdown-content">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{mainContent}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{mainContent}</ReactMarkdown>
           </div>
           
           {questions.length > 0 && (
@@ -275,7 +276,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
           {textAfterQuestions && (
             <div className="markdown-content" style={{ marginTop: '20px' }}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{textAfterQuestions}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{textAfterQuestions}</ReactMarkdown>
             </div>
           )}
         </>
@@ -284,7 +285,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
     return (
       <div className="markdown-content">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{msg.content}</ReactMarkdown>
       </div>
     );
   };
