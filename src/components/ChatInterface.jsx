@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
 // Importaciones de Material-UI añadidas
-import { Box, TextField, Button, ButtonGroup, Fab } from '@mui/material';
+import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 
 const API_CHAT = "https://chat-v20-strong-465781488910.us-central1.run.app";
 
@@ -40,7 +41,35 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
 
   const markdownComponents = {
-    a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />
+    a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
+    table: ({ node, ...props }) => (
+      <TableContainer component={Paper} sx={{ my: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+        <Table size="small" {...props} />
+      </TableContainer>
+    ),
+    thead: ({ node, ...props }) => <TableHead sx={{ bgcolor: '#f1f5f9' }} {...props} />,
+    tbody: ({ node, ...props }) => <TableBody {...props} />,
+    tr: ({ node, ...props }) => <TableRow hover {...props} />,
+    th: ({ node, ...props }) => (
+      <TableCell 
+        sx={{ 
+          fontWeight: 'bold', 
+          color: 'var(--pida-primary)', 
+          borderBottom: '2px solid #cbd5e1',
+          whiteSpace: 'nowrap'
+        }} 
+        {...props} 
+      />
+    ),
+    td: ({ node, ...props }) => (
+      <TableCell 
+        sx={{ 
+          borderColor: '#e2e8f0',
+          verticalAlign: 'top'
+        }} 
+        {...props} 
+      />
+    )
   };
 
   useEffect(() => {
@@ -188,7 +217,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
   const renderMessageContent = (msg, index) => {
     if (msg.role === 'user') {
-      return <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>;
+      return <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown>;
     }
 
     const regex = /(?:#{2,3}\s*|\*\*\s*)?Preguntas de Seguimiento\s*(?:\*\*|:)?/i;
@@ -222,7 +251,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
       return (
         <>
           <div className="markdown-content">
-            <ReactMarkdown components={markdownComponents}>{mainContent}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{mainContent}</ReactMarkdown>
           </div>
           
           {questions.length > 0 && (
@@ -246,7 +275,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
           {textAfterQuestions && (
             <div className="markdown-content" style={{ marginTop: '20px' }}>
-              <ReactMarkdown components={markdownComponents}>{textAfterQuestions}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{textAfterQuestions}</ReactMarkdown>
             </div>
           )}
         </>
@@ -255,7 +284,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
     return (
       <div className="markdown-content">
-        <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown>
       </div>
     );
   };
