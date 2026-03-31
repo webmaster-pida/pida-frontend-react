@@ -229,12 +229,26 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
     if (displayContent.includes(tagStart)) {
       const parts = displayContent.split(tagStart);
-      displayContent = parts[0]; // Todo lo que está antes de la etiqueta es el markdown normal
+      let textBeforeTags = parts[0];
+      let textInsideAndAfter = parts[1] || "";
+      
+      let qString = "";
+      let textAfterTags = ""; // Aquí guardaremos lo que inyecta Vertex AI
 
-      // Solo extraemos y mostramos los botones si ya terminó de escribir
-      if (!isCurrentlyTypingThis && parts[1]) {
-        const qString = parts[1].replace(tagEnd, '').trim();
-        // Separamos las preguntas por el delimitador |
+      if (textInsideAndAfter.includes(tagEnd)) {
+        // Separamos lo que son preguntas de lo que Vertex puso al final
+        const subParts = textInsideAndAfter.split(tagEnd);
+        qString = subParts[0]; 
+        textAfterTags = subParts.slice(1).join(tagEnd); 
+      } else {
+        qString = textInsideAndAfter;
+      }
+
+      // Reconstruimos el Markdown: Texto Principal + (Saltamos las preguntas) + Fuentes de Vertex
+      displayContent = textBeforeTags + "\n" + textAfterTags;
+
+      // Solo mostramos los botones si ya terminó de escribir la etiqueta de cierre
+      if (!isCurrentlyTypingThis && textInsideAndAfter.includes(tagEnd)) {
         questions = qString.split('|').map(q => q.trim()).filter(q => q.length > 0);
       }
     }
