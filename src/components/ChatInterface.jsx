@@ -16,13 +16,11 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
 
-  // Solo buscamos la data cuando el Tooltip decide abrirse
   const fetchPreview = async () => {
     if (fetched || !href || !href.startsWith('http')) return;
     setFetched(true);
     setLoading(true);
     try {
-      // Limpiamos la URL por si Gemini le pegó un punto final
       const cleanHref = href.replace(/[\.\)]+$/, '');
       const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(cleanHref)}`);
       const data = await res.json();
@@ -40,8 +38,12 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
     <Tooltip
       placement="top"
       arrow
-      enterDelay={200} // Reacciona más rápido al pasar el mouse
-      onOpen={fetchPreview} // Dispara la búsqueda silenciosamente
+      enterDelay={200}
+      onOpen={fetchPreview}
+      // 👇 SOLUCIÓN 1: Forzamos a que el Tooltip esté por encima de toda la interfaz
+      PopperProps={{
+        sx: { zIndex: 999999 } 
+      }}
       title={
         <Box sx={{ width: 280, p: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
           {loading ? (
@@ -76,7 +78,7 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
         tooltip: {
           sx: {
             bgcolor: '#1e293b', 
-            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)', // Sombra más pronunciada
             borderRadius: '12px',
             border: '1px solid #334155',
             p: 1,
@@ -87,16 +89,18 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
         }
       }}
     >
-      {/* El hijo directo del Tooltip. Le pasamos {...props} con cuidado */}
-      <a 
-        href={href} 
-        target="_blank" 
-        rel="noopener noreferrer" 
-        style={{ color: 'var(--pida-primary)', textDecoration: 'underline', fontWeight: 600 }}
-        {...props}
-      >
-        {children}
-      </a>
+      {/* 👇 SOLUCIÓN 2: Envolvemos en un <span> para garantizar que Material-UI capture el Hover */}
+      <span style={{ display: 'inline' }}>
+        <a 
+          href={href} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          style={{ color: 'var(--pida-primary)', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' }}
+          {...props}
+        >
+          {children}
+        </a>
+      </span>
     </Tooltip>
   );
 };
@@ -130,7 +134,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
   }, [messages, isTyping]);
 
   const markdownComponents = {
-    a: ({ node, ...props }) => <PreviewLink href={props.href}>{props.children}</PreviewLink>,
+    a: ({ node, ...props }) => <PreviewLink href={props.href} {...props}>{props.children}</PreviewLink>,
     table: ({ node, ...props }) => (
       <TableContainer component={Paper} sx={{ my: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
         <Table size="small" {...props} />
