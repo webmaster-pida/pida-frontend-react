@@ -10,12 +10,13 @@ import { Box, TextField, Button, ButtonGroup, Fab, MenuItem, Tooltip, CircularPr
 const API_PRE = "https://precalifier-v20-stripe-elements-465781488910.us-central1.run.app";
 
 // =========================================================================
-// COMPONENTE DE VISTA PREVIA (MICROLINK)
+// COMPONENTE DE VISTA PREVIA (MICROLINK) CON FILTRO DE ERRORES
 // =========================================================================
 const PreviewLink = ({ href, children, node, title, ...props }) => {
   const [previewData, setPreviewData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetchedUrl, setFetchedUrl] = useState(null);
+  const [isScrapeBlocked, setIsScrapeBlocked] = useState(false);
 
   const MICROLINK_API_KEY = import.meta.env.VITE_MICROLINK_KEY || "";
 
@@ -27,6 +28,8 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
     
     setFetchedUrl(href); 
     setLoading(true);
+    setIsScrapeBlocked(false);
+
     try {
       const cleanHref = href.replace(/[\.\)]+$/, '');
       const res = await fetch(`https://pro.microlink.io?url=${encodeURIComponent(cleanHref)}`, {
@@ -34,11 +37,23 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
       });
       
       const data = await res.json();
+
       if (data.status === 'success') {
-        setPreviewData(data.data);
+        const returnedTitle = (data.data.title || '').toLowerCase();
+        // Lista de keywords que indican que el sitio bloqueó la lectura
+        const blockedKeywords = ['error:', 'could not be satisfied', 'cloudflare', 'attention required', 'access denied', '403 forbidden', 'not acceptable', 'security check'];
+
+        if (blockedKeywords.some(kw => returnedTitle.includes(kw))) {
+          setIsScrapeBlocked(true); // Bloqueo detectado, no mostraremos el texto de error
+        } else {
+          setPreviewData(data.data);
+        }
+      } else {
+        setIsScrapeBlocked(true);
       }
     } catch (e) {
       console.error("Error cargando preview:", e);
+      setIsScrapeBlocked(true);
     } finally {
       setLoading(false);
     }
@@ -76,7 +91,8 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
                 </Typography>
               </Box>
 
-              {previewData ? (
+              {/* Solo mostramos contenido si NO hay error y hay datos válidos */}
+              {!isScrapeBlocked && previewData ? (
                 <>
                   <Typography 
                     variant="subtitle2" 
@@ -100,7 +116,8 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
                   )}
                 </>
               ) : (
-                <Typography variant="body2" sx={{ color: '#cbd5e1', fontStyle: 'italic' }}>
+                /* Fallback silencioso: Solo el aviso institucional sin mostrar el error técnico */
+                <Typography variant="body2" sx={{ color: '#cbd5e1', mt: 0.5, fontSize: '0.8rem' }}>
                   Documento Institucional Externo
                 </Typography>
               )}
@@ -166,7 +183,6 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
     }
   }, [resultText, isAnalyzing]);
 
-  // CONFIGURACIÓN DE COMPONENTES MARKDOWN
   const markdownComponents = {
     a: ({ node, ...props }) => <PreviewLink href={props.href} {...props}>{props.children}</PreviewLink>
   };

@@ -12,24 +12,22 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
   const [previewData, setPreviewData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetchedUrl, setFetchedUrl] = useState(null);
-  const [isScrapeBlocked, setIsScrapeBlocked] = useState(false);
+  const [isScrapeBlocked, setIsScrapeBlocked] = useState(false); // Estado para detectar bloqueos
 
-  // Leemos la llave directamente
   const MICROLINK_API_KEY = import.meta.env.VITE_MICROLINK_KEY || "";
 
   let hostname = "";
   try { hostname = new URL(href).hostname.replace('www.', ''); } catch (e) {}
 
   const fetchPreview = async () => {
-    // Evitamos peticiones si el link no es HTTP o si ya buscamos exactamente ESTE link completo
     if (!href || !href.startsWith('http') || fetchedUrl === href) return;
     
     setFetchedUrl(href); 
     setLoading(true);
+    setIsScrapeBlocked(false);
+
     try {
       const cleanHref = href.replace(/[\.\)]+$/, '');
-      
-      // FORZAMOS LA RUTA AL SERVIDOR VIP PRO DE MICROLINK
       const res = await fetch(`https://pro.microlink.io?url=${encodeURIComponent(cleanHref)}`, {
         headers: MICROLINK_API_KEY ? { 'x-api-key': MICROLINK_API_KEY } : {}
       });
@@ -38,10 +36,11 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
 
       if (data.status === 'success') {
         const returnedTitle = (data.data.title || '').toLowerCase();
-        const blockedKeywords = ['error:', 'could not be satisfied', 'cloudflare', 'attention required', 'access denied', '403 forbidden', 'not acceptable'];
+        // Filtro de palabras clave de error
+        const blockedKeywords = ['error:', 'could not be satisfied', 'cloudflare', 'attention required', 'access denied', '403 forbidden', 'not acceptable', 'security check'];
 
         if (blockedKeywords.some(kw => returnedTitle.includes(kw))) {
-          setIsScrapeBlocked(true);
+          setIsScrapeBlocked(true); // Marcamos como bloqueado para no mostrar el texto
         } else {
           setPreviewData(data.data);
         }
@@ -49,7 +48,6 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
         setIsScrapeBlocked(true);
       }
     } catch (e) {
-      console.error("Error cargando preview:", e);
       setIsScrapeBlocked(true);
     } finally {
       setLoading(false);
@@ -57,13 +55,9 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
   };
 
   useEffect(() => {
-    // EL SECRETO: Debounce de 1.5 segundos. 
-    // Si el 'href' cambia porque la IA sigue escribiendo, el temporizador se reinicia.
-    // Solo disparará la petición cuando la IA termine de escribir el link por completo.
     const timer = setTimeout(() => {
       fetchPreview();
     }, 1500);
-
     return () => clearTimeout(timer);
   }, [href]);
 
@@ -82,7 +76,6 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                {/* Icono y hostname se mantienen siempre */}
                 <img 
                   src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`} 
                   alt="icon" 
@@ -93,41 +86,35 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
                 </Typography>
               </Box>
 
-              {/* ELIMINAMOS LA CONDICIÓN isScrapeBlocked PARA VER QUÉ TRAE MICROLINK REALMENTE */}
-              {previewData && (
+              {/* Si NO está bloqueado y hay data, mostramos todo. Si no, solo el aviso genérico */}
+              {!isScrapeBlocked && previewData ? (
                 <>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.3, color: 'white' }}>
+                  <Typography 
+                    variant="subtitle2" 
+                    sx={{ 
+                      fontWeight: 'bold', lineHeight: 1.3, color: 'white',
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                    }}
+                  >
                     {previewData.title || "Fuente de información"}
                   </Typography>
                   {previewData.description && (
                     <Typography 
                       variant="body2" 
                       sx={{ 
-                        fontSize: '0.8rem', 
-                        color: '#cbd5e1', 
-                        mt: 0.5,
-                        // REFUERZO DE TRUNCADO
-                        display: '-webkit-box',
-                        WebkitLineClamp: 4, // <--- Limita a 4 líneas máximo
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        lineHeight: 1.4
+                        fontSize: '0.8rem', color: '#cbd5e1', mt: 0.5,
+                        display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4
                       }}
                     >
                       {previewData.description}
                     </Typography>
                   )}
                 </>
+              ) : (
+                <Typography variant="body2" sx={{ color: '#cbd5e1', mt: 0.5, fontSize: '0.8rem' }}>
+                  Documento Institucional Externo
+                </Typography>
               )}
-
-              {/* El bloque de "Documento Institucional" queda comentado aquí abajo:
-              (!isScrapeBlocked && previewData) ? ( ... ) : (
-                <>
-                  <Typography variant="subtitle2" ... > Documento Institucional Externo </Typography>
-                  ...
-                </>
-              )
-              */}
             </Box>
           )}
         </Box>
@@ -135,29 +122,19 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
       slotProps={{
         tooltip: {
           sx: {
-            maxWidth: 420, 
-            maxHeight: 500, // <--- Límite de altura (ajústalo a tu gusto)
-            overflowY: 'auto', // <--- Permite scroll si el contenido es muy largo
-            bgcolor: '#0f172a',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7)',
-            borderRadius: '8px',
-            border: '1px solid #334155',
-            p: 1.5,
-            // Opcional: Estilizar el scrollbar para que sea discreto
+            maxWidth: 420, maxHeight: 500, overflowY: 'auto',
+            bgcolor: '#0f172a', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7)',
+            borderRadius: '8px', border: '1px solid #334155', p: 1.5,
             '&::-webkit-scrollbar': { width: '4px' },
             '&::-webkit-scrollbar-thumb': { backgroundColor: '#334155', borderRadius: '10px' }
           }
         },
-        arrow: {
-          sx: { color: '#0f172a' }
-        }
+        arrow: { sx: { color: '#0f172a' } }
       }}
     >
       <span style={{ display: 'inline' }}>
         <a 
-          href={href} 
-          target="_blank" 
-          rel="noopener noreferrer" 
+          href={href} target="_blank" rel="noopener noreferrer" 
           style={{ color: 'var(--pida-primary)', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' }}
           {...props}
         >
@@ -166,7 +143,7 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
       </span>
     </Tooltip>
   );
-};
+}
 
 export default function ChatInterface({ user, resetSignal, loadChatId, refreshHistory }) {
   const [messages, setMessages] = useState([]);
