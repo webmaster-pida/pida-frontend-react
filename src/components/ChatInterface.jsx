@@ -6,7 +6,7 @@ import { Exporter, getTimestampedName } from '../utils/exporter';
 
 import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 
-const API_CHAT = "https://chat-v20-git-465781488910.us-central1.run.app";
+const API_CHAT = "https://chat-v20-perplexity-465781488910.us-central1.run.app";
 
 export default function ChatInterface({ user, resetSignal, loadChatId, refreshHistory }) {
   const [messages, setMessages] = useState([]);
