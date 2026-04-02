@@ -47,7 +47,7 @@ import { db } from '../config/firebase';
 /**
  * LANDING PAGE - VERSIÓN PRODUCCIÓN MUI
  * Preserva íntegramente la lógica de suscripción, detección de moneda
- * y contenido institucional de PIDA.
+ * e integración con Firebase.
  */
 export default function LandingPage({ onOpenAuth }) {
   const theme = useTheme();
@@ -170,7 +170,7 @@ export default function LandingPage({ onOpenAuth }) {
   };
 
   return (
-    <Box sx={{ bgcolor: 'white', minHeight: '100vh' }}>
+    <Box id="landing-page-root" sx={{ bgcolor: 'white' }}>
       
       {/* NAVBAR */}
       <Box component="header" sx={{ 
@@ -184,7 +184,6 @@ export default function LandingPage({ onOpenAuth }) {
               <Box component="img" src="/img/PIDA_logo-576.png" alt="Logo PIDA" sx={{ height: { xs: 50, md: 65 } }} />
             </Box>
 
-            {/* Desktop Menu */}
             {!isMobile && (
               <Stack direction="row" spacing={3} alignItems="center">
                 <Button color="inherit" onClick={() => handleNavClick('diferencia')} sx={{ fontWeight: 600 }}>Diferencia PIDA</Button>
@@ -255,7 +254,7 @@ export default function LandingPage({ onOpenAuth }) {
                 <Typography variant="h6" sx={{ color: '#4B5563', mb: 5, fontWeight: 400, lineHeight: 1.6 }}>
                   Los asistentes de Inteligencia Artificial genéricos son un océano de información, pero sin un ancla, pueden llevarte a la deriva con datos imprecisos.
                 </Typography>
-                <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap sx={{ gap: 2 }}>
+                <Stack direction="row" spacing={2} flexWrap="wrap">
                   <Button sx={muiPrimaryBtnStyle} onClick={() => handleNavClick('planes')}>Ver Planes</Button>
                   <Button sx={muiGhostBtnStyle} onClick={() => onOpenAuth('login')}>Login PIDA</Button>
                 </Stack>
@@ -277,9 +276,7 @@ export default function LandingPage({ onOpenAuth }) {
         {/* DIFERENCIA SECTION */}
         <Box component="section" id="diferencia" sx={{ py: 10, bgcolor: 'white' }}>
           <Container maxWidth="md">
-            <Box textAlign="center" sx={{ mb: 4 }}>
-              <Typography variant="h3" fontWeight={800} gutterBottom>¿Cuál es la gran diferencia de PIDA?</Typography>
-            </Box>
+            <Typography variant="h3" fontWeight={800} align="center" gutterBottom>¿Cuál es la gran diferencia de PIDA?</Typography>
             <Typography variant="body1" sx={{ fontSize: '1.2rem', mb: 4, color: '#374151', textAlign: 'center', lineHeight: 1.8 }}>
               PIDA no improvisa buscando en el caos de internet. Su punto de partida es la biblioteca del <strong>IIRESODH</strong>, una institución referente con más de 30 años de experiencia en Litigio Estratégico Internacional.
             </Typography>
@@ -324,7 +321,7 @@ export default function LandingPage({ onOpenAuth }) {
             </Box>
 
             <Stack spacing={8} sx={{ maxWidth: 950, mx: 'auto' }}>
-              <Box sx={{ borderLeft: '6px solid #0284C7', pl: { xs: 3, md: 6 }, position: 'relative' }}>
+              <Box sx={{ borderLeft: '6px solid #0284C7', pl: { xs: 3, md: 6 } }}>
                 <Typography variant="h4" fontWeight={800} color="#1D3557">1. Experto en Derechos Humanos</Typography>
                 <Typography variant="subtitle1" sx={{ color: '#0284C7', fontWeight: 800, mt: 1, mb: 3, letterSpacing: 1.5 }}>TU CONSULTOR FUNDAMENTADO</Typography>
                 <Typography variant="body1" sx={{ fontSize: '1.15rem', mb: 3, lineHeight: 1.8 }}>
@@ -399,7 +396,7 @@ export default function LandingPage({ onOpenAuth }) {
                           height: '100%', borderRadius: 6, display: 'flex', flexDirection: 'column',
                           border: isAdv ? '3px solid #1D3557' : '1px solid #E5E7EB',
                           transform: isAdv ? { md: 'scale(1.05)' } : 'none',
-                          boxShadow: isAdv ? 10 : 2, zIndex: isAdv ? 2 : 1
+                          boxShadow: isAdv ? 10 : 2
                         }}>
                           {isAdv && <Box sx={{ bgcolor: '#1D3557', color: 'white', textAlign: 'center', py: 1, fontWeight: 800, textTransform: 'uppercase', fontSize: '0.75rem' }}>Más Popular</Box>}
                           <CardContent sx={{ p: 5, flexGrow: 1 }}>
@@ -429,10 +426,10 @@ export default function LandingPage({ onOpenAuth }) {
                 </Grid>
               </>
             )}
-          </div>
+          </Container>
         </Box>
 
-        {/* INFO CORPORATIVA */}
+        {/* INFO CORPORATIVA (FIXED LINE 432) */}
         <Box component="section" sx={{ py: 12, textAlign: 'center' }}>
           <Container maxWidth="md">
             <Business sx={{ fontSize: 60, color: '#1D3557', mb: 3 }} />
