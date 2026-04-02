@@ -50,7 +50,7 @@ export default function Sidebar({ currentView, setCurrentView, user }) {
   const navItems = [
     { id: 'investigador', label: 'Experto', icon: <SearchIcon />, fullLabel: 'Experto en DDHH' },
     { id: 'analizador', label: 'Analizador', icon: <DescriptionIcon />, fullLabel: 'Analizador Docs' },
-    { id: 'precalificador', label: 'Precalificador', icon: <GavelIcon />, fullLabel: 'Precalificador' },
+    { id: 'precalificador', label: 'Precalificar', icon: <GavelIcon />, fullLabel: 'Precalificador' },
   ];
 
   // --- VISTA MÓVIL (Barra Inferior) ---
@@ -67,8 +67,7 @@ export default function Sidebar({ currentView, setCurrentView, user }) {
           showLabels
           value={currentView}
           onChange={(event, newValue) => {
-            if (newValue === 'menu') return;
-            setCurrentView(newValue);
+            if (newValue !== 'menu') setCurrentView(newValue);
           }}
           sx={{ height: 70, bgcolor: '#1D3557' }}
         >
@@ -80,12 +79,13 @@ export default function Sidebar({ currentView, setCurrentView, user }) {
               icon={item.icon}
               sx={{ 
                 color: 'rgba(255,255,255,0.6)', 
-                '&.Mui-selected': { color: 'white' } 
+                '&.Mui-selected': { color: 'white' },
+                '& .MuiBottomNavigationAction-label': { fontSize: '0.65rem' }
               }}
             />
           ))}
           <BottomNavigationAction
-            label="Menú"
+            label="Más"
             value="menu"
             icon={<MoreIcon />}
             onClick={handleMenuOpen}
@@ -100,7 +100,7 @@ export default function Sidebar({ currentView, setCurrentView, user }) {
           onClose={handleMenuClose}
           anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
           transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          PaperProps={{ sx: { width: 200, borderRadius: '12px', mb: 1 } }}
+          PaperProps={{ sx: { width: 200, borderRadius: '12px', mb: 1, boxShadow: '0 -4px 20px rgba(0,0,0,0.15)' } }}
         >
           <MenuItem onClick={() => { setCurrentView('cuenta'); handleMenuClose(); }}>
             <ListItemIcon><AccountIcon fontSize="small" /></ListItemIcon>
@@ -121,27 +121,19 @@ export default function Sidebar({ currentView, setCurrentView, user }) {
     <Box
       component="aside"
       sx={{
-        width: DRAWER_WIDTH,
-        height: '100vh',
-        bgcolor: '#1D3557',
-        display: 'flex',
-        flexDirection: 'column',
-        flexShrink: 0,
+        width: DRAWER_WIDTH, height: '100vh', bgcolor: '#1D3557',
+        display: 'flex', flexDirection: 'column', flexShrink: 0,
         borderRight: '1px solid rgba(255,255,255,0.1)',
       }}
     >
-      {/* Logo Container */}
       <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
         <Box 
-          component="img" 
-          src="/img/PIDA-logo-blanco-scaled.png" 
-          alt="PIDA" 
+          component="img" src="/img/PIDA-logo-blanco-scaled.png" alt="PIDA" 
           sx={{ width: '100%', maxWidth: 160, cursor: 'pointer' }}
           onClick={() => setCurrentView('investigador')}
         />
       </Box>
 
-      {/* Navegación */}
       <List sx={{ px: 2, flexGrow: 1 }}>
         {navItems.map((item) => (
           <ListItem key={item.id} disablePadding sx={{ mb: 1 }}>
@@ -149,30 +141,22 @@ export default function Sidebar({ currentView, setCurrentView, user }) {
               selected={currentView === item.id}
               onClick={() => setCurrentView(item.id)}
               sx={{
-                borderRadius: '10px',
-                color: 'rgba(255,255,255,0.7)',
+                borderRadius: '10px', color: 'rgba(255,255,255,0.7)',
                 '&.Mui-selected': {
-                  bgcolor: 'primary.light',
-                  color: 'white',
-                  '&:hover': { bgcolor: 'primary.light' },
+                  bgcolor: 'rgba(255,255,255,0.15)', color: 'white',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' },
                   '& .MuiListItemIcon-root': { color: 'white' }
                 },
                 '&:hover': { bgcolor: 'rgba(255,255,255,0.08)', color: 'white' }
               }}
             >
-              <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText 
-                primary={item.fullLabel} 
-                primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: 500 }} 
-              />
+              <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>{item.icon}</ListItemIcon>
+              <ListItemText primary={item.fullLabel} primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: 500 }} />
             </ListItemButton>
           </ListItem>
         ))}
       </List>
 
-      {/* Usuario / Logout */}
       <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.1)' }}>
         <Box 
           sx={{ 
@@ -182,10 +166,7 @@ export default function Sidebar({ currentView, setCurrentView, user }) {
           }}
           onClick={() => setCurrentView('cuenta')}
         >
-          <Avatar 
-            src={user?.photoURL} 
-            sx={{ width: 36, height: 36, border: '1.5px solid rgba(255,255,255,0.3)' }}
-          >
+          <Avatar src={user?.photoURL} sx={{ width: 36, height: 36, border: '1.5px solid rgba(255,255,255,0.3)' }}>
             {user?.displayName?.charAt(0) || 'U'}
           </Avatar>
           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
