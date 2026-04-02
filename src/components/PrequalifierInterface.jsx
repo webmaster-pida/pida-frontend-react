@@ -267,7 +267,6 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
             InputLabelProps={{ shrink: true }}
           />
           
-          {/* FIX AQUÍ: InputLabelProps añadido para evitar sobreposición visual */}
           <TextField
             select
             label="País (Código Penal)"
@@ -280,7 +279,7 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
             InputLabelProps={{ shrink: true }}
             SelectProps={{ 
               displayEmpty: true,
-              MenuProps: { style: { zIndex: 999999 } } // Refuerzo para asegurar que despliegue
+              MenuProps: { style: { zIndex: 999999 } }
             }}
           >
             <MenuItem value="" disabled><em>Selecciona un país...</em></MenuItem>
@@ -330,7 +329,7 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
           }}
         />
 
-        <Box className="pida-form-actions" sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button 
             variant="text" 
             onClick={handleClear} 
@@ -345,7 +344,7 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
             color="primary" 
             onClick={handleAnalyze} 
             disabled={isAnalyzing}
-            sx={{ px: 4, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-accent)', '&:hover': { bgcolor: '#004494' } }}
+            sx={{ width: 220, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-accent)', '&:hover': { bgcolor: '#004494' } }}
           >
             Precalificar Caso
           </Button>

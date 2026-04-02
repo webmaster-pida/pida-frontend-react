@@ -680,8 +680,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           }}
         />
         
-        {/* Botones de Limpiar y Analizar de MUI */}
-        <Box className="pida-form-actions" sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        {/* Botones de Limpiar y Analizar de MUI - Se eliminó pida-form-actions para estandarizar separación */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button 
             variant="text" 
             onClick={handleClear} 
@@ -695,7 +695,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             variant="contained" 
             color="primary" 
             disabled={isAnalyzing}
-            sx={{ px: 4, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-accent)', '&:hover': { bgcolor: '#004494' } }}
+            sx={{ width: 220, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-accent)', '&:hover': { bgcolor: '#004494' } }}
           >
             Analizar
           </Button>
