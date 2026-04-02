@@ -11,17 +11,20 @@ const API_CHAT = "https://chat-v20-perplexity-465781488910.us-central1.run.app";
 // =========================================================================
 // COMPONENTE DE TARJETA DE PREVISUALIZACIÓN (ESTILO PERPLEXITY)
 // =========================================================================
-const PreviewLink = ({ href, children }) => {
+const PreviewLink = ({ href, children, node, title, ...props }) => {
   const [previewData, setPreviewData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [fetched, setFetched] = useState(false);
 
+  // Solo buscamos la data cuando el Tooltip decide abrirse
   const fetchPreview = async () => {
-    if (previewData || !href || !href.startsWith('http')) return; 
+    if (fetched || !href || !href.startsWith('http')) return;
+    setFetched(true);
     setLoading(true);
     try {
-      // Usamos Microlink API (gratuita) para saltarnos el bloqueo de CORS y extraer la tarjeta
-      const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(href)}`);
+      // Limpiamos la URL por si Gemini le pegó un punto final
+      const cleanHref = href.replace(/[\.\)]+$/, '');
+      const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(cleanHref)}`);
       const data = await res.json();
       if (data.status === 'success') {
         setPreviewData(data.data);
@@ -35,10 +38,10 @@ const PreviewLink = ({ href, children }) => {
 
   return (
     <Tooltip
-      open={open}
-      onOpen={() => { setOpen(true); fetchPreview(); }}
-      onClose={() => setOpen(false)}
-      enterDelay={400} // Espera un poco antes de abrir para no saturar si pasa el mouse rápido
+      placement="top"
+      arrow
+      enterDelay={200} // Reacciona más rápido al pasar el mouse
+      onOpen={fetchPreview} // Dispara la búsqueda silenciosamente
       title={
         <Box sx={{ width: 280, p: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
           {loading ? (
@@ -65,27 +68,32 @@ const PreviewLink = ({ href, children }) => {
               </Typography>
             </>
           ) : (
-            <Typography variant="body2" color="white">Visitar enlace...</Typography>
+            <Typography variant="body2" color="white">Visitar enlace externo...</Typography>
           )}
         </Box>
       }
       componentsProps={{
         tooltip: {
           sx: {
-            bgcolor: '#1e293b', // Fondo oscuro elegante
+            bgcolor: '#1e293b', 
             boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)',
             borderRadius: '12px',
             border: '1px solid #334155',
             p: 1,
           }
+        },
+        arrow: {
+          sx: { color: '#1e293b' }
         }
       }}
     >
+      {/* El hijo directo del Tooltip. Le pasamos {...props} con cuidado */}
       <a 
         href={href} 
         target="_blank" 
         rel="noopener noreferrer" 
-        style={{ color: 'var(--pida-primary)', textDecoration: 'underline', fontWeight: 500 }}
+        style={{ color: 'var(--pida-primary)', textDecoration: 'underline', fontWeight: 600 }}
+        {...props}
       >
         {children}
       </a>
