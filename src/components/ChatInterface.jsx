@@ -256,6 +256,22 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     // Limpieza de alucinaciones de formato en tablas
     displayContent = displayContent.replace(/["']br["']/g, '<br />');
 
+    // 👇 NUEVO ESCUDO DE SEGURIDAD FRONTEND 👇
+    // Previene que tablas rotas o código crudo arruinen la vista de la sección de Fuentes.
+    if (displayContent.includes('## Fuentes y Jurisprudencia')) {
+      const splitPoint = '## Fuentes y Jurisprudencia';
+      const parts = displayContent.split(splitPoint);
+      let fuentesText = parts[1];
+      
+      // Eliminar formato separador de tablas de Markdown (ej. |:---| o |---|)
+      fuentesText = fuentesText.replace(/\|?\s*:?-{2,}:?\s*\|?/g, '');
+      // Reemplazar barras verticales por un separador visual limpio
+      fuentesText = fuentesText.replace(/\|/g, ' • ');
+      
+      displayContent = parts[0] + splitPoint + fuentesText;
+    }
+    // 👆 FIN DEL ESCUDO 👆
+
     return (
       <>
         <div className="markdown-content">
