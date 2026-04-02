@@ -35,11 +35,15 @@ export default function Sidebar({ currentView, setCurrentView, user }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
-  // Estado para el menú desplegable (Cuenta/Cerrar Sesión)
   const [anchorEl, setAnchorEl] = useState(null);
   const openMenu = Boolean(anchorEl);
 
-  const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
+  const handleMenuOpen = (event) => {
+    // Importante: Detenemos la propagación para que el Dashboard no detecte el click
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+  };
+
   const handleMenuClose = () => setAnchorEl(null);
 
   const doLogout = () => {
@@ -53,13 +57,12 @@ export default function Sidebar({ currentView, setCurrentView, user }) {
     { id: 'precalificador', label: 'Precalificar', icon: <GavelIcon />, fullLabel: 'Precalificador' },
   ];
 
-  // --- VISTA MÓVIL (Barra Inferior) ---
   if (isMobile) {
     return (
       <Paper 
         elevation={10} 
         sx={{ 
-          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 10000,
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100000, // Un punto más que el layout
           borderRadius: '16px 16px 0 0', overflow: 'hidden'
         }}
       >
@@ -88,19 +91,32 @@ export default function Sidebar({ currentView, setCurrentView, user }) {
             label="Más"
             value="menu"
             icon={<MoreIcon />}
-            onClick={handleMenuOpen}
+            onClick={handleMenuOpen} // Dispara el menú
             sx={{ color: 'rgba(255,255,255,0.6)' }}
           />
         </BottomNavigation>
 
-        {/* Menú emergente para móviles */}
         <Menu
           anchorEl={anchorEl}
           open={openMenu}
           onClose={handleMenuClose}
+          // ESTA ES LA SOLUCIÓN TÉCNICA CRÍTICA:
+          sx={{ zIndex: 200001 }} 
+          slotProps={{
+            root: {
+              onClick: (e) => e.stopPropagation() // Evita conflictos con el Dashboard
+            }
+          }}
           anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
           transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          PaperProps={{ sx: { width: 200, borderRadius: '12px', mb: 1, boxShadow: '0 -4px 20px rgba(0,0,0,0.15)' } }}
+          PaperProps={{ 
+            sx: { 
+              width: 200, 
+              borderRadius: '12px', 
+              mb: 1, 
+              boxShadow: '0 -4px 20px rgba(0,0,0,0.15)' 
+            } 
+          }}
         >
           <MenuItem onClick={() => { setCurrentView('cuenta'); handleMenuClose(); }}>
             <ListItemIcon><AccountIcon fontSize="small" /></ListItemIcon>
@@ -116,71 +132,31 @@ export default function Sidebar({ currentView, setCurrentView, user }) {
     );
   }
 
-  // --- VISTA ESCRITORIO (Sidebar Vertical) ---
+  // ... (El resto del código Desktop se mantiene igual)
   return (
-    <Box
-      component="aside"
-      sx={{
-        width: DRAWER_WIDTH, height: '100vh', bgcolor: '#1D3557',
-        display: 'flex', flexDirection: 'column', flexShrink: 0,
-        borderRight: '1px solid rgba(255,255,255,0.1)',
-      }}
-    >
+    <Box component="aside" sx={{ width: DRAWER_WIDTH, height: '100vh', bgcolor: '#1D3557', display: 'flex', flexDirection: 'column', flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.1)' }}>
       <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
-        <Box 
-          component="img" src="/img/PIDA-logo-blanco-scaled.png" alt="PIDA" 
-          sx={{ width: '100%', maxWidth: 160, cursor: 'pointer' }}
-          onClick={() => setCurrentView('investigador')}
-        />
+        <Box component="img" src="/img/PIDA-logo-blanco-scaled.png" alt="PIDA" sx={{ width: '100%', maxWidth: 160, cursor: 'pointer' }} onClick={() => setCurrentView('investigador')} />
       </Box>
-
       <List sx={{ px: 2, flexGrow: 1 }}>
         {navItems.map((item) => (
           <ListItem key={item.id} disablePadding sx={{ mb: 1 }}>
-            <ListItemButton
-              selected={currentView === item.id}
-              onClick={() => setCurrentView(item.id)}
-              sx={{
-                borderRadius: '10px', color: 'rgba(255,255,255,0.7)',
-                '&.Mui-selected': {
-                  bgcolor: 'rgba(255,255,255,0.15)', color: 'white',
-                  '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' },
-                  '& .MuiListItemIcon-root': { color: 'white' }
-                },
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)', color: 'white' }
-              }}
-            >
+            <ListItemButton selected={currentView === item.id} onClick={() => setCurrentView(item.id)} sx={{ borderRadius: '10px', color: 'rgba(255,255,255,0.7)', '&.Mui-selected': { bgcolor: 'rgba(255,255,255,0.15)', color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }, '& .MuiListItemIcon-root': { color: 'white' } }, '&:hover': { bgcolor: 'rgba(255,255,255,0.08)', color: 'white' } }}>
               <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>{item.icon}</ListItemIcon>
               <ListItemText primary={item.fullLabel} primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: 500 }} />
             </ListItemButton>
           </ListItem>
         ))}
       </List>
-
       <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.1)' }}>
-        <Box 
-          sx={{ 
-            display: 'flex', alignItems: 'center', gap: 1.5, p: 1, 
-            borderRadius: '10px', cursor: 'pointer',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' }
-          }}
-          onClick={() => setCurrentView('cuenta')}
-        >
-          <Avatar src={user?.photoURL} sx={{ width: 36, height: 36, border: '1.5px solid rgba(255,255,255,0.3)' }}>
-            {user?.displayName?.charAt(0) || 'U'}
-          </Avatar>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1, borderRadius: '10px', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }} onClick={() => setCurrentView('cuenta')}>
+          <Avatar src={user?.photoURL} sx={{ width: 36, height: 36, border: '1.5px solid rgba(255,255,255,0.3)' }}>{user?.displayName?.charAt(0) || 'U'}</Avatar>
           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-            <Typography variant="subtitle2" sx={{ color: 'white', noWrap: true, fontSize: '0.85rem' }}>
-              {user?.displayName || 'Usuario'}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', noWrap: true, display: 'block' }}>
-              {user?.email}
-            </Typography>
+            <Typography variant="subtitle2" sx={{ color: 'white', noWrap: true, fontSize: '0.85rem' }}>{user?.displayName || 'Usuario'}</Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', noWrap: true, display: 'block' }}>{user?.email}</Typography>
           </Box>
           <Tooltip title="Cerrar Sesión">
-            <IconButton size="small" onClick={(e) => { e.stopPropagation(); doLogout(); }} sx={{ color: 'rgba(255,255,255,0.4)' }}>
-              <LogoutIcon fontSize="small" />
-            </IconButton>
+            <IconButton size="small" onClick={(e) => { e.stopPropagation(); doLogout(); }} sx={{ color: 'rgba(255,255,255,0.4)' }}><LogoutIcon fontSize="small" /></IconButton>
           </Tooltip>
         </Box>
       </Box>
