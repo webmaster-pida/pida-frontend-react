@@ -82,6 +82,7 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                {/* Icono y hostname se mantienen siempre */}
                 <img 
                   src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`} 
                   alt="icon" 
@@ -92,27 +93,28 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
                 </Typography>
               </Box>
 
-              {!isScrapeBlocked && previewData ? (
+              {/* ELIMINAMOS LA CONDICIÓN isScrapeBlocked PARA VER QUÉ TRAE MICROLINK REALMENTE */}
+              {previewData && (
                 <>
                   <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.3, color: 'white' }}>
                     {previewData.title || "Fuente de información"}
                   </Typography>
                   {previewData.description && (
-                    <Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#cbd5e1', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', mt: 0.5 }}>
+                    <Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#cbd5e1', mt: 0.5 }}>
                       {previewData.description}
                     </Typography>
                   )}
                 </>
-              ) : (
-                <>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.3, color: 'white' }}>
-                    Documento Institucional Externo
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#cbd5e1', mt: 0.5 }}>
-                    Haz clic para acceder y validar la información directamente en el sitio web original.
-                  </Typography>
-                </>
               )}
+
+              {/* El bloque de "Documento Institucional" queda comentado aquí abajo:
+              (!isScrapeBlocked && previewData) ? ( ... ) : (
+                <>
+                  <Typography variant="subtitle2" ... > Documento Institucional Externo </Typography>
+                  ...
+                </>
+              )
+              */}
             </Box>
           )}
         </Box>
