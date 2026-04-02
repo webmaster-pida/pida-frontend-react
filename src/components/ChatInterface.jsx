@@ -100,7 +100,20 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
                     {previewData.title || "Fuente de información"}
                   </Typography>
                   {previewData.description && (
-                    <Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#cbd5e1', mt: 0.5 }}>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        fontSize: '0.8rem', 
+                        color: '#cbd5e1', 
+                        mt: 0.5,
+                        // REFUERZO DE TRUNCADO
+                        display: '-webkit-box',
+                        WebkitLineClamp: 4, // <--- Limita a 4 líneas máximo
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        lineHeight: 1.4
+                      }}
+                    >
                       {previewData.description}
                     </Typography>
                   )}
@@ -119,15 +132,20 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
           )}
         </Box>
       }
-      componentsProps={{
+      slotProps={{
         tooltip: {
           sx: {
             maxWidth: 420, 
+            maxHeight: 500, // <--- Límite de altura (ajústalo a tu gusto)
+            overflowY: 'auto', // <--- Permite scroll si el contenido es muy largo
             bgcolor: '#0f172a',
             boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7)',
             borderRadius: '8px',
             border: '1px solid #334155',
             p: 1.5,
+            // Opcional: Estilizar el scrollbar para que sea discreto
+            '&::-webkit-scrollbar': { width: '4px' },
+            '&::-webkit-scrollbar-thumb': { backgroundColor: '#334155', borderRadius: '10px' }
           }
         },
         arrow: {
