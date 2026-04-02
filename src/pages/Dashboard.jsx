@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import Sidebar from '../components/Sidebar';
+import ChatInterface from '../components/ChatInterface';
+import AnalyzerInterface from '../components/AnalyzerInterface';
+import PrequalifierInterface from '../components/PrequalifierInterface';
+import AccountInterface from '../components/AccountInterface';
+import { db, auth } from '../config/firebase'; 
+import { PIDA_CONFIG, STRIPE_PRICES } from '../config/constants';
+
 import { 
   Box, 
   Typography, 
   Button, 
   IconButton, 
   Divider, 
-  Avatar, 
   CircularProgress, 
   Paper, 
   Stepper, 
@@ -30,34 +37,24 @@ import {
   Stars as VipIcon
 } from '@mui/icons-material';
 
-// Importaciones de PIDA
-import Sidebar from '../components/Sidebar';
-import ChatInterface from '../components/ChatInterface';
-import AnalyzerInterface from '../components/AnalyzerInterface';
-import PrequalifierInterface from '../components/PrequalifierInterface';
-import AccountInterface from '../components/AccountInterface';
-import { db, auth } from '../config/firebase'; 
-import { PIDA_CONFIG, STRIPE_PRICES } from '../config/constants';
-
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3kjrZGFGln3bhwEQKnpoNXf2MnLXGHylM1OQ6SvWJmNVCNqhCxg6x000l605E1B');
 
-// =========================================================
-// COMPONENTE: CHECKOUT DENTRO DE LA APP
-// =========================================================
 const InAppCheckout = ({ user }) => {
   const stripe = useStripe();
   const elements = useElements();
   
   const [plan, setPlan] = useState('avanzado');
   const [interval, setInterval] = useState('monthly');
+  
   const rawCurrency = localStorage.getItem('pida_currency');
   const [currency] = useState(['USD', 'MXN'].includes(rawCurrency) ? rawCurrency : 'USD');
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
   const [promoCode, setPromoCode] = useState('');
   const [discountData, setDiscountData] = useState(null);
   const [promoMsg, setPromoMsg] = useState({ text: '', type: '' });
@@ -87,12 +84,15 @@ const InAppCheckout = ({ user }) => {
     e.preventDefault();
     if (!stripe || !elements) return;
     setLoading(true); setError('');
+
     try {
       const cardElement = elements.getElement(CardElement);
       const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
-        type: 'card', card: cardElement,
+        type: 'card',
+        card: cardElement,
         billing_details: { name: user.displayName || user.email || 'Usuario PIDA' }
       });
+
       if (pmError) throw new Error(pmError.message);
 
       const token = await user.getIdToken();
@@ -100,8 +100,11 @@ const InAppCheckout = ({ user }) => {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          priceId: planDetails.id, currency: currency.toLowerCase(), plan_key: plan,
-          name: user.displayName || user.email, promotion_code: discountData ? promoCode : "",
+          priceId: planDetails.id,
+          currency: currency.toLowerCase(),
+          plan_key: plan,
+          name: user.displayName || user.email,
+          promotion_code: discountData ? promoCode : "",
           paymentMethodId: paymentMethod.id
         })
       });
@@ -110,37 +113,39 @@ const InAppCheckout = ({ user }) => {
       if (!intentRes.ok) throw new Error(data.detail || "Error al procesar pago");
 
       if (data.requiresAction) {
-        const result = data.clientSecret.startsWith('seti_') 
-          ? await stripe.confirmCardSetup(data.clientSecret)
-          : await stripe.confirmCardPayment(data.clientSecret);
+        let result;
+        if (data.clientSecret.startsWith('seti_')) {
+          result = await stripe.confirmCardSetup(data.clientSecret);
+        } else {
+          result = await stripe.confirmCardPayment(data.clientSecret);
+        }
         if (result.error) throw new Error(result.error.message);
       }
 
       sessionStorage.setItem('pida_is_onboarding', 'true');
       window.location.reload(); 
+      
     } catch(err) {
-      setError(err.message);
+      setError(`❌ ${err.message}`);
       setLoading(false);
     }
   };
 
   return (
-    <Paper elevation={4} sx={{ maxWidth: 600, p: { xs: 3, md: 5 }, borderRadius: 4, margin: 'auto' }}>
+    <Paper elevation={4} sx={{ maxWidth: 600, background: 'white', padding: '40px', borderRadius: '16px', textAlign: 'center', margin: '0 auto', width: '95%' }}>
       <Stepper activeStep={1} alternativeLabel sx={{ mb: 4 }}>
         {['Cuenta', 'Activación', 'Acceso'].map((label) => (
           <Step key={label}><StepLabel>{label}</StepLabel></Step>
         ))}
       </Stepper>
 
-      <Typography variant="h5" color="primary" fontWeight={800} gutterBottom>
-        Activa tus 5 días gratis
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-        Sesión iniciada como <strong>{user.email}</strong>. No se realizará ningún cobro hoy.
-      </Typography>
+      <Typography variant="h5" sx={{ color: 'var(--pida-primary)', marginBottom: '10px', fontWeight: 800 }}>Activa tus 5 días gratis</Typography>
+      <p style={{ color: '#64748B', marginBottom: '30px', fontSize: '0.95rem' }}>
+        Has iniciado sesión como <strong>{user.email}</strong>. Configura tu plan final. No se realizará ningún cobro hoy.
+      </p>
 
-      <Box component="form" onSubmit={handlePay}>
-        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>Elige tu Plan</Typography>
+      <Box component="form" onSubmit={handlePay} style={{ textAlign: 'left' }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'var(--pida-primary)', mb: 1 }}>Elige tu Plan</Typography>
         <ToggleButtonGroup
           value={plan}
           exclusive
@@ -155,57 +160,63 @@ const InAppCheckout = ({ user }) => {
         </ToggleButtonGroup>
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="subtitle2" fontWeight={700}>Ciclo de facturación</Typography>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'var(--pida-primary)' }}>Ciclo de facturación</Typography>
           <FormControlLabel
             control={<Switch checked={interval === 'annual'} onChange={(e) => setInterval(e.target.checked ? 'annual' : 'monthly')} />}
             label={interval === 'annual' ? "Anual (Ahorra 20%)" : "Mensual"}
           />
         </Box>
 
-        <Box sx={{ p: 2, bgcolor: '#F8FAFC', borderRadius: 3, border: '1px solid #E2E8F0', mb: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="body2" color="text.secondary">Total hoy:</Typography>
-            <Typography variant="body2" fontWeight={800} color="success.main">$0.00 (Prueba)</Typography>
-          </Box>
-          <Divider sx={{ my: 1 }} />
-          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Typography variant="body2" fontWeight={700}>Después de la prueba:</Typography>
-            <Typography variant="body2" fontWeight={800} color="primary">
-              {discountData ? `${(discountData.final_amount/100).toLocaleString('es-ES', {style:'currency', currency})} / ${interval === 'monthly' ? 'mes' : 'año'}` : `${planDetails.text} / ${interval === 'monthly' ? 'mes' : 'año'}`}
-            </Typography>
-          </Box>
+        <Box sx={{ padding: '20px', background: '#F8FAFC', borderRadius: '12px', marginBottom: '20px', border: '1px solid #E2E8F0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <span style={{ color: '#64748B', fontWeight: '600' }}>Total a pagar hoy:</span>
+            <span style={{ color: '#10B981', fontWeight: '800' }}>$0.00 (Prueba 5 días)</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #E2E8F0', paddingTop: '10px' }}>
+            <span style={{ color: '#1D3557', fontWeight: '600' }}>Después de la prueba:</span>
+            <div style={{ textAlign: 'right' }}>
+              <span style={{ color: '#1D3557', fontWeight: '800', textDecoration: discountData ? 'line-through' : 'none', opacity: discountData ? 0.5 : 1 }}>
+                {planDetails.text} / {interval === 'monthly' ? 'mes' : 'año'}
+              </span>
+              {discountData && (
+                <div style={{ color: '#10B981', fontWeight: '800', fontSize: '1.1rem' }}>
+                  {new Intl.NumberFormat(currency === 'MXN' ? 'es-MX' : 'en-US', { style: 'currency', currency }).format(discountData.final_amount / 100)} / {interval === 'monthly' ? 'mes' : 'año'}
+                </div>
+              )}
+            </div>
+          </div>
         </Box>
 
-        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>Datos de la tarjeta</Typography>
-        <Box sx={{ p: 1.5, border: '1px solid #CBD5E1', borderRadius: 2, mb: 2, bgcolor: 'white' }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'var(--pida-primary)', mb: 1 }}>Datos de la tarjeta</Typography>
+        <div style={{ padding: '15px', border: '1px solid #CBD5E1', borderRadius: '8px', background: 'white', marginBottom: '15px' }}>
           <CardElement options={{ style: { base: { fontSize: '16px', color: '#1D3557' } } }} />
-        </Box>
+        </div>
 
-        <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
           <TextField 
-            size="small" fullWidth placeholder="CÓDIGO DESCUENTO" 
-            value={promoCode} onChange={e => setPromoCode(e.target.value.toUpperCase())}
+            size="small" fullWidth placeholder="CÓDIGO DE DESCUENTO" 
+            value={promoCode} onChange={e => setPromoCode(e.target.value.toUpperCase())} 
+            disabled={!!discountData || loading} 
           />
-          <Button variant="outlined" onClick={handleApplyPromo} disabled={loading}>Aplicar</Button>
-        </Box>
-        {promoMsg.text && <Typography variant="caption" color={promoMsg.type === 'error' ? 'error' : 'success.main'}>{promoMsg.text}</Typography>}
+          <Button variant="outlined" onClick={handleApplyPromo} disabled={!!discountData || !promoCode || loading}>
+            {discountData ? '✓' : 'Aplicar'}
+          </Button>
+        </div>
 
-        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
         <Button 
           type="submit" variant="contained" fullWidth size="large" 
-          disabled={loading} sx={{ mt: 3, py: 1.5, borderRadius: 3, fontWeight: 700 }}
+          disabled={loading} sx={{ py: 1.5, borderRadius: 3, fontWeight: 700 }}
         >
-          {loading ? <CircularProgress size={24} color="inherit" /> : 'Empezar prueba gratuita'}
+          {loading ? <CircularProgress size={24} color="inherit" /> : 'Confirmar y empezar prueba gratuita'}
         </Button>
       </Box>
     </Paper>
   );
 };
 
-// =========================================================
-// DASHBOARD PRINCIPAL
-// =========================================================
+
 export default function Dashboard({ user }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -217,14 +228,13 @@ export default function Dashboard({ user }) {
   const [isVip, setIsVip] = useState(false);
   const [isTrial, setIsTrial] = useState(false);
 
-  // Estados de Historial y Menús
   const [chatHistory, setChatHistory] = useState([]);
   const [anaHistory, setAnaHistory] = useState([]);
   const [preHistory, setPreHistory] = useState([]);
+  
   const [anchorEl, setAnchorEl] = useState(null);
   const openMenu = Boolean(anchorEl);
 
-  // Reset Signalers
   const [resetSignals, setResetSignals] = useState({ chat: 0, ana: 0, pre: 0 });
   const [loadData, setLoadData] = useState({ chat: null, ana: null, pre: null });
 
@@ -280,16 +290,15 @@ export default function Dashboard({ user }) {
     setPreHistory(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   };
 
-  // ✅ CORRECCIÓN: Actualizar historial inmediatamente al abrir el menú
   const handleMenuOpen = (event) => {
-    fetchHistories();
+    fetchHistories(); // Actualiza los datos justo antes de mostrar el menú
     setAnchorEl(event.currentTarget);
   };
   
   const handleMenuClose = () => setAnchorEl(null);
 
   const deleteItem = async (type, id, e) => {
-    e.stopPropagation(); // Evita que se dispare la carga al borrar
+    e.stopPropagation(); 
     const token = await user.getIdToken();
     const baseUrl = type === 'chat' ? PIDA_CONFIG.API_CHAT + '/conversations' : PIDA_CONFIG.API_ANA + '/analysis-history';
     if (type === 'pre') {
@@ -302,8 +311,8 @@ export default function Dashboard({ user }) {
 
   if (isCheckingAccess) return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', bgcolor: '#f9fafb' }}>
-      <CircularProgress size={40} thickness={5} />
-      <Typography sx={{ mt: 2, color: 'text.secondary', fontWeight: 500 }}>Verificando suscripción...</Typography>
+      <CircularProgress size={40} />
+      <Typography sx={{ mt: 2, color: 'text.secondary' }}>Verificando suscripción...</Typography>
     </Box>
   );
 
@@ -313,9 +322,8 @@ export default function Dashboard({ user }) {
     </Box>
   );
 
-  // ✅ UNIFICACIÓN VISUAL: Ancho idéntico para los botones de acción e historial
   const headerBtnSx = {
-    width: isMobile ? 'auto' : 240, // Ancho suficiente para leer bien el texto
+    width: isMobile ? 'auto' : 240, // Ancho unificado y legible
     borderRadius: 2,
     textTransform: 'none',
     fontWeight: 700,
@@ -333,7 +341,6 @@ export default function Dashboard({ user }) {
           display: 'flex', alignItems: 'center', px: { xs: 2, md: 4 }, gap: 2, zIndex: 1100 
         }}>
           
-          {/* BOTÓN ACCIÓN PRINCIPAL - Ancho Unificado */}
           <Button 
             variant="contained" startIcon={<AddIcon />} size="small"
             onClick={() => {
@@ -345,7 +352,6 @@ export default function Dashboard({ user }) {
             {isMobile ? 'Nuevo' : (currentView === 'investigador' ? 'Nuevo Chat' : currentView === 'analizador' ? 'Nuevo Análisis' : 'Nuevo Caso')}
           </Button>
 
-          {/* MENÚ DE HISTORIAL - Ancho Unificado y Carga Corregida */}
           {currentView !== 'cuenta' && (
             <>
               <Button 
@@ -357,6 +363,7 @@ export default function Dashboard({ user }) {
               </Button>
               <Menu
                 anchorEl={anchorEl} open={openMenu} onClose={handleMenuClose}
+                sx={{ zIndex: 200000 }} // ELEVACIÓN CRÍTICA: Más alto que el z-index 99999 del layout
                 PaperProps={{ sx: { width: 320, maxHeight: 450, borderRadius: 3, mt: 1, boxShadow: '0 10px 25px rgba(0,0,0,0.1)' } }}
               >
                 <Typography variant="overline" sx={{ px: 2, py: 1, display: 'block', fontWeight: 800, color: 'text.disabled' }}>Registros Recientes</Typography>
@@ -365,7 +372,6 @@ export default function Dashboard({ user }) {
                   <MenuItem disabled sx={{ justifyContent: 'center', py: 3 }}>No hay historial aún</MenuItem>
                 )}
                 {(currentView === 'investigador' ? chatHistory : currentView === 'analizador' ? anaHistory : preHistory).map((item) => (
-                  // ✅ CORRECCIÓN: El evento de carga ahora está en el MenuItem (toda la fila)
                   <MenuItem 
                     key={item.id} 
                     sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, py: 1.5 }}
@@ -392,7 +398,6 @@ export default function Dashboard({ user }) {
             </>
           )}
 
-          {/* BADGE DE PLAN */}
           <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
             <Chip 
               icon={isVip ? <VipIcon /> : undefined}
@@ -404,7 +409,6 @@ export default function Dashboard({ user }) {
           </Box>
         </Box>
 
-        {/* VISTAS DINÁMICAS */}
         <Box sx={{ flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
           {currentView === 'investigador' && <ChatInterface user={user} resetSignal={resetSignals.chat} loadChatId={loadData.chat} refreshHistory={fetchHistories} />}
           {currentView === 'analizador' && <AnalyzerInterface user={user} resetSignal={resetSignals.ana} loadAnaId={loadData.ana} />}
