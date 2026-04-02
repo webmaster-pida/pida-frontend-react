@@ -540,7 +540,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
             <div className="pida-bubble pida-message-bubble">
               <Box sx={{ 
                 // CAMBIO AQUÍ: De '320px' a algo más generoso, o '100%'
-                width: '450px', 
+                width: '400px', 
                 maxWidth: '100%', // Esto asegura que en móviles no se desborde
                 display: 'flex', 
                 alignItems: 'center', 
