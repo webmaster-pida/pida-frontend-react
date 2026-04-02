@@ -22,7 +22,7 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
 
   const fetchPreview = async () => {
     if (fetched || !href || !href.startsWith('http')) return;
-    setFetched(true); // Evita llamadas dobles
+    setFetched(true); 
     setLoading(true);
     try {
       const cleanHref = href.replace(/[\.\)]+$/, '');
@@ -49,7 +49,6 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
     }
   };
 
-  // 👇 TÉCNICA DE PRECARGA: En lugar de esperar al 'hover', busca la info en cuanto el enlace aparece en pantalla
   useEffect(() => {
     fetchPreview();
   }, [href]);
@@ -58,12 +57,9 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
     <Tooltip
       placement="top"
       arrow
-      // Bajamos el delay de 300 a 100 milisegundos para que reaccione al instante
       enterDelay={100} 
-      // Ya no necesitamos onOpen={fetchPreview} porque se dispara automático en el useEffect
       PopperProps={{ sx: { zIndex: 999999 } }}
       title={
-        // 👇 SOLUCIÓN DE ANCHO: Subimos el width a 380px
         <Box sx={{ width: 380, p: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
@@ -110,7 +106,6 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
       componentsProps={{
         tooltip: {
           sx: {
-            // 👇 SOLUCIÓN DE ANCHO: Desbloqueamos el maxWidth de MUI para permitir la tarjeta de 380px
             maxWidth: 420, 
             bgcolor: '#0f172a',
             boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7)',
@@ -144,6 +139,9 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [chatId, setChatId] = useState(null);
+  
+  // 👇 NUEVO ESTADO: Para guardar el mensaje en vivo del orquestador
+  const [currentStatus, setCurrentStatus] = useState('Iniciando...'); 
   
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -254,6 +252,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     
     setMessages(prev => [...prev, { role: 'user', content: textToSend }]);
     setIsTyping(true);
+    setCurrentStatus('Conectando...'); // Restablecemos el estado inicial al enviar
     
     setIsAtBottom(true);
     setTimeout(() => scrollToBottom(), 50);
@@ -310,8 +309,13 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
           if (line.startsWith('data:')) {
             try {
               const data = JSON.parse(line.substring(6));
-              if (data.text) {
-                
+              
+              // 👇 NUEVO LECTOR DE EVENTOS DE ESTADO
+              if (data.event === 'status' && data.message) {
+                setCurrentStatus(data.message);
+              } 
+              // SI ES TEXTO NORMAL DE GEMINI, LO PROCESA:
+              else if (data.text) {
                 const chars = data.text;
                 const step = 10; 
                 for (let i = 0; i < chars.length; i += step) {
@@ -328,7 +332,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
                   
                   await new Promise(resolve => setTimeout(resolve, 2));
                 }
-
               }
             } catch (e) {}
           }
@@ -342,9 +345,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     }
   };
 
-  // =========================================================================
-  // RENDERIZADO PROFESIONAL (PARSER ESTRUCTURADO)
-  // =========================================================================
   const renderMessageContent = (msg, index) => {
     if (msg.role === 'user') {
       return <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{msg.content}</ReactMarkdown>;
@@ -354,7 +354,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     let displayContent = msg.content;
     let questions = [];
 
-    // Buscamos la etiqueta estructurada
     const tagStart = "<pida_questions>";
     const tagEnd = "</pida_questions>";
 
@@ -364,10 +363,9 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
       let textInsideAndAfter = parts[1] || "";
       
       let qString = "";
-      let textAfterTags = ""; // Aquí guardaremos lo que inyecta Vertex AI
+      let textAfterTags = ""; 
 
       if (textInsideAndAfter.includes(tagEnd)) {
-        // Separamos lo que son preguntas de lo que Vertex puso al final
         const subParts = textInsideAndAfter.split(tagEnd);
         qString = subParts[0]; 
         textAfterTags = subParts.slice(1).join(tagEnd); 
@@ -375,33 +373,25 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
         qString = textInsideAndAfter;
       }
 
-      // Reconstruimos el Markdown: Texto Principal + (Saltamos las preguntas) + Fuentes de Vertex
       displayContent = textBeforeTags + "\n" + textAfterTags;
 
-      // Solo mostramos los botones si ya terminó de escribir la etiqueta de cierre
       if (!isCurrentlyTypingThis && textInsideAndAfter.includes(tagEnd)) {
         questions = qString.split('|').map(q => q.trim()).filter(q => q.length > 0);
       }
     }
 
-    // Limpieza de alucinaciones de formato en tablas
     displayContent = displayContent.replace(/["']br["']/g, '<br />');
 
-    // 👇 NUEVO ESCUDO DE SEGURIDAD FRONTEND 👇
-    // Previene que tablas rotas o código crudo arruinen la vista de la sección de Fuentes.
     if (displayContent.includes('## Fuentes y Jurisprudencia')) {
       const splitPoint = '## Fuentes y Jurisprudencia';
       const parts = displayContent.split(splitPoint);
       let fuentesText = parts[1];
       
-      // Eliminar formato separador de tablas de Markdown (ej. |:---| o |---|)
       fuentesText = fuentesText.replace(/\|?\s*:?-{2,}:?\s*\|?/g, '');
-      // Reemplazar barras verticales por un separador visual limpio
       fuentesText = fuentesText.replace(/\|/g, ' • ');
       
       displayContent = parts[0] + splitPoint + fuentesText;
     }
-    // 👆 FIN DEL ESCUDO 👆
 
     return (
       <>
@@ -457,13 +447,24 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
             </div>
           ))}
 
+          {/* 👇 NUEVO INDICADOR DE ESTADO (ANCHO FIJO) */}
           {isTyping && (messages.length === 0 || messages[messages.length - 1].role === 'user' || messages[messages.length - 1].content === '') && (
             <div className="pida-bubble pida-message-bubble">
-              <div className="typing-indicator">
-                <div className="typing-dot"></div>
-                <div className="typing-dot"></div>
-                <div className="typing-dot"></div>
-              </div>
+              <Box sx={{ 
+                width: '320px', // Ancho fijo para que no salte
+                maxWidth: '100%',
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 2, 
+                py: 1, 
+                px: 2,
+                color: '#475569' 
+              }}>
+                <CircularProgress size={20} sx={{ color: 'var(--pida-primary)' }} />
+                <Typography variant="body2" sx={{ fontWeight: 500, fontStyle: 'italic' }}>
+                  {currentStatus}
+                </Typography>
+              </Box>
             </div>
           )}
           
@@ -471,7 +472,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
         </div>
       </div>
 
-      {/* FAB de MUI para Scroll To Bottom */}
       {!isAtBottom && messages.length > 0 && (
         <Fab
           color="primary"
