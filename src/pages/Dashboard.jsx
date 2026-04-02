@@ -280,7 +280,7 @@ export default function Dashboard({ user }) {
     setPreHistory(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   };
 
-  // ✅ CORRECCIÓN: Actualizar historial al abrir el menú
+  // ✅ CORRECCIÓN: Actualizar historial inmediatamente al abrir el menú
   const handleMenuOpen = (event) => {
     fetchHistories();
     setAnchorEl(event.currentTarget);
@@ -289,7 +289,7 @@ export default function Dashboard({ user }) {
   const handleMenuClose = () => setAnchorEl(null);
 
   const deleteItem = async (type, id, e) => {
-    e.stopPropagation(); // Evita que el clic se propague al MenuItem y seleccione el chat
+    e.stopPropagation(); // Evita que se dispare la carga al borrar
     const token = await user.getIdToken();
     const baseUrl = type === 'chat' ? PIDA_CONFIG.API_CHAT + '/conversations' : PIDA_CONFIG.API_ANA + '/analysis-history';
     if (type === 'pre') {
@@ -313,13 +313,14 @@ export default function Dashboard({ user }) {
     </Box>
   );
 
-  // Estilo unificado para los botones del encabezado
+  // ✅ UNIFICACIÓN VISUAL: Ancho idéntico para los botones de acción e historial
   const headerBtnSx = {
-    width: isMobile ? 'auto' : 200,
+    width: isMobile ? 'auto' : 240, // Ancho suficiente para leer bien el texto
     borderRadius: 2,
     textTransform: 'none',
     fontWeight: 700,
-    whiteSpace: 'nowrap'
+    whiteSpace: 'nowrap',
+    height: 42
   };
 
   return (
@@ -344,7 +345,7 @@ export default function Dashboard({ user }) {
             {isMobile ? 'Nuevo' : (currentView === 'investigador' ? 'Nuevo Chat' : currentView === 'analizador' ? 'Nuevo Análisis' : 'Nuevo Caso')}
           </Button>
 
-          {/* MENÚ DE HISTORIAL - Ancho Unificado y Clic Corregido */}
+          {/* MENÚ DE HISTORIAL - Ancho Unificado y Carga Corregida */}
           {currentView !== 'cuenta' && (
             <>
               <Button 
@@ -352,22 +353,22 @@ export default function Dashboard({ user }) {
                 onClick={handleMenuOpen}
                 sx={{ ...headerBtnSx, borderColor: '#E2E8F0', color: 'text.secondary' }}
               >
-                {!isMobile && 'Historial'} <ArrowDownIcon fontSize="small" />
+                {!isMobile && 'Historial de consultas'} <ArrowDownIcon sx={{ ml: 'auto' }} />
               </Button>
               <Menu
                 anchorEl={anchorEl} open={openMenu} onClose={handleMenuClose}
                 PaperProps={{ sx: { width: 320, maxHeight: 450, borderRadius: 3, mt: 1, boxShadow: '0 10px 25px rgba(0,0,0,0.1)' } }}
               >
-                <Typography variant="overline" sx={{ px: 2, py: 1, display: 'block', fontWeight: 800, color: 'text.disabled' }}>Consultas Recientes</Typography>
+                <Typography variant="overline" sx={{ px: 2, py: 1, display: 'block', fontWeight: 800, color: 'text.disabled' }}>Registros Recientes</Typography>
                 <Divider />
                 {((currentView === 'investigador' ? chatHistory : currentView === 'analizador' ? anaHistory : preHistory).length === 0) && (
                   <MenuItem disabled sx={{ justifyContent: 'center', py: 3 }}>No hay historial aún</MenuItem>
                 )}
                 {(currentView === 'investigador' ? chatHistory : currentView === 'analizador' ? anaHistory : preHistory).map((item) => (
-                  // ✅ CORRECCIÓN: Evento de carga movido al MenuItem
+                  // ✅ CORRECCIÓN: El evento de carga ahora está en el MenuItem (toda la fila)
                   <MenuItem 
                     key={item.id} 
-                    sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}
+                    sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, py: 1.5 }}
                     onClick={() => {
                         if (currentView === 'investigador') setLoadData(p => ({...p, chat: item.id}));
                         else if (currentView === 'analizador') setLoadData(p => ({...p, ana: item.id}));
@@ -375,7 +376,7 @@ export default function Dashboard({ user }) {
                         handleMenuClose();
                     }}
                   >
-                    <Typography variant="body2" noWrap sx={{ flexGrow: 1 }}>
+                    <Typography variant="body2" noWrap sx={{ flexGrow: 1, maxWidth: '240px' }}>
                       {item.title || "Sin título"}
                     </Typography>
                     <IconButton 
@@ -383,7 +384,7 @@ export default function Dashboard({ user }) {
                         color="error" 
                         onClick={(e) => deleteItem(currentView === 'investigador' ? 'chat' : currentView === 'analizador' ? 'ana' : 'pre', item.id, e)}
                     >
-                      <DeleteIcon fontSize="inherit" />
+                      <DeleteIcon fontSize="small" />
                     </IconButton>
                   </MenuItem>
                 ))}
