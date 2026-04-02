@@ -19,7 +19,6 @@ import {
   MenuItem,
   Chip,
   Alert,
-  Tooltip,
   useMediaQuery,
   useTheme
 } from '@mui/material';
@@ -28,8 +27,7 @@ import {
   History as HistoryIcon, 
   Delete as DeleteIcon,
   KeyboardArrowDown as ArrowDownIcon,
-  Stars as VipIcon,
-  ErrorOutline as ErrorIcon
+  Stars as VipIcon
 } from '@mui/icons-material';
 
 // Importaciones de PIDA
@@ -52,7 +50,6 @@ const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3k
 const InAppCheckout = ({ user }) => {
   const stripe = useStripe();
   const elements = useElements();
-  const theme = useTheme();
   
   const [plan, setPlan] = useState('avanzado');
   const [interval, setInterval] = useState('monthly');
@@ -283,11 +280,16 @@ export default function Dashboard({ user }) {
     setPreHistory(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   };
 
-  const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
+  // ✅ CORRECCIÓN: Actualizar historial al abrir el menú
+  const handleMenuOpen = (event) => {
+    fetchHistories();
+    setAnchorEl(event.currentTarget);
+  };
+  
   const handleMenuClose = () => setAnchorEl(null);
 
   const deleteItem = async (type, id, e) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Evita que el clic se propague al MenuItem y seleccione el chat
     const token = await user.getIdToken();
     const baseUrl = type === 'chat' ? PIDA_CONFIG.API_CHAT + '/conversations' : PIDA_CONFIG.API_ANA + '/analysis-history';
     if (type === 'pre') {
@@ -311,6 +313,15 @@ export default function Dashboard({ user }) {
     </Box>
   );
 
+  // Estilo unificado para los botones del encabezado
+  const headerBtnSx = {
+    width: isMobile ? 'auto' : 200,
+    borderRadius: 2,
+    textTransform: 'none',
+    fontWeight: 700,
+    whiteSpace: 'nowrap'
+  };
+
   return (
     <Box id="pida-app-layout" sx={{ display: 'flex', bgcolor: 'var(--pida-bg-app)', height: '100vh', overflow: 'hidden' }}>
       <Sidebar currentView={currentView} setCurrentView={setCurrentView} user={user} />
@@ -320,25 +331,26 @@ export default function Dashboard({ user }) {
           height: 70, bgcolor: 'white', borderBottom: '1px solid #E5E7EB', 
           display: 'flex', alignItems: 'center', px: { xs: 2, md: 4 }, gap: 2, zIndex: 1100 
         }}>
-          {/* BOTÓN ACCIÓN PRINCIPAL */}
+          
+          {/* BOTÓN ACCIÓN PRINCIPAL - Ancho Unificado */}
           <Button 
             variant="contained" startIcon={<AddIcon />} size="small"
             onClick={() => {
                 setResetSignals(prev => ({ ...prev, [currentView === 'investigador' ? 'chat' : currentView === 'analizador' ? 'ana' : 'pre']: prev[currentView === 'investigador' ? 'chat' : currentView === 'analizador' ? 'ana' : 'pre'] + 1 }));
                 setLoadData({ chat: null, ana: null, pre: null });
             }}
-            sx={{ display: currentView === 'cuenta' ? 'none' : 'inline-flex', borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+            sx={{ ...headerBtnSx, display: currentView === 'cuenta' ? 'none' : 'inline-flex' }}
           >
-            {isMobile ? 'Nuevo' : `Nuevo ${currentView === 'investigador' ? 'Chat' : currentView === 'analizador' ? 'Análisis' : 'Caso'}`}
+            {isMobile ? 'Nuevo' : (currentView === 'investigador' ? 'Nuevo Chat' : currentView === 'analizador' ? 'Nuevo Análisis' : 'Nuevo Caso')}
           </Button>
 
-          {/* MENÚ DE HISTORIAL */}
+          {/* MENÚ DE HISTORIAL - Ancho Unificado y Clic Corregido */}
           {currentView !== 'cuenta' && (
             <>
               <Button 
                 variant="outlined" color="inherit" startIcon={<HistoryIcon />} size="small"
                 onClick={handleMenuOpen}
-                sx={{ borderRadius: 2, textTransform: 'none', borderColor: '#E2E8F0', color: 'text.secondary' }}
+                sx={{ ...headerBtnSx, borderColor: '#E2E8F0', color: 'text.secondary' }}
               >
                 {!isMobile && 'Historial'} <ArrowDownIcon fontSize="small" />
               </Button>
@@ -352,19 +364,25 @@ export default function Dashboard({ user }) {
                   <MenuItem disabled sx={{ justifyContent: 'center', py: 3 }}>No hay historial aún</MenuItem>
                 )}
                 {(currentView === 'investigador' ? chatHistory : currentView === 'analizador' ? anaHistory : preHistory).map((item) => (
-                  <MenuItem key={item.id} sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
-                    <Typography 
-                        variant="body2" noWrap sx={{ flexGrow: 1 }} 
-                        onClick={() => {
-                            if (currentView === 'investigador') setLoadData(p => ({...p, chat: item.id}));
-                            else if (currentView === 'analizador') setLoadData(p => ({...p, ana: item.id}));
-                            else setLoadData(p => ({...p, pre: item}));
-                            handleMenuClose();
-                        }}
-                    >
+                  // ✅ CORRECCIÓN: Evento de carga movido al MenuItem
+                  <MenuItem 
+                    key={item.id} 
+                    sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}
+                    onClick={() => {
+                        if (currentView === 'investigador') setLoadData(p => ({...p, chat: item.id}));
+                        else if (currentView === 'analizador') setLoadData(p => ({...p, ana: item.id}));
+                        else setLoadData(p => ({...p, pre: item}));
+                        handleMenuClose();
+                    }}
+                  >
+                    <Typography variant="body2" noWrap sx={{ flexGrow: 1 }}>
                       {item.title || "Sin título"}
                     </Typography>
-                    <IconButton size="small" color="error" onClick={(e) => deleteItem(currentView === 'investigador' ? 'chat' : currentView === 'analizador' ? 'ana' : 'pre', item.id, e)}>
+                    <IconButton 
+                        size="small" 
+                        color="error" 
+                        onClick={(e) => deleteItem(currentView === 'investigador' ? 'chat' : currentView === 'analizador' ? 'ana' : 'pre', item.id, e)}
+                    >
                       <DeleteIcon fontSize="inherit" />
                     </IconButton>
                   </MenuItem>
@@ -379,7 +397,6 @@ export default function Dashboard({ user }) {
               icon={isVip ? <VipIcon /> : undefined}
               label={`Plan: ${isVip ? 'VIP' : userPlan}${isTrial && !isVip ? ' (Prueba)' : ''}`} 
               color={isVip ? "warning" : "primary"} 
-              variant="light"
               sx={{ fontWeight: 700, borderRadius: 2, height: 32, bgcolor: isVip ? '#FFFBEB' : '#EEF2FF', color: isVip ? '#92400E' : '#1D3557' }}
             />
             {!isMobile && <Box component="img" src="/img/PIDA-MASCOTA-menu.png" sx={{ height: 45 }} />}
