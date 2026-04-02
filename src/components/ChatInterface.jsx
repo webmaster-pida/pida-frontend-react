@@ -365,7 +365,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = `Chat_PIDA_${format.toUpperCase()}.${format}`; 
+      a.download = `${getTimestampedName("Experto_PIDA")}.${format}`; 
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -379,15 +379,30 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
   const handleTXTDownload = () => {
     const cleanMessages = messages.map(msg => {
       if (msg.role !== 'model') return msg;
+      
+      // 1. Borrar marca interna
       let content = msg.content.replace(/_Fin del análisis\._/g, "");
+      
+      // 2. Transformar la etiqueta <pida_questions> a viñetas
       content = content.replace(/<pida_questions>([\s\S]*?)<\/pida_questions>/g, (match, p1) => {
           const qs = p1.split('|').map(q => q.trim()).filter(q => q);
           if (qs.length === 0) return "";
           return "\n\nPreguntas de seguimiento sugeridas:\n" + qs.map(q => `- ${q}`).join('\n');
       });
+
+      // 3. Destruir las filas separadoras de tablas (|---|---|)
+      content = content.replace(/^\|?[\s\-:]+\|[\s\-:|]+$/gm, "");
+
+      // 4. Limpiar los bordes de las tablas para que parezcan listas
+      content = content.replace(/\|/g, " - ");
+
+      // 5. Quitar los asteriscos de las negritas para que sea texto limpio
+      content = content.replace(/\*\*/g, "");
+
       return { ...msg, content };
     });
-    Exporter.downloadTXT(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", cleanMessages);
+
+    Exporter.downloadTXT(getTimestampedName("Experto_PIDA"), "Reporte Experto Jurídico", cleanMessages);
   };
 
   const renderMessageContent = (msg, index) => {
