@@ -1,11 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  define: {
+    // Inyectamos la llave directamente como un string global
+    'import.meta.env.VITE_MICROLINK_KEY': JSON.stringify('F4jGFCR2Ur9PZzezxRnOf4ohHBhOXVTX3ccK3Sla')
+  },
   build: {
-    sourcemap: false, // Oculta el código original en producción
-    minify: 'esbuild', // Tritura y comprime el código al máximo
+    sourcemap: false,
+    minify: 'esbuild',
   }
 })
