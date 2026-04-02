@@ -8,9 +8,6 @@ import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, 
 
 const API_CHAT = "https://chat-v20-perplexity-465781488910.us-central1.run.app";
 
-// =========================================================================
-// COMPONENTE DE TARJETA DE PREVISUALIZACIÓN (MÁS ANCHO Y CON PRECARGA)
-// =========================================================================
 const PreviewLink = ({ href, children, node, title, ...props }) => {
   const [previewData, setPreviewData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -140,7 +137,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
   const [isTyping, setIsTyping] = useState(false);
   const [chatId, setChatId] = useState(null);
   
-  // 👇 NUEVO ESTADO: Para guardar el mensaje en vivo del orquestador
   const [currentStatus, setCurrentStatus] = useState('Iniciando...'); 
   
   const messagesEndRef = useRef(null);
@@ -252,7 +248,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     
     setMessages(prev => [...prev, { role: 'user', content: textToSend }]);
     setIsTyping(true);
-    setCurrentStatus('Conectando...'); // Restablecemos el estado inicial al enviar
+    setCurrentStatus('Conectando...');
     
     setIsAtBottom(true);
     setTimeout(() => scrollToBottom(), 50);
@@ -310,11 +306,9 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
             try {
               const data = JSON.parse(line.substring(6));
               
-              // 👇 NUEVO LECTOR DE EVENTOS DE ESTADO
               if (data.event === 'status' && data.message) {
                 setCurrentStatus(data.message);
               } 
-              // SI ES TEXTO NORMAL DE GEMINI, LO PROCESA:
               else if (data.text) {
                 const chars = data.text;
                 const step = 10; 
@@ -343,6 +337,57 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     } finally {
       setIsTyping(false);
     }
+  };
+
+  // 👇 NUEVOS CONTROLADORES DE DESCARGA 👇
+  const handleBackendDownload = async (format) => {
+    if (!chatId) {
+      alert("Por favor, interactúa en el chat antes de descargarlo.");
+      return;
+    }
+    try {
+      const token = await user.getIdToken();
+      const formData = new FormData();
+      formData.append("convo_id", chatId);
+      formData.append("file_format", format);
+
+      // Llamamos a tu servidor Python donde hicimos la magia de limpiar etiquetas
+      const res = await fetch(`${API_CHAT}/download-chat`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+
+      if (!res.ok) throw new Error("Error en el servidor al generar el documento.");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `Chat_PIDA_${format.toUpperCase()}.${format}`; 
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      alert("Hubo un problema descargando el archivo.");
+    }
+  };
+
+  // Para el TXT seguimos usando el Exporter, pero limpiamos las etiquetas antes de dárselo
+  const handleTXTDownload = () => {
+    const cleanMessages = messages.map(msg => {
+      if (msg.role !== 'model') return msg;
+      let content = msg.content.replace(/_Fin del análisis\._/g, "");
+      content = content.replace(/<pida_questions>([\s\S]*?)<\/pida_questions>/g, (match, p1) => {
+          const qs = p1.split('|').map(q => q.trim()).filter(q => q);
+          if (qs.length === 0) return "";
+          return "\n\nPreguntas de seguimiento sugeridas:\n" + qs.map(q => `- ${q}`).join('\n');
+      });
+      return { ...msg, content };
+    });
+    Exporter.downloadTXT(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", cleanMessages);
   };
 
   const renderMessageContent = (msg, index) => {
@@ -447,11 +492,10 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
             </div>
           ))}
 
-          {/* 👇 NUEVO INDICADOR DE ESTADO (ANCHO FIJO) */}
           {isTyping && (messages.length === 0 || messages[messages.length - 1].role === 'user' || messages[messages.length - 1].content === '') && (
             <div className="pida-bubble pida-message-bubble">
               <Box sx={{ 
-                width: '320px', // Ancho fijo para que no salte
+                width: '320px', 
                 maxWidth: '100%',
                 display: 'flex', 
                 alignItems: 'center', 
@@ -504,9 +548,10 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
         {messages.length > 0 && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
             <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>TXT</Button>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>DOCX</Button>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Experto-PIDA"), "Reporte Experto Jurídico", messages)}>PDF</Button>
+              {/* 👇 BOTONES DE DESCARGA CONECTADOS CORRECTAMENTE 👇 */}
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={handleTXTDownload}>TXT</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('docx')}>DOCX</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('pdf')}>PDF</Button>
             </ButtonGroup>
           </Box>
         )}
