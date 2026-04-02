@@ -11,25 +11,29 @@ const API_CHAT = "https://chat-v20-perplexity-465781488910.us-central1.run.app";
 const PreviewLink = ({ href, children, node, title, ...props }) => {
   const [previewData, setPreviewData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [fetched, setFetched] = useState(false);
+  const [fetchedUrl, setFetchedUrl] = useState(null);
   const [isScrapeBlocked, setIsScrapeBlocked] = useState(false);
 
-  const MICROLINK_API_KEY = import.meta.env.VITE_MICROLINK_KEY;
+  // Leemos la llave directamente
+  const MICROLINK_API_KEY = import.meta.env.VITE_MICROLINK_KEY || "";
 
   let hostname = "";
   try { hostname = new URL(href).hostname.replace('www.', ''); } catch (e) {}
 
   const fetchPreview = async () => {
-    if (fetched || !href || !href.startsWith('http')) return;
-    setFetched(true); 
+    // Evitamos peticiones si el link no es HTTP o si ya buscamos exactamente ESTE link completo
+    if (!href || !href.startsWith('http') || fetchedUrl === href) return;
+    
+    setFetchedUrl(href); 
     setLoading(true);
     try {
       const cleanHref = href.replace(/[\.\)]+$/, '');
-      const endpoint = MICROLINK_API_KEY ? 'https://pro.microlink.io' : 'https://api.microlink.io';
       
-      const res = await fetch(`${endpoint}?url=${encodeURIComponent(cleanHref)}`, {
+      // FORZAMOS LA RUTA AL SERVIDOR VIP PRO DE MICROLINK
+      const res = await fetch(`https://pro.microlink.io?url=${encodeURIComponent(cleanHref)}`, {
         headers: MICROLINK_API_KEY ? { 'x-api-key': MICROLINK_API_KEY } : {}
       });
+      
       const data = await res.json();
 
       if (data.status === 'success') {
@@ -53,7 +57,14 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
   };
 
   useEffect(() => {
-    fetchPreview();
+    // EL SECRETO: Debounce de 1.5 segundos. 
+    // Si el 'href' cambia porque la IA sigue escribiendo, el temporizador se reinicia.
+    // Solo disparará la petición cuando la IA termine de escribir el link por completo.
+    const timer = setTimeout(() => {
+      fetchPreview();
+    }, 1500);
+
+    return () => clearTimeout(timer);
   }, [href]);
 
   return (
@@ -561,7 +572,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
         {messages.length > 0 && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
             <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
-              {/* 👇 BOTONES DE DESCARGA CONECTADOS CORRECTAMENTE 👇 */}
               <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={handleTXTDownload}>TXT</Button>
               <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('docx')}>DOCX</Button>
               <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('pdf')}>PDF</Button>
