@@ -4,9 +4,94 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw'; 
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
-import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tooltip, CircularProgress, Typography } from '@mui/material';
 
 const API_CHAT = "https://chat-v20-perplexity-465781488910.us-central1.run.app";
+
+// =========================================================================
+// COMPONENTE DE TARJETA DE PREVISUALIZACIÓN (ESTILO PERPLEXITY)
+// =========================================================================
+const PreviewLink = ({ href, children }) => {
+  const [previewData, setPreviewData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const fetchPreview = async () => {
+    if (previewData || !href || !href.startsWith('http')) return; 
+    setLoading(true);
+    try {
+      // Usamos Microlink API (gratuita) para saltarnos el bloqueo de CORS y extraer la tarjeta
+      const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(href)}`);
+      const data = await res.json();
+      if (data.status === 'success') {
+        setPreviewData(data.data);
+      }
+    } catch (e) {
+      console.error("Error cargando preview:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Tooltip
+      open={open}
+      onOpen={() => { setOpen(true); fetchPreview(); }}
+      onClose={() => setOpen(false)}
+      enterDelay={400} // Espera un poco antes de abrir para no saturar si pasa el mouse rápido
+      title={
+        <Box sx={{ width: 280, p: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+              <CircularProgress size={24} sx={{ color: '#60a5fa' }} />
+            </Box>
+          ) : previewData ? (
+            <>
+              {previewData.image?.url && (
+                <img 
+                  src={previewData.image.url} 
+                  alt="preview" 
+                  style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '6px' }} 
+                />
+              )}
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.2, color: 'white' }}>
+                {previewData.title || new URL(href).hostname}
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.75rem', color: '#94a3b8', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                {previewData.description || "Haz clic para visitar este sitio web."}
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#60a5fa', mt: 0.5, wordBreak: 'break-all' }}>
+                {new URL(href).hostname}
+              </Typography>
+            </>
+          ) : (
+            <Typography variant="body2" color="white">Visitar enlace...</Typography>
+          )}
+        </Box>
+      }
+      componentsProps={{
+        tooltip: {
+          sx: {
+            bgcolor: '#1e293b', // Fondo oscuro elegante
+            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)',
+            borderRadius: '12px',
+            border: '1px solid #334155',
+            p: 1,
+          }
+        }
+      }}
+    >
+      <a 
+        href={href} 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        style={{ color: 'var(--pida-primary)', textDecoration: 'underline', fontWeight: 500 }}
+      >
+        {children}
+      </a>
+    </Tooltip>
+  );
+};
 
 export default function ChatInterface({ user, resetSignal, loadChatId, refreshHistory }) {
   const [messages, setMessages] = useState([]);
@@ -37,7 +122,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
   }, [messages, isTyping]);
 
   const markdownComponents = {
-    a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
+    a: ({ node, ...props }) => <PreviewLink href={props.href}>{props.children}</PreviewLink>,
     table: ({ node, ...props }) => (
       <TableContainer component={Paper} sx={{ my: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
         <Table size="small" {...props} />
