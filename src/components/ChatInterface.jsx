@@ -6,7 +6,7 @@ import { Exporter, getTimestampedName } from '../utils/exporter';
 
 import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 
-const API_CHAT = "https://chat-v20-strong-465781488910.us-central1.run.app";
+const API_CHAT = "https://chat-v20-git-465781488910.us-central1.run.app";
 
 export default function ChatInterface({ user, resetSignal, loadChatId, refreshHistory }) {
   const [messages, setMessages] = useState([]);
@@ -252,6 +252,9 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
         questions = qString.split('|').map(q => q.trim()).filter(q => q.length > 0);
       }
     }
+
+    // Limpieza de alucinaciones de formato en tablas
+    displayContent = displayContent.replace(/["']br["']/g, '<br />');
 
     return (
       <>
