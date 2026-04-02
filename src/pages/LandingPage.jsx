@@ -3,27 +3,7 @@ import { STRIPE_PRICES } from '../config/constants';
 import { db } from '../config/firebase'; 
 
 // Importaciones de Material-UI
-import { 
-  Box, 
-  Typography, 
-  Button, 
-  Menu, 
-  MenuItem, 
-  IconButton,
-  Switch,
-  Dialog,
-  DialogContent,
-  TextField,
-  Alert,
-  Stack
-} from '@mui/material';
-import { 
-  Facebook, 
-  Instagram, 
-  Email,
-  Close as CloseIcon,
-  Menu as MenuIcon
-} from '@mui/icons-material';
+import { Box, TextField, Button, Menu, MenuItem } from '@mui/material';
 
 export default function LandingPage({ onOpenAuth }) {
   const [interval, setInterval] = useState('monthly'); 
@@ -31,8 +11,10 @@ export default function LandingPage({ onOpenAuth }) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isUS, setIsUS] = useState(false);
 
-  // ESTADOS PARA UI
+  // ESTADO: Controla si el menú móvil está abierto
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // ESTADOS MUI: Controlan el menú desplegable del Newsletter
   const [anchorEl, setAnchorEl] = useState(null);
   const openNewsletter = Boolean(anchorEl);
 
@@ -42,7 +24,6 @@ export default function LandingPage({ onOpenAuth }) {
   });
   const [contactStatus, setContactStatus] = useState({ text: '', type: '', isSubmitting: false });
 
-  // --- LÓGICA DE NEGOCIO (PRESERVADA AL 100%) ---
   useEffect(() => {
     const detectLocation = async () => {
       try {
@@ -51,12 +32,19 @@ export default function LandingPage({ onOpenAuth }) {
         const response = await fetch('https://ipapi.co/json/', { signal: controller.signal });
         const data = await response.json();
         clearTimeout(timeoutId);
-        if (data.country_code === 'US') setIsUS(true); 
-        else if (data.country_code === 'MX') setCurrency('MXN'); 
+        
+        if (data.country_code === 'US') {
+          setIsUS(true); 
+        } else if (data.country_code === 'MX') { 
+          setCurrency('MXN'); 
+        }
       } catch (e) {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        if (/America\/(New_York|Chicago|Los_Angeles|Denver|Phoenix|Detroit|Boise|Anchorage)/i.test(tz)) setIsUS(true);
-        else if (/Mexico|Monterrey|Chihuahua|Tijuana|Cancun/i.test(tz)) setCurrency('MXN'); 
+        if (/America\/(New_York|Chicago|Los_Angeles|Denver|Phoenix|Detroit|Boise|Anchorage)/i.test(tz)) {
+          setIsUS(true);
+        } else if (/Mexico|Monterrey|Chihuahua|Tijuana|Cancun/i.test(tz)) { 
+          setCurrency('MXN'); 
+        }
       }
     };
     detectLocation();
@@ -79,14 +67,23 @@ export default function LandingPage({ onOpenAuth }) {
     return () => window.clearInterval(timer);
   }, []);
 
+  // Bloquear el scroll del cuerpo si el menú móvil está abierto
   useEffect(() => {
-    document.body.style.overflow = isMenuOpen ? 'hidden' : 'unset';
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
     return () => { document.body.style.overflow = 'unset'; };
   }, [isMenuOpen]);
 
-  // --- MANEJADORES ---
-  const handleNewsletterClick = (event) => setAnchorEl(event.currentTarget);
-  const handleNewsletterClose = () => setAnchorEl(null);
+  // Funciones para manejar el menú de Newsletter de MUI
+  const handleNewsletterClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleNewsletterClose = () => {
+    setAnchorEl(null);
+  };
 
   const handleSelectPlan = (planKey) => {
     sessionStorage.setItem('pida_pending_plan', planKey);
@@ -102,12 +99,13 @@ export default function LandingPage({ onOpenAuth }) {
           return;
       }
       setContactStatus({ text: '', type: '', isSubmitting: true });
+      const leadData = {
+          name: contactForm.name, company: contactForm.company, email: contactForm.email,
+          phone: `${contactForm.countryCode} ${contactForm.phone}`, message: contactForm.message,
+          createdAt: new Date(), status: 'nuevo'
+      };
       try {
-          await db.collection('leads_corporativos').add({
-              name: contactForm.name, company: contactForm.company, email: contactForm.email,
-              phone: `${contactForm.countryCode} ${contactForm.phone}`, message: contactForm.message,
-              createdAt: new Date(), status: 'nuevo'
-          });
+          await db.collection('leads_corporativos').add(leadData);
           setContactStatus({ text: 'Datos recibidos. Te contactaremos pronto.', type: 'success', isSubmitting: false });
           setTimeout(() => {
               setIsContactOpen(false);
@@ -127,288 +125,658 @@ export default function LandingPage({ onOpenAuth }) {
     }, 100);
   };
 
+  // --- Estilos reutilizables de MUI para los botones ---
+  const muiPrimaryBtnStyle = {
+    backgroundColor: 'var(--navy)',
+    color: 'var(--white)',
+    textTransform: 'none',
+    fontWeight: 600,
+    fontSize: '0.95rem',
+    borderRadius: '8px',
+    padding: '10px 24px',
+    boxShadow: '0 2px 10px rgba(29, 53, 87, 0.2)',
+    fontFamily: 'var(--font-body)',
+    '&:hover': {
+      backgroundColor: 'var(--cyan)',
+      color: 'var(--navy-dark)',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 5px 20px rgba(0, 195, 255, 0.3)',
+    }
+  };
+
+  const muiGhostBtnStyle = {
+    backgroundColor: 'white',
+    color: 'var(--navy)',
+    border: '1px solid var(--navy)',
+    textTransform: 'none',
+    fontWeight: 600,
+    fontSize: '0.95rem',
+    borderRadius: '8px',
+    padding: '10px 24px',
+    fontFamily: 'var(--font-body)',
+    '&:hover': {
+      backgroundColor: '#f8fafc',
+      borderColor: 'var(--navy)',
+    }
+  };
+
   return (
-    <Box id="landing-page-root">
-      {/* OVERLAY MÓVIL */}
+    <div id="landing-page-root">
+      
       {isMenuOpen && (
-        <Box onClick={() => setIsMenuOpen(false)} sx={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(29, 53, 87, 0.5)', backdropFilter: 'blur(3px)', zIndex: 998 }} />
+        <div 
+          onClick={() => setIsMenuOpen(false)}
+          style={{
+            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+            backgroundColor: 'rgba(29, 53, 87, 0.5)', backdropFilter: 'blur(3px)',
+            zIndex: 998
+          }}
+        ></div>
       )}
 
-      {/* NAVBAR (Clases originales preservadas) */}
-      <Box component="header" className="nav" id="navbar" sx={{ transition: 'top 0.3s ease' }}>
-        <div className="wrapper nav-inner">
-          <a href="/" style={{ display: 'flex', alignItems: 'center', zIndex: 1001 }}>
-            <img src="/img/PIDA_logo-576.png" alt="Logo PIDA" style={{ height: '65px' }} />
+      <header className="nav" id="navbar" style={{ padding: '12px 0', zIndex: 1000 }}>
+        <div className="wrapper nav-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          
+          <a href="/" style={{ display: 'flex', alignItems: 'center', flexShrink: 0, zIndex: 1001 }}>
+            <img src="/img/PIDA_logo-576.png" alt="Logo PIDA" style={{ height: '65px', width: 'auto', flexShrink: 0 }} />
           </a>
 
-          <IconButton 
+          <button 
             className="mobile-menu-toggle"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            sx={{ display: 'none', color: '#1D3557', zIndex: 1001 }}
+            style={{
+              display: 'none', background: 'none', border: 'none', color: 'var(--pida-primary)',
+              cursor: 'pointer', zIndex: 1001, padding: '5px'
+            }}
           >
-            {isMenuOpen ? <CloseIcon fontSize="large" /> : <MenuIcon fontSize="large" />}
-          </IconButton>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              {isMenuOpen ? (
+                <>
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </>
+              ) : (
+                <>
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
+                </>
+              )}
+            </svg>
+          </button>
 
-          <div className={`nav-right-container ${isMenuOpen ? 'open' : ''}`}>
-            <div className="social-links-row">
-              <IconButton href="https://www.facebook.com/ia.pida" target="_blank" color="primary" sx={{ p: 0.5 }}><Facebook /></IconButton>
-              <IconButton href="https://www.instagram.com/pida.ia" target="_blank" color="primary" sx={{ p: 0.5 }}><Instagram /></IconButton>
-              <a href="https://www.tiktok.com/@pida.solucion" target="_blank" rel="noreferrer" className="nav-link" style={{ display: 'flex', alignItems: 'center' }}>
-                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19.589 6.686a4.793 4.793 0 0 1-3.976-4.686h-3.868v11.52a4.11 4.11 0 1 1-4.11-4.111c.287 0 .565.031.834.084v-3.9a7.978 7.978 0 1 0 7.142 7.927V9.752a8.683 8.683 0 0 0 3.978 1.054V6.686z"/></svg>
+          <div className={`nav-right-container ${isMenuOpen ? 'open' : ''}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+            
+            <div className="social-links-row" style={{ display: 'flex', gap: '15px', paddingRight: '8px' }}>
+              <a href="https://www.facebook.com/ia.pida" target="_blank" rel="noreferrer" aria-label="Facebook PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pidared)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
+                <svg width="26" height="26" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" /></svg>
+              </a>
+              <a href="https://www.instagram.com/pida.ia" target="_blank" rel="noreferrer" aria-label="Instagram PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pidared)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
+                <svg width="26" height="26" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+              </a>
+              <a href="https://www.tiktok.com/@pida.solucion" target="_blank" rel="noreferrer" aria-label="TikTok PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pidared)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
+                <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M19.589 6.686a4.793 4.793 0 0 1-3.976-4.686h-3.868v11.52a4.11 4.11 0 1 1-4.11-4.111c.287 0 .565.031.834.084v-3.9a7.978 7.978 0 1 0 7.142 7.927V9.752a8.683 8.683 0 0 0 3.978 1.054V6.686z"/></svg>
               </a>
             </div>
 
-            <nav className="nav-menu">
+            <nav className="nav-menu" style={{ display: 'flex', alignItems: 'center' }}>
               <a href="#diferencia" onClick={(e) => { e.preventDefault(); handleNavClick('diferencia'); }} className="nav-link hide-on-mobile">Diferencia PIDA</a>
               <a href="#ecosistema" onClick={(e) => { e.preventDefault(); handleNavClick('ecosistema'); }} className="nav-link hide-on-mobile">Ecosistema</a>
               <a href="#planes" onClick={(e) => { e.preventDefault(); handleNavClick('planes'); }} className="nav-link hide-on-mobile">Planes</a>
 
-              <Box sx={{ display: 'inline-block' }}>
-                <Button onClick={handleNewsletterClick} color="inherit" className="nav-link" sx={{ textTransform: 'none', p: 0, minWidth: 'auto', fontWeight: 500, fontFamily: 'inherit' }}>
+              <div style={{ display: 'inline-block' }}>
+                <Button
+                  id="newsletter-button"
+                  aria-controls={openNewsletter ? 'newsletter-menu' : undefined}
+                  aria-haspopup="true"
+                  aria-expanded={openNewsletter ? 'true' : undefined}
+                  onClick={handleNewsletterClick}
+                  className="nav-link"
+                  disableRipple
+                  sx={{
+                    textTransform: 'none',
+                    backgroundColor: 'transparent',
+                    p: 0,
+                    minWidth: 'auto',
+                    fontFamily: 'inherit',
+                    fontSize: 'inherit',
+                    fontWeight: 'inherit',
+                    '&:hover': { backgroundColor: 'transparent' }
+                  }}
+                >
                   Newsletter <span style={{ fontSize: '0.7em', marginLeft: '5px' }}>▼</span>
                 </Button>
-                <Menu anchorEl={anchorEl} open={openNewsletter} onClose={handleNewsletterClose} PaperProps={{ sx: { mt: 1, boxShadow: 3 } }}>
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-001.pdf" target="_blank">📄 Enero 2026</MenuItem>
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-002.pdf" target="_blank">📄 Febrero 2026</MenuItem>
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-003.pdf" target="_blank">📄 Marzo 2026</MenuItem>
+                
+                <Menu
+                  id="newsletter-menu"
+                  anchorEl={anchorEl}
+                  open={openNewsletter}
+                  onClose={handleNewsletterClose}
+                  MenuListProps={{ 'aria-labelledby': 'newsletter-button' }}
+                  PaperProps={{
+                    sx: {
+                      mt: 1,
+                      boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb',
+                      minWidth: '160px'
+                    }
+                  }}
+                >
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-001.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Enero 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-002.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Febrero 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-003.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Marzo 2026</MenuItem>
                 </Menu>
-              </Box>
+              </div>
 
-              <Button variant="outlined" onClick={() => onOpenAuth('login')} sx={{ ml: { sm: 2 }, borderRadius: '8px', textTransform: 'none', fontWeight: 700, borderColor: '#1D3557', color: '#1D3557' }}>
+              {/* Botón LOGIN - Actualizado con estilos directos MUI para no romper el layout */}
+              <Button 
+                onClick={() => { setIsMenuOpen(false); onOpenAuth('login'); }}
+                sx={{
+                  ...muiGhostBtnStyle,
+                  padding: { xs: '12px', sm: '6px 18px' }, // Ajuste responsive
+                  width: { xs: '100%', sm: 'auto' },
+                  mt: { xs: '15px', sm: '0' },
+                  ml: { xs: '0', sm: '15px' },
+                }}
+              >
                 Login
               </Button>
             </nav>
           </div>
         </div>
-      </Box>
 
-      <main style={{ marginTop: '80px' }}>
-        {/* HERO SECTION */}
-        <section className="hero">
+        <style>
+          {`
+            @media (max-width: 850px) {
+              .mobile-menu-toggle {
+                display: block !important;
+              }
+              .hide-on-mobile { display: block !important; }
+              
+              .nav-right-container {
+                position: fixed;
+                top: 0;
+                right: -100%;
+                width: 260px;
+                height: 100vh;
+                background-color: #ffffff;
+                box-shadow: -5px 0 25px rgba(0,0,0,0.15);
+                display: flex !important;
+                flex-direction: column;
+                align-items: flex-start !important;
+                padding: 90px 25px 20px 25px;
+                transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                z-index: 999;
+                gap: 25px !important;
+              }
+              .nav-right-container.open {
+                right: 0;
+              }
+              .nav-right-container .nav-menu {
+                flex-direction: column;
+                align-items: flex-start !important;
+                width: 100%;
+                gap: 20px;
+              }
+              .nav-right-container .nav-link {
+                font-size: 1.1rem !important;
+                font-weight: 600 !important;
+                color: var(--pida-primary) !important;
+                width: 100%;
+                padding: 5px 0;
+                border-bottom: 1px solid #f1f5f9;
+                justify-content: flex-start;
+              }
+              .social-links-row {
+                width: 100%;
+                justify-content: flex-start;
+                padding-bottom: 15px;
+                border-bottom: 2px solid #e2e8f0;
+              }
+            }
+          `}
+        </style>
+      </header>
+
+      <main>
+        <section id="pida"></section>
+        
+        <section className="hero" style={{ paddingTop: '30px' }}>
           <div className="wrapper hero-grid">
             <div className="hero-content">
-              <Typography variant="h1" sx={{ fontSize: 'inherit', lineHeight: 'inherit', margin: 'inherit' }}>
+              <h1 style={{ fontSize: '3.0rem', lineHeight: '1.15', marginBottom: '15px', marginTop: '15px' }}>
                 Inteligencia Aumentada para la Defensa de los <br />
                 <span className="text-gradient">Derechos Humanos</span>
-              </Typography>
-              <Typography className="hero-desc">
+              </h1>
+              <p className="hero-desc">
                 Los asistentes de Inteligencia Artificial genéricos son un océano de información, pero sin un ancla, pueden llevarte a la deriva con datos imprecisos.
-              </Typography>
+              </p>
               
-              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-                <Button variant="contained" onClick={() => handleNavClick('planes')} sx={{ bgcolor: '#1D3557', borderRadius: '8px', px: 4, py: 1.5, fontWeight: 700, textTransform: 'none' }}>
+              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+                {/* BOTONES HERO - Actualizados a MUI */}
+                <Button 
+                  onClick={() => document.getElementById('planes').scrollIntoView({ behavior: 'smooth' })}
+                  sx={muiPrimaryBtnStyle}
+                >
                   Ver Planes
                 </Button>
-                <Button variant="outlined" onClick={() => onOpenAuth('login')} sx={{ color: '#1D3557', borderColor: '#1D3557', borderRadius: '8px', px: 4, py: 1.5, fontWeight: 700, textTransform: 'none' }}>
+                <Button 
+                  onClick={() => onOpenAuth('login')}
+                  sx={muiGhostBtnStyle}
+                >
                   Login PIDA
                 </Button>
               </div>
             </div>
             
-            <div className="hero-visual">
-              <Box sx={{ width: '100%', maxWidth: '500px', bgcolor: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(29, 53, 87, 0.1)', border: '1px solid #E5E7EB' }}>
-                <video controls poster="/img/PIDA-MASCOTA-576-trans.png" style={{ width: '100%', display: 'block' }}>
+            <div className="hero-visual-column" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{
+                width: '100%',
+                maxWidth: '500px',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '16px',
+                overflow: 'hidden',
+                boxShadow: '0 20px 40px rgba(29, 53, 87, 0.1)',
+                border: '1px solid var(--pida-border)'
+              }}>
+                <video 
+                  controls 
+                  preload="metadata"
+                  poster="/img/PIDA-MASCOTA-576-trans.png"
+                  style={{ 
+                    width: '100%', 
+                    display: 'block', 
+                    aspectRatio: '16/9',
+                    objectFit: 'contain', 
+                    backgroundColor: '#FFFFFF' 
+                  }}
+                >
                   <source src="https://storage.googleapis.com/img-pida/PIDA.mp4" type="video/mp4" />
+                  Tu navegador no soporta la reproducción de videos.
                 </video>
-              </Box>
+              </div>
             </div>
+
           </div>
         </section>
 
-        {/* DIFERENCIA SECTION */}
-        <section id="diferencia" style={{ backgroundColor: '#FFFFFF', padding: '40px 0' }}>
+        <section id="diferencia" style={{ backgroundColor: '#FFFFFF', padding: '40px 0 10px 0' }}>
             <div className="wrapper">
                 <div className="section-intro">
-                    <Typography variant="h2">¿Cuál es la gran diferencia de PIDA?</Typography>
-                    <Typography component="p">PIDA no improvisa buscando en el caos de internet. Su punto de partida es la biblioteca del <strong>IIRESODH</strong>, una institución referente con más de 30 años de experiencia en Litigio Estratégico Internacional.</Typography>
-                    <Typography component="p">Primero, PIDA consulta este acervo validado por personas expertas en Derechos Humanos para obtener el fundamento correcto. Luego, usa la IA para construir tu respuesta. Así obtienes la velocidad de la tecnología, pero con la <strong>autoridad y el rigor técnico</strong> que solo el IIRESODH puede garantizar.</Typography>
+                    <h2>¿Cuál es la gran diferencia de PIDA?</h2>
+                    <p>PIDA no improvisa buscando en el caos de internet. Su punto de partida es la biblioteca del <strong>IIRESODH</strong>, una institución referente con más de 30 años de experiencia en Litigio Estratégico Internacional.</p>
+                    <p>Primero, PIDA consulta este acervo validado por personas expertas en Derechos Humanos para obtener el fundamento correcto. Luego, usa la IA para construir tu respuesta. Así obtienes la velocidad de la tecnología, pero con la <strong>autoridad y el rigor técnico</strong> que solo el IIRESODH puede garantizar.</p>
                 </div>
             </div>
         </section>
 
-        {/* BONDADES SECTION */}
-        <section id="bondades" style={{ background: '#FAFAFA', padding: '60px 0' }}>
+        <section id="bondades" style={{ background: '#FAFAFA', padding: '40px 0 10px 0' }}>
             <div className="wrapper">
-                <Typography variant="h2" align="center" sx={{ mb: 6 }}>Bondades únicas de PIDA</Typography>
+                <h2 style={{ marginBottom: '40px', textAlign: 'center' }}>Bondades únicas de PIDA</h2>
                 <div className="bento-grid">
                     <div className="bento-card">
-                        <Typography variant="h3" className="bento-title">Respuestas Ancladas, no Adivinanzas</Typography>
-                        <Typography component="p">Cada respuesta está fundamentada y prioriza el conocimiento del IIRESODH. Esto le da un nivel de fiabilidad y precisión que las IAs genéricas no pueden ofrecer, minimizando el riesgo de información incorrecta.</Typography>
+                        <h3 className="bento-title">Respuestas Ancladas, no Adivinanzas</h3>
+                        <p>Cada respuesta está fundamentada y prioriza el conocimiento del IIRESODH. Esto le da un nivel de fiabilidad y precisión que las IAs genéricas no pueden ofrecer, minimizando el riesgo de información incorrecta.</p>
                     </div>
                     <div className="bento-card">
-                        <Typography variant="h3" className="bento-title">Lo Mejor de Dos Mundos</Typography>
-                        <Typography component="p">Combina la sabiduría especializada del IIRESODH con la capacidad de razonamiento y redacción de un modelo de IA de vanguardia. Obtienes respuestas con calidad de experto, no solo texto genérico.</Typography>
+                        <h3 className="bento-title">Lo Mejor de Dos Mundos</h3>
+                        <p>Combina la sabiduría especializada del IIRESODH con la capacidad de razonamiento y redacción de un modelo de IA de vanguardia. Obtienes respuestas con calidad de experto, no solo texto genérico.</p>
                     </div>
                     <div className="bento-card">
-                        <Typography variant="h3" className="bento-title">Eficiencia Acelerada</Typography>
-                        <Typography component="p">El “Analizador de Documentos” sigue siendo tu experto incansable, capaz de procesar tus archivos y extraer información clave en minutos, liberándote para la estrategia y la acción.</Typography>
+                        <h3 className="bento-title">Eficiencia Acelerada</h3>
+                        <p>El “Analizador de Documentos” sigue siendo tu experto incansable, capaz de procesar tus archivos y extraer información clave en minutos, liberándote para la estrategia y la acción.</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        {/* ECOSISTEMA SECTION */}
-        <section id="ecosistema" style={{ backgroundColor: '#FFFFFF', padding: '80px 0' }}>
+        <section id="ecosistema" style={{ backgroundColor: '#FFFFFF', padding: '40px 0' }}>
             <div className="wrapper">
-                <div className="section-intro">
-                    <Typography variant="h2">El Ecosistema PIDA</Typography>
-                    <Typography sx={{ fontSize: '1.2rem', color: '#4B5563' }}>
+                <div className="section-intro" style={{ marginBottom: '60px' }}>
+                    <h2 style={{ color: 'var(--navy)', fontSize: '2.5rem', marginBottom: '15px' }}>El Ecosistema PIDA</h2>
+                    <p style={{ fontSize: '1.2rem', color: '#4B5563', maxWidth: '800px', margin: '0 auto' }}>
                         PIDA integra tres motores especializados que trabajan en conjunto para cubrir el ciclo completo de la defensa legal: investigación, análisis documental y diagnóstico de casos.
-                    </Typography>
+                    </p>
                 </div>
 
-                <Stack spacing={6} sx={{ maxWidth: '900px', mx: 'auto' }}>
-                    <Box sx={{ borderLeft: '4px solid #0284C7', pl: 4 }}>
-                        <Typography variant="h3" sx={{ fontSize: '1.5rem', mb: 1 }}>1. Experto en Derechos Humanos</Typography>
-                        <Typography color="secondary" sx={{ fontWeight: 800, mb: 2, fontSize: '0.8rem', letterSpacing: 1 }}>TU CONSULTOR FUNDAMENTADO</Typography>
-                        <Typography sx={{ mb: 2 }}>Este motor redefine la investigación jurídica. A diferencia de los chats genéricos que improvisan respuestas, PIDA actúa como un consultor senior conectado directamente a la biblioteca privada y curada del IIRESODH.</Typography>
-                        <Typography variant="body2" color="text.secondary"><strong>Aplicación Práctica:</strong> Utilízalo para resolver dudas complejas sobre control de convencionalidad, buscar jurisprudencia específica de la Corte IDH o redactar argumentos sólidos para tus demandas.</Typography>
-                    </Box>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '50px', maxWidth: '900px', margin: '0 auto' }}>
+                    <div style={{ borderLeft: '4px solid #0284C7', paddingLeft: '30px' }}>
+                        <h3 style={{ color: 'var(--navy)', fontSize: '1.5rem', marginBottom: '10px' }}>
+                            1. Experto en Derechos Humanos
+                            <span style={{ display: 'block', fontSize: '1rem', color: '#0284C7', fontWeight: '600', marginTop: '5px' }}>TU CONSULTOR FUNDAMENTADO</span>
+                        </h3>
+                        <p style={{ fontSize: '1.05rem', color: '#374151', lineHeight: '1.7', marginBottom: '15px' }}>
+                            Este motor redefine la investigación jurídica. A diferencia de los chats genéricos que improvisan respuestas, PIDA actúa como un consultor senior conectado directamente a la <strong>biblioteca privada y curada del IIRESODH</strong>.
+                        </p>
+                        <p style={{ fontSize: '1rem', color: '#4B5563', lineHeight: '1.6' }}>
+                            <strong>Aplicación Práctica:</strong> Utilízalo para resolver dudas complejas sobre control de convencionalidad, buscar jurisprudencia específica de la Corte IDH o redactar argumentos sólidos para tus demandas. Cada respuesta está respaldada por una base de conocimiento autorizada, garantizando rigor técnico y reduciendo el riesgo de imprecisiones.
+                        </p>
+                    </div>
 
-                    <Box sx={{ borderLeft: '4px solid #B92F32', pl: 4 }}>
-                        <Typography variant="h3" sx={{ fontSize: '1.5rem', mb: 1 }}>2. Analizador de Documentos</Typography>
-                        <Typography color="error" sx={{ fontWeight: 800, mb: 2, fontSize: '0.8rem', letterSpacing: 1 }}>TU ESTRATEGA PROCESAL</Typography>
-                        <Typography sx={{ mb: 2 }}>Capacidad de procesamiento masivo para el abogado moderno. Esta herramienta lee, comprende y procesa archivos voluminosos (PDF, Word) en segundos.</Typography>
-                        <Typography variant="body2" color="text.secondary"><strong>Aplicación Práctica:</strong> Carga una sentencia extensa y pídele que encuentre contradicciones lógicas, extraiga los hechos probados o elabore una Teoría del Caso.</Typography>
-                    </Box>
+                    <div style={{ borderLeft: '4px solid #0284C7', paddingLeft: '30px' }}>
+                        <h3 style={{ color: 'var(--navy)', fontSize: '1.5rem', marginBottom: '10px' }}>
+                            2. Analizador de Documentos
+                            <span style={{ display: 'block', fontSize: '1rem', color: '#0284C7', fontWeight: '600', marginTop: '5px' }}>TU ESTRATEGA PROCESAL</span>
+                        </h3>
+                        <p style={{ fontSize: '1.05rem', color: '#374151', lineHeight: '1.7', marginBottom: '15px' }}>
+                            Capacidad de procesamiento masivo para el abogado moderno. Esta herramienta lee, comprende y procesa archivos voluminosos (PDF, Word) en segundos, actuando como un asistente analítico incansable.
+                        </p>
+                        <p style={{ fontSize: '1rem', color: '#4B5563', lineHeight: '1.6' }}>
+                            <strong>Aplicación Práctica:</strong> Carga una sentencia extensa y pídele que encuentre contradicciones lógicas, extraiga los hechos probados para armar tu apelación o elabore una <strong>Teoría del Caso</strong> basada en las pruebas del expediente. Además, puedes instruirle para que redacte borradores de escritos legales (amparos, memorandos) utilizando estrictamente la información del documento subido.
+                        </p>
+                    </div>
 
-                    <Box sx={{ borderLeft: '4px solid #1D3557', pl: 4 }}>
-                        <Typography variant="h3" sx={{ fontSize: '1.5rem', mb: 1 }}>3. Precalificador de Conductas</Typography>
-                        <Typography sx={{ fontWeight: 800, mb: 2, fontSize: '0.8rem', letterSpacing: 1, color: '#1D3557' }}>TU DIAGNÓSTICO INMEDIATO</Typography>
-                        <Typography sx={{ mb: 2 }}>Una herramienta de encuadre jurídico diseñada para la etapa inicial de cualquier caso. Funciona como un puente inteligente entre los hechos fácticos y la tipificación legal.</Typography>
-                        <Typography variant="body2" color="text.secondary"><strong>Aplicación Práctica:</strong> Ideal para la primera entrevista. Narra los hechos y el sistema identificará posibles delitos penales y violaciones a DDHH.</Typography>
-                    </Box>
-                </Stack>
+                    <div style={{ borderLeft: '4px solid #0284C7', paddingLeft: '30px' }}>
+                        <h3 style={{ color: 'var(--navy)', fontSize: '1.5rem', marginBottom: '10px' }}>
+                            3. Precalificador de Conductas
+                            <span style={{ display: 'block', fontSize: '1rem', color: '#0284C7', fontWeight: '600', marginTop: '5px' }}>TU DIAGNÓSTICO INMEDIATO</span>
+                        </h3>
+                        <p style={{ fontSize: '1.05rem', color: '#374151', lineHeight: '1.7', marginBottom: '15px' }}>
+                            Una herramienta de encuadre jurídico diseñada para la etapa inicial de cualquier caso. Funciona como un puente inteligente entre los hechos fácticos y la tipificación legal.
+                        </p>
+                        <p style={{ fontSize: '1rem', color: '#4B5563', lineHeight: '1.6' }}>
+                            <strong>Aplicación Práctica:</strong> Ideal para la primera entrevista con el cliente. Simplemente narra los hechos del caso y el sistema realizará un análisis preliminar instantáneo para identificar posibles <strong>delitos penales</strong> y <strong>violaciones a Derechos Humanos</strong> conforme a estándares internacionales. Esto te permite trazar una ruta de defensa clara desde el primer minuto.
+                        </p>
+                    </div>
+                </div>
             </div>
         </section>
 
-        {/* PLANES SECTION */}
-        <section id="planes" style={{ padding: '80px 0', background: '#F9FAFB' }}>
+        <section id="planes">
           <div className="wrapper">
             <div className="section-intro">
-              <Typography variant="h2">Planes Flexibles</Typography>
-              <Typography sx={{ mb: 4 }}>Selecciona el plan que mejor se adapte a tu nivel de investigación.</Typography>
-              <Typography color="primary" sx={{ fontWeight: 800, fontSize: '1.2rem', mb: 5 }}>Todos los planes incluyen 5 días de prueba sin costo</Typography>
+              <h2>Planes Flexibles</h2>
+              <p style={{ marginBottom: '10px' }}>Selecciona el plan que mejor se adapte a tu nivel de investigación.</p>
+              <p style={{ color: '#0284C7', fontWeight: 700, fontSize: '1.1rem', marginBottom: '20px' }}>
+                Todos los planes incluyen 5 días de prueba sin costo
+              </p>
             </div>
 
             {isUS ? (
-              <Alert severity="error" sx={{ maxWidth: '650px', mx: 'auto', borderRadius: '12px' }}>
-                <Typography variant="h6" fontWeight={800}>Servicio no disponible en su región</Typography>
-                Por políticas regulatorias, PIDA no está disponible actualmente en los Estados Unidos.
-              </Alert>
+              <div style={{ textAlign: 'center', padding: '40px 20px', background: '#FEF2F2', borderRadius: '12px', border: '1px solid #FECACA', color: '#991B1B', maxWidth: '650px', margin: '0 auto 50px auto' }}>
+                <h3 style={{ marginBottom: '15px', color: '#991B1B', fontSize: '1.4rem' }}>Servicio no disponible en su región</h3>
+                <p style={{ fontWeight: '500', lineHeight: '1.6' }}>
+                  Por políticas regulatorias y de privacidad corporativa, la comercialización de suscripciones de PIDA no se encuentra disponible actualmente para usuarios o entidades ubicadas dentro del territorio de los Estados Unidos.
+                </p>
+              </div>
             ) : (
-              <Box>
+              <>
                 <div className="billing-toggle-wrapper">
-                  <Stack direction="row" spacing={2} justifyContent="center" alignItems="center" sx={{ mb: 4 }}>
-                    <Typography sx={{ opacity: interval === 'monthly' ? 1 : 0.5, fontWeight: 700 }}>Mensual</Typography>
-                    <Switch checked={interval === 'annual'} onChange={(e) => setInterval(e.target.checked ? 'annual' : 'monthly')} color="primary" />
-                    <Typography sx={{ opacity: interval === 'annual' ? 1 : 0.5, fontWeight: 700 }}>Anual</Typography>
-                    {interval === 'annual' && <Chip label="Ahorra 20%" color="success" size="small" sx={{ fontWeight: 800 }} />}
-                  </Stack>
+                  <div className="billing-toggle-controls">
+                    <span className={`billing-label ${interval === 'monthly' ? 'active' : 'inactive'}`}>Mensual</span>
+                    <label className="switch">
+                      <input type="checkbox" checked={interval === 'annual'} onChange={(e) => setInterval(e.target.checked ? 'annual' : 'monthly')} />
+                      <span className="slider round"></span>
+                    </label>
+                    <span className={`billing-label ${interval === 'annual' ? 'active' : 'inactive'}`}>Anual</span>
+                  </div>
+                  <div className="discount-tooltip-container">
+                    {interval === 'annual' && <span className="discount-tooltip">¡Dos meses gratis!</span>}
+                  </div>
                 </div>
 
                 <div className="pricing-grid">
-                  {['basico', 'avanzado', 'premium'].map((pKey) => {
-                    const plan = STRIPE_PRICES[pKey][interval][currency];
-                    const isFav = pKey === 'avanzado';
-                    return (
-                      <div key={pKey} className={`pricing-card ${isFav ? 'featured' : ''}`}>
-                        {isFav && <div className="card-badge">Más Popular</div>}
-                        <Typography variant="h3" sx={{ textTransform: 'capitalize' }}>{pKey === 'basico' ? 'Básico' : pKey}</Typography>
-                        <div className="price-container">
-                          <span className="price-val">{plan.text}</span>
-                          <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
-                        </div>
-                        <ul className="plan-features">
-                          <li>✅ Newsletter mensual</li>
-                          <li>✅ {pKey === 'basico' ? '5' : pKey === 'avanzado' ? '20' : '100'} consultas diarias</li>
-                          <li>✅ {pKey === 'basico' ? '3' : pKey === 'avanzado' ? '15' : '25'} análisis de docs</li>
-                          <li>✅ {pKey === 'basico' ? '15' : '40'} Mb por archivo</li>
-                          <li>{pKey === 'basico' ? '❌ Sin precalificador' : '✅ Precalificador incluido'}</li>
-                        </ul>
-                        <Button 
-                          variant={isFav ? "contained" : "outlined"} 
-                          fullWidth 
-                          onClick={() => handleSelectPlan(pKey)}
-                          sx={{ mt: 'auto', py: 1.5, borderRadius: '8px', fontWeight: 700, bgcolor: isFav ? '#1D3557' : 'transparent', color: isFav ? 'white' : '#1D3557' }}
-                        >
-                          Elegir {pKey}
-                        </Button>
-                      </div>
-                    );
-                  })}
+                  <div className="pricing-card">
+                    <h3>Básico</h3>
+                    <div className="price-container">
+                      <span className="price-val">{STRIPE_PRICES.basico[interval][currency].text}</span>
+                      <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
+                    </div>
+                    <ul className="plan-features">
+                      <li>✅ Newsletter mensual</li>
+                      <li>✅ 5 consultas diarias</li>
+                      <li>✅ 3 análisis de documentos</li>
+                      <li>✅ 1 archivo por análisis</li>
+                      <li>✅ 15 Mb por archivo</li>
+                      <li>❌ Sin precalificador</li>
+                    </ul>
+                    {/* BOTÓN TARJETA BÁSICA - Actualizado a MUI */}
+                    <Button 
+                      onClick={() => handleSelectPlan('basico')}
+                      sx={{ ...muiPrimaryBtnStyle, width: '100%', mt: 'auto' }}
+                    >
+                      Elegir Básico
+                    </Button>
+                  </div>
+
+                  <div className="pricing-card featured">
+                    <div className="card-badge">Más Popular</div>
+                    <h3>Avanzado</h3>
+                    <div className="price-container">
+                      <span className="price-val">{STRIPE_PRICES.avanzado[interval][currency].text}</span>
+                      <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
+                    </div>
+                    <ul className="plan-features">
+                      <li>✅ Newsletter mensual</li>
+                      <li>✅ 20 consultas diarias</li>
+                      <li>✅ 15 análisis de documentos</li>
+                      <li>✅ 3 archivos por análisis</li>
+                      <li>✅ 40 Mb por archivo</li>
+                      <li>✅ 20 precalificaciones diarias</li>
+                      <li>✅ Descuentos en productos IIRESODH</li>
+                    </ul>
+                    {/* BOTÓN TARJETA AVANZADA - Actualizado a MUI */}
+                    <Button 
+                      onClick={() => handleSelectPlan('avanzado')}
+                      sx={{ ...muiPrimaryBtnStyle, width: '100%', mt: 'auto' }}
+                    >
+                      Elegir Avanzado
+                    </Button>
+                  </div>
+
+                  <div className="pricing-card">
+                    <h3>Premium</h3>
+                    <div className="price-container">
+                      <span className="price-val">{STRIPE_PRICES.premium[interval][currency].text}</span>
+                      <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
+                    </div>
+                    <ul className="plan-features">
+                      <li>✅ Newsletter mensual</li>
+                      <li>✅ 100 consultas diarias</li>
+                      <li>✅ 25 análisis de documentos</li>
+                      <li>✅ 5 archivos por análisis</li>
+                      <li>✅ 40 Mb por archivo</li>
+                      <li>✅ 100 precalificaciones diarias</li>
+                      <li>✅ Descuentos en productos IIRESODH</li>
+                    </ul>
+                    {/* BOTÓN TARJETA PREMIUM - Actualizado a MUI */}
+                    <Button 
+                      onClick={() => handleSelectPlan('premium')}
+                      sx={{ ...muiPrimaryBtnStyle, width: '100%', mt: 'auto' }}
+                    >
+                      Elegir Premium
+                    </Button>
+                  </div>
                 </div>
-              </Box>
+              </>
             )}
           </div>
         </section>
 
-        {/* CORPORATIVO SECTION */}
-        <section id="info-corporativa" className="wrapper" style={{ margin: '60px auto', padding: '60px 20px', background: '#F8FAFC', borderRadius: '16px', border: '1px solid #E5E7EB', textAlign: 'center' }}>
-            <Typography variant="h3" sx={{ mb: 3 }}>¿PIDA para tu Organización o Institución?</Typography>
-            <Typography sx={{ mb: 5, maxWidth: '800px', mx: 'auto', color: '#6B7280' }}>
-                Ofrecemos esquemas de licenciamiento por volumen para firmas legales, ONGs y entidades gubernamentales. Incluye facturación centralizada y soporte prioritario.
-            </Typography>
-            <Button variant="contained" onClick={() => setIsContactOpen(true)} sx={{ bgcolor: '#1D3557', borderRadius: '30px', px: 6, py: 2, fontWeight: 700 }}>
-                Contactar Soporte Corporativo
-            </Button>
+        <section id="info-corporativa" style={{ marginTop: '60px', padding: '60px 20px', background: '#F8FAFC', borderRadius: '16px', border: '1px solid var(--pida-border)', textAlign: 'center' }}>
+            <div className="wrapper" style={{ maxWidth: '900px', margin: '0 auto' }}>
+                <h3 style={{ color: 'var(--pida-primary)', fontSize: '2rem', marginBottom: '20px' }}>¿Necesitas PIDA para tu Organización o Institución?</h3>
+                <p style={{ color: 'var(--pida-text-muted)', fontSize: '1.15rem', lineHeight: '1.7', marginBottom: '35px' }}>
+                    PIDA está diseñado para escalar con las necesidades de grandes equipos de litigio que requieren de mucha investigación y redacción. Si representas a una firma legal, una organización de defensa de derechos humanos, una fiscalía o formas parte de cualquier órgano de gobierno o bien, perteneces a una institución académica, ofrecemos esquemas de licenciamiento por volumen. 
+                    <br /><br />
+                    Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario.
+                </p>
+                {/* BOTÓN CORPORATIVO - Actualizado a MUI */}
+                <Button 
+                  onClick={() => setIsContactOpen(true)}
+                  sx={muiPrimaryBtnStyle}
+                >
+                  Contactar con Soporte Corporativo
+                </Button>
+            </div>
         </section>
 
-        {/* TESTIMONIOS */}
         <section id="testimonios">
             <div className="wrapper">
-                <Typography variant="h2" align="center" sx={{ mb: 4 }}>Lo que dicen nuestros usuarios</Typography>
-                <div className="carousel-container">
-                    <div className="carousel-track" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
-                        <div className="testimonial-slide"><div className="testimonial-card"><span className="quote-icon">“</span><p className="testimonial-text">PIDA me dio respuestas mucho más completas y técnicas de lo que yo andaba buscando.</p><span className="testimonial-author">Carlos Urquilla</span></div></div>
-                        <div className="testimonial-slide"><div className="testimonial-card"><span className="quote-icon">“</span><p className="testimonial-text">Este sistema PIDA me ha gustado mucho por la calidad de información que proporciona.</p><span className="testimonial-author">Alexandra Esquivel</span></div></div>
-                        <div className="testimonial-slide"><div className="testimonial-card"><span className="quote-icon">“</span><p className="testimonial-text">Cuando comprendes que la IA complementa la inteligencia humana, trabajarás en otro nivel.</p><span className="testimonial-author">Fabiola Galaviz</span></div></div>
+                <div className="section-intro" style={{ marginBottom: '10px' }}>
+                    <h2>Lo que dicen nuestros usuarios</h2>
+                </div>
+                <div className="carousel-container" style={{ overflow: 'hidden' }}>
+                    <div className="carousel-track" id="carouselTrack" style={{ display: 'flex', transform: `translateX(-${currentSlide * 100}%)`, transition: 'transform 0.5s ease-in-out' }}>
+                        
+                        <div className="testimonial-slide" style={{ minWidth: '100%' }}>
+                            <div className="testimonial-card">
+                                <span className="quote-icon">“</span>
+                                <p className="testimonial-text">PIDA me dio respuestas mucho más completas y técnicas de lo que yo andaba buscando, me da mucha confianza.</p>
+                                <span className="testimonial-author">Carlos Urquilla</span>
+                            </div>
+                        </div>
+                        
+                        <div className="testimonial-slide" style={{ minWidth: '100%' }}>
+                            <div className="testimonial-card">
+                                <span className="quote-icon">“</span>
+                                <p className="testimonial-text">Este sistema PIDA me ha gustado mucho por la calidad de información que proporciona. He realizado varias consultas y han satisfecho mis expectativas.</p>
+                                <span className="testimonial-author">Alexandra Esquivel</span>
+                            </div>
+                        </div>
+                        
+                        <div className="testimonial-slide" style={{ minWidth: '100%' }}>
+                            <div className="testimonial-card">
+                                <span className="quote-icon">“</span>
+                                <p className="testimonial-text">Creo que la limitante de creer en la IA es que uno no entiende cómo funciona. Cuando comprendes que la IA no sustituye la inteligencia humana sino que la complementa, entonces empezarás a trabajar en otro nivel, recuperando tiempo valiosísimo para otras cosas.</p>
+                                <span className="testimonial-author">Fabiola Galaviz</span>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div className="carousel-dots" id="carouselDots">
+                        <button className={`dot-btn ${currentSlide === 0 ? 'active' : ''}`} onClick={() => setCurrentSlide(0)}></button>
+                        <button className={`dot-btn ${currentSlide === 1 ? 'active' : ''}`} onClick={() => setCurrentSlide(1)}></button>
+                        <button className={`dot-btn ${currentSlide === 2 ? 'active' : ''}`} onClick={() => setCurrentSlide(2)}></button>
                     </div>
                 </div>
             </div>
         </section>
 
-        <footer className="footer">
-            <div className="wrapper">
-                <div className="copyright">
-                    <span>&copy; 2025 IIRESODH PAYMENTS, LLC.</span>
-                    <Stack direction="row" spacing={3}>
-                        <a href="/terminos.html" target="_blank" className="nav-link">Términos</a>
-                        <a href="/privacidad.html" target="_blank" className="nav-link">Privacidad</a>
-                        <a href="mailto:contacto@pida-ai.com" className="nav-link">Soporte</a>
-                    </Stack>
-                </div>
+        <div className="wrapper">                  
+            <div className="copyright">
+                <span>&copy; 2025 IIRESODH PAYMENTS, LLC.</span>
+                <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Términos de uso</a>
+                <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Política de privacidad</a>
+                <a href="mailto:contacto@pida-ai.com" style={{ color: 'var(--navy)', textDecoration: 'none' }}>contacto@pida-ai.com</a>
             </div>
-        </footer>
+            <br />&nbsp;
+        </div>
       </main>
 
-      {/* MODAL DE CONTACTO (Refactorizado con Dialog) */}
-      <Dialog open={isContactOpen} onClose={() => setIsContactOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px', p: 2 } }}>
-        <Box sx={{ textAlign: 'center', p: 2 }}>
-            <img src="/img/PIDA_logo-576.png" style={{ width: '120px', marginBottom: '20px' }} />
-            <Typography variant="h5" fontWeight={800} gutterBottom>Contacto Corporativo</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>Diseñaremos un plan a la medida de tu equipo legal o académico.</Typography>
-            
-            <form onSubmit={handleContactSubmit}>
-                <Stack spacing={2}>
-                    <Stack direction={{ sm: 'row' }} spacing={2}>
-                        <TextField fullWidth label="Nombre" size="small" required value={contactForm.name} onChange={e => setContactForm({...contactForm, name: e.target.value})} />
-                        <TextField fullWidth label="Empresa" size="small" required value={contactForm.company} onChange={e => setContactForm({...contactForm, company: e.target.value})} />
-                    </Stack>
-                    <TextField fullWidth label="Email" type="email" size="small" required value={contactForm.email} onChange={e => setContactForm({...contactForm, email: e.target.value})} />
-                    <Stack direction="row" spacing={2}>
-                        <TextField sx={{ width: '100px' }} label="Cód." size="small" value={contactForm.countryCode} onChange={e => setContactForm({...contactForm, countryCode: e.target.value})} />
-                        <TextField fullWidth label="Teléfono" size="small" value={contactForm.phone} onChange={e => setContactForm({...contactForm, phone: e.target.value})} />
-                    </Stack>
-                    <TextField fullWidth multiline rows={3} label="Mensaje" required value={contactForm.message} onChange={e => setContactForm({...contactForm, message: e.target.value})} />
-                    {contactStatus.text && <Alert severity={contactStatus.type}>{contactStatus.text}</Alert>}
-                    <Button type="submit" variant="contained" fullWidth disabled={contactStatus.isSubmitting} sx={{ bgcolor: '#1D3557', py: 1.5, borderRadius: '8px', fontWeight: 700 }}>
-                        {contactStatus.isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
+      {isContactOpen && (
+        <div className="modal-backdrop">
+            <div className="modal-card">
+                <button className="modal-close-btn" onClick={() => setIsContactOpen(false)}>×</button>
+                <img src="/img/PIDA_logo-576.png" alt="PIDA Logo" style={{ width: '140px', marginBottom: '20px', margin: '0 auto' }} />
+                <h2 className="modal-title">Contacto Corporativo</h2>
+                <p className="modal-subtitle">Déjanos tus datos y un asesor se pondrá en contacto contigo para diseñar un plan a la medida de tu organización.</p>
+
+                <form onSubmit={handleContactSubmit} style={{ textAlign: 'left' }}>
+                    <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+                        <TextField 
+                            label="Nombre completo" 
+                            variant="outlined" 
+                            size="small" 
+                            fullWidth 
+                            required 
+                            value={contactForm.name} 
+                            onChange={e => setContactForm({...contactForm, name: e.target.value})} 
+                            sx={{ bgcolor: '#FAFAFA' }} 
+                        />
+                        <TextField 
+                            label="Organización / Empresa" 
+                            variant="outlined" 
+                            size="small" 
+                            fullWidth 
+                            required 
+                            value={contactForm.company} 
+                            onChange={e => setContactForm({...contactForm, company: e.target.value})} 
+                            sx={{ bgcolor: '#FAFAFA' }} 
+                        />
+                    </Box>
+
+                    <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+                        <TextField 
+                            type="email" 
+                            label="Correo electrónico" 
+                            variant="outlined" 
+                            size="small" 
+                            fullWidth 
+                            required 
+                            value={contactForm.email} 
+                            onChange={e => setContactForm({...contactForm, email: e.target.value})} 
+                            sx={{ bgcolor: '#FAFAFA' }} 
+                        />
+                        <TextField 
+                            type="email" 
+                            label="Confirmar correo" 
+                            variant="outlined" 
+                            size="small" 
+                            fullWidth 
+                            required 
+                            value={contactForm.confirmEmail} 
+                            onChange={e => setContactForm({...contactForm, confirmEmail: e.target.value})} 
+                            sx={{ bgcolor: '#FAFAFA' }} 
+                        />
+                    </Box>
+
+                    <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+                        <TextField 
+                            label="Cód. (Ej: +503)" 
+                            variant="outlined" 
+                            size="small" 
+                            required 
+                            value={contactForm.countryCode} 
+                            onChange={e => setContactForm({...contactForm, countryCode: e.target.value})} 
+                            sx={{ bgcolor: '#FAFAFA', width: { xs: '100%', sm: '120px' } }} 
+                        />
+                        <TextField 
+                            type="tel" 
+                            label="Número de teléfono" 
+                            variant="outlined" 
+                            size="small" 
+                            fullWidth 
+                            required 
+                            value={contactForm.phone} 
+                            onChange={e => setContactForm({...contactForm, phone: e.target.value})} 
+                            sx={{ bgcolor: '#FAFAFA' }} 
+                        />
+                    </Box>
+
+                    <TextField
+                        label="Cuéntanos un poco sobre las necesidades de tu equipo..."
+                        multiline
+                        minRows={3}
+                        maxRows={5}
+                        fullWidth
+                        required
+                        value={contactForm.message}
+                        onChange={e => setContactForm({...contactForm, message: e.target.value})}
+                        sx={{ mb: 2, bgcolor: '#FAFAFA' }}
+                    />
+
+                    {contactStatus.text && (
+                        <div className={`status-msg ${contactStatus.type}`}>
+                            {contactStatus.text}
+                        </div>
+                    )}
+
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        color="primary"
+                        fullWidth
+                        disabled={contactStatus.isSubmitting}
+                        sx={{ py: 1.5, fontSize: '1rem', fontWeight: 'bold', borderRadius: 2, bgcolor: 'var(--pida-accent)', '&:hover': { bgcolor: '#004494' } }}
+                    >
+                        {contactStatus.isSubmitting ? 'Enviando información...' : 'Enviar Solicitud'}
                     </Button>
-                </Stack>
-            </form>
-        </Box>
-      </Dialog>
-    </Box>
+                </form>
+            </div>
+        </div>
+      )}
+    </div>
   );
 }
