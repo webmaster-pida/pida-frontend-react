@@ -9,7 +9,7 @@ import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, 
 const API_CHAT = "https://chat-v20-perplexity-465781488910.us-central1.run.app";
 
 // =========================================================================
-// COMPONENTE DE TARJETA DE PREVISUALIZACIÓN (ESTILO MINIMALISTA PROFESIONAL)
+// COMPONENTE DE TARJETA DE PREVISUALIZACIÓN (MÁS ANCHO Y CON PRECARGA)
 // =========================================================================
 const PreviewLink = ({ href, children, node, title, ...props }) => {
   const [previewData, setPreviewData] = useState(null);
@@ -17,13 +17,12 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
   const [fetched, setFetched] = useState(false);
   const [isScrapeBlocked, setIsScrapeBlocked] = useState(false);
 
-  // Extraemos el dominio limpio para mostrarlo siempre
   let hostname = "";
   try { hostname = new URL(href).hostname.replace('www.', ''); } catch (e) {}
 
   const fetchPreview = async () => {
     if (fetched || !href || !href.startsWith('http')) return;
-    setFetched(true);
+    setFetched(true); // Evita llamadas dobles
     setLoading(true);
     try {
       const cleanHref = href.replace(/[\.\)]+$/, '');
@@ -32,7 +31,6 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
 
       if (data.status === 'success') {
         const returnedTitle = (data.data.title || '').toLowerCase();
-        // Filtro estricto para bloquear páginas de error de Cloudflare/WAF como el de la ONU
         const blockedKeywords = ['error:', 'could not be satisfied', 'cloudflare', 'attention required', 'access denied', '403 forbidden', 'not acceptable'];
 
         if (blockedKeywords.some(kw => returnedTitle.includes(kw))) {
@@ -51,23 +49,28 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
     }
   };
 
+  // 👇 TÉCNICA DE PRECARGA: En lugar de esperar al 'hover', busca la info en cuanto el enlace aparece en pantalla
+  useEffect(() => {
+    fetchPreview();
+  }, [href]);
+
   return (
     <Tooltip
       placement="top"
       arrow
-      enterDelay={300}
-      onOpen={fetchPreview}
+      // Bajamos el delay de 300 a 100 milisegundos para que reaccione al instante
+      enterDelay={100} 
+      // Ya no necesitamos onOpen={fetchPreview} porque se dispara automático en el useEffect
       PopperProps={{ sx: { zIndex: 999999 } }}
       title={
-        <Box sx={{ width: 300, p: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        // 👇 SOLUCIÓN DE ANCHO: Subimos el width a 380px
+        <Box sx={{ width: 380, p: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
               <CircularProgress size={24} sx={{ color: '#60a5fa' }} />
             </Box>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              
-              {/* Encabezado: Logotipo pequeño (Favicon) + URL */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                 <img 
                   src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`} 
@@ -79,7 +82,6 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
                 </Typography>
               </Box>
 
-              {/* Cuerpo de la tarjeta: Dinámico según si hubo error o éxito */}
               {!isScrapeBlocked && previewData ? (
                 <>
                   <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.3, color: 'white' }}>
@@ -92,7 +94,6 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
                   )}
                 </>
               ) : (
-                // Fallback Elegante: Si la ONU u otro sitio bloquea el acceso, mostramos esto
                 <>
                   <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.3, color: 'white' }}>
                     Documento Institucional Externo
@@ -109,7 +110,9 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
       componentsProps={{
         tooltip: {
           sx: {
-            bgcolor: '#0f172a', // Un azul casi negro, muy premium
+            // 👇 SOLUCIÓN DE ANCHO: Desbloqueamos el maxWidth de MUI para permitir la tarjeta de 380px
+            maxWidth: 420, 
+            bgcolor: '#0f172a',
             boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7)',
             borderRadius: '8px',
             border: '1px solid #334155',
