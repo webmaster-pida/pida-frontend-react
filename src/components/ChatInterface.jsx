@@ -9,601 +9,603 @@ import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, 
 const API_CHAT = "https://chat-v20-perplexity-465781488910.us-central1.run.app";
 
 const PreviewLink = ({ href, children, node, title, ...props }) => {
-  const [previewData, setPreviewData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [fetched, setFetched] = useState(false);
-  const [isScrapeBlocked, setIsScrapeBlocked] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [fetched, setFetched] = useState(false);
+  const [isScrapeBlocked, setIsScrapeBlocked] = useState(false);
 
-  const MICROLINK_API_KEY = import.meta.env.VITE_MICROLINK_KEY;
+  const MICROLINK_API_KEY = import.meta.env.VITE_MICROLINK_KEY;
 
-  let hostname = "";
-  try { hostname = new URL(href).hostname.replace('www.', ''); } catch (e) {}
+  let hostname = "";
+  try { hostname = new URL(href).hostname.replace('www.', ''); } catch (e) {}
 
-  const fetchPreview = async () => {
-    if (fetched || !href || !href.startsWith('http')) return;
-    setFetched(true); 
-    setLoading(true);
-    try {
-      const cleanHref = href.replace(/[\.\)]+$/, '');
-      const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(cleanHref)}`, {
-        headers: MICROLINK_API_KEY ? { 'x-api-key': MICROLINK_API_KEY } : {}
-      });
-      const data = await res.json();
+  const fetchPreview = async () => {
+    if (fetched || !href || !href.startsWith('http')) return;
+    setFetched(true); 
+    setLoading(true);
+    try {
+      const cleanHref = href.replace(/[\.\)]+$/, '');
+      const endpoint = MICROLINK_API_KEY ? 'https://pro.microlink.io' : 'https://api.microlink.io';
+      
+      const res = await fetch(`${endpoint}?url=${encodeURIComponent(cleanHref)}`, {
+        headers: MICROLINK_API_KEY ? { 'x-api-key': MICROLINK_API_KEY } : {}
+      });
+      const data = await res.json();
 
-      if (data.status === 'success') {
-        const returnedTitle = (data.data.title || '').toLowerCase();
-        const blockedKeywords = ['error:', 'could not be satisfied', 'cloudflare', 'attention required', 'access denied', '403 forbidden', 'not acceptable'];
+      if (data.status === 'success') {
+        const returnedTitle = (data.data.title || '').toLowerCase();
+        const blockedKeywords = ['error:', 'could not be satisfied', 'cloudflare', 'attention required', 'access denied', '403 forbidden', 'not acceptable'];
 
-        if (blockedKeywords.some(kw => returnedTitle.includes(kw))) {
-          setIsScrapeBlocked(true);
-        } else {
-          setPreviewData(data.data);
-        }
-      } else {
-        setIsScrapeBlocked(true);
-      }
-    } catch (e) {
-      console.error("Error cargando preview:", e);
-      setIsScrapeBlocked(true);
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (blockedKeywords.some(kw => returnedTitle.includes(kw))) {
+          setIsScrapeBlocked(true);
+        } else {
+          setPreviewData(data.data);
+        }
+      } else {
+        setIsScrapeBlocked(true);
+      }
+    } catch (e) {
+      console.error("Error cargando preview:", e);
+      setIsScrapeBlocked(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  useEffect(() => {
-    fetchPreview();
-  }, [href]);
+  useEffect(() => {
+    fetchPreview();
+  }, [href]);
 
-  return (
-    <Tooltip
-      placement="top"
-      arrow
-      enterDelay={100} 
-      PopperProps={{ sx: { zIndex: 999999 } }}
-      title={
-        <Box sx={{ width: 380, p: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-              <CircularProgress size={24} sx={{ color: '#60a5fa' }} />
-            </Box>
-          ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                <img 
-                  src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`} 
-                  alt="icon" 
-                  style={{ width: 16, height: 16, borderRadius: '2px', backgroundColor: 'white' }} 
-                />
-                <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
-                  {hostname}
-                </Typography>
-              </Box>
+  return (
+    <Tooltip
+      placement="top"
+      arrow
+      enterDelay={100} 
+      PopperProps={{ sx: { zIndex: 999999 } }}
+      title={
+        <Box sx={{ width: 380, p: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+              <CircularProgress size={24} sx={{ color: '#60a5fa' }} />
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                <img 
+                  src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`} 
+                  alt="icon" 
+                  style={{ width: 16, height: 16, borderRadius: '2px', backgroundColor: 'white' }} 
+                />
+                <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                  {hostname}
+                </Typography>
+              </Box>
 
-              {!isScrapeBlocked && previewData ? (
-                <>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.3, color: 'white' }}>
-                    {previewData.title || "Fuente de información"}
-                  </Typography>
-                  {previewData.description && (
-                    <Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#cbd5e1', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', mt: 0.5 }}>
-                      {previewData.description}
-                    </Typography>
-                  )}
-                </>
-              ) : (
-                <>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.3, color: 'white' }}>
-                    Documento Institucional Externo
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#cbd5e1', mt: 0.5 }}>
-                    Haz clic para acceder y validar la información directamente en el sitio web original.
-                  </Typography>
-                </>
-              )}
-            </Box>
-          )}
-        </Box>
-      }
-      componentsProps={{
-        tooltip: {
-          sx: {
-            maxWidth: 420, 
-            bgcolor: '#0f172a',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7)',
-            borderRadius: '8px',
-            border: '1px solid #334155',
-            p: 1.5,
-          }
-        },
-        arrow: {
-          sx: { color: '#0f172a' }
-        }
-      }}
-    >
-      <span style={{ display: 'inline' }}>
-        <a 
-          href={href} 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          style={{ color: 'var(--pida-primary)', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' }}
-          {...props}
-        >
-          {children}
-        </a>
-      </span>
-    </Tooltip>
-  );
+              {!isScrapeBlocked && previewData ? (
+                <>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.3, color: 'white' }}>
+                    {previewData.title || "Fuente de información"}
+                  </Typography>
+                  {previewData.description && (
+                    <Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#cbd5e1', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', mt: 0.5 }}>
+                      {previewData.description}
+                    </Typography>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.3, color: 'white' }}>
+                    Documento Institucional Externo
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#cbd5e1', mt: 0.5 }}>
+                    Haz clic para acceder y validar la información directamente en el sitio web original.
+                  </Typography>
+                </>
+              )}
+            </Box>
+          )}
+        </Box>
+      }
+      componentsProps={{
+        tooltip: {
+          sx: {
+            maxWidth: 420, 
+            bgcolor: '#0f172a',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7)',
+            borderRadius: '8px',
+            border: '1px solid #334155',
+            p: 1.5,
+          }
+        },
+        arrow: {
+          sx: { color: '#0f172a' }
+        }
+      }}
+    >
+      <span style={{ display: 'inline' }}>
+        <a 
+          href={href} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          style={{ color: 'var(--pida-primary)', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' }}
+          {...props}
+        >
+          {children}
+        </a>
+      </span>
+    </Tooltip>
+  );
 };
 
 export default function ChatInterface({ user, resetSignal, loadChatId, refreshHistory }) {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [chatId, setChatId] = useState(null);
-  
-  const [currentStatus, setCurrentStatus] = useState('Iniciando...'); 
-  
-  const messagesEndRef = useRef(null);
-  const chatContainerRef = useRef(null);
-  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [chatId, setChatId] = useState(null);
+  
+  const [currentStatus, setCurrentStatus] = useState('Iniciando...'); 
+  
+  const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
-  const handleScroll = () => {
-    if (chatContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-      const distanceToBottom = scrollHeight - scrollTop - clientHeight;
-      setIsAtBottom(distanceToBottom < 80);
-    }
-  };
+  const handleScroll = () => {
+    if (chatContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+      const distanceToBottom = scrollHeight - scrollTop - clientHeight;
+      setIsAtBottom(distanceToBottom < 80);
+    }
+  };
 
-  const scrollToBottom = (behavior = 'smooth') => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
-  };
+  const scrollToBottom = (behavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  };
 
-  useEffect(() => {
-    if (isAtBottom) {
-      scrollToBottom();
-    }
-  }, [messages, isTyping]);
+  useEffect(() => {
+    if (isAtBottom) {
+      scrollToBottom();
+    }
+  }, [messages, isTyping]);
 
-  const markdownComponents = {
-    a: ({ node, ...props }) => <PreviewLink href={props.href} {...props}>{props.children}</PreviewLink>,
-    table: ({ node, ...props }) => (
-      <TableContainer component={Paper} sx={{ my: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-        <Table size="small" {...props} />
-      </TableContainer>
-    ),
-    thead: ({ node, ...props }) => <TableHead sx={{ bgcolor: '#f1f5f9' }} {...props} />,
-    tbody: ({ node, ...props }) => <TableBody {...props} />,
-    tr: ({ node, ...props }) => <TableRow hover {...props} />,
-    th: ({ node, ...props }) => (
-      <TableCell 
-        sx={{ 
-          fontWeight: 'bold', 
-          color: 'var(--pida-primary)', 
-          borderBottom: '2px solid #cbd5e1',
-          whiteSpace: 'nowrap'
-        }} 
-        {...props} 
-      />
-    ),
-    td: ({ node, ...props }) => (
-      <TableCell 
-        sx={{ 
-          borderColor: '#e2e8f0',
-          verticalAlign: 'top'
-        }} 
-        {...props} 
-      />
-    )
-  };
+  const markdownComponents = {
+    a: ({ node, ...props }) => <PreviewLink href={props.href} {...props}>{props.children}</PreviewLink>,
+    table: ({ node, ...props }) => (
+      <TableContainer component={Paper} sx={{ my: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+        <Table size="small" {...props} />
+      </TableContainer>
+    ),
+    thead: ({ node, ...props }) => <TableHead sx={{ bgcolor: '#f1f5f9' }} {...props} />,
+    tbody: ({ node, ...props }) => <TableBody {...props} />,
+    tr: ({ node, ...props }) => <TableRow hover {...props} />,
+    th: ({ node, ...props }) => (
+      <TableCell 
+        sx={{ 
+          fontWeight: 'bold', 
+          color: 'var(--pida-primary)', 
+          borderBottom: '2px solid #cbd5e1',
+          whiteSpace: 'nowrap'
+        }} 
+        {...props} 
+      />
+    ),
+    td: ({ node, ...props }) => (
+      <TableCell 
+        sx={{ 
+          borderColor: '#e2e8f0',
+          verticalAlign: 'top'
+        }} 
+        {...props} 
+      />
+    )
+  };
 
-  useEffect(() => {
-    if (resetSignal > 0) {
-      setMessages([]);
-      setChatId(null);
-      setInput('');
-      setIsAtBottom(true);
-    }
-  }, [resetSignal]);
+  useEffect(() => {
+    if (resetSignal > 0) {
+      setMessages([]);
+      setChatId(null);
+      setInput('');
+      setIsAtBottom(true);
+    }
+  }, [resetSignal]);
 
-  useEffect(() => {
-    if (loadChatId) {
-      const loadPastChat = async () => {
-        try {
-          const token = await user.getIdToken();
-          const res = await fetch(`${API_CHAT}/conversations/${loadChatId}/messages`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          const msgs = await res.json();
-          setChatId(loadChatId);
-          setMessages(msgs);
-          setIsAtBottom(true);
-          setTimeout(() => scrollToBottom('auto'), 100);
-        } catch (err) {
-          console.error("Error cargando chat", err);
-        }
-      };
-      loadPastChat();
-    }
-  }, [loadChatId, user]);
+  useEffect(() => {
+    if (loadChatId) {
+      const loadPastChat = async () => {
+        try {
+          const token = await user.getIdToken();
+          const res = await fetch(`${API_CHAT}/conversations/${loadChatId}/messages`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const msgs = await res.json();
+          setChatId(loadChatId);
+          setMessages(msgs);
+          setIsAtBottom(true);
+          setTimeout(() => scrollToBottom('auto'), 100);
+        } catch (err) {
+          console.error("Error cargando chat", err);
+        }
+      };
+      loadPastChat();
+    }
+  }, [loadChatId, user]);
 
-  const startConversation = async () => {
-    const token = await user.getIdToken();
-    const res = await fetch(`${API_CHAT}/conversations`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: "Nuevo Chat" })
-    });
-    
-    if (!res.ok) throw new Error(res.status === 403 ? "Suscripción inactiva." : "Error al crear la conversación.");
-    
-    const data = await res.json();
-    setChatId(data.id);
-    return data.id;
-  };
+  const startConversation = async () => {
+    const token = await user.getIdToken();
+    const res = await fetch(`${API_CHAT}/conversations`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: "Nuevo Chat" })
+    });
+    
+    if (!res.ok) throw new Error(res.status === 403 ? "Suscripción inactiva." : "Error al crear la conversación.");
+    
+    const data = await res.json();
+    setChatId(data.id);
+    return data.id;
+  };
 
-  const handleSend = async (e, textOverride = null) => {
-    if (e) e.preventDefault();
-    
-    const textToSend = textOverride || input.trim();
-    if (!textToSend || isTyping) return;
+  const handleSend = async (e, textOverride = null) => {
+    if (e) e.preventDefault();
+    
+    const textToSend = textOverride || input.trim();
+    if (!textToSend || isTyping) return;
 
-    if (!textOverride) setInput('');
-    
-    setMessages(prev => [...prev, { role: 'user', content: textToSend }]);
-    setIsTyping(true);
-    setCurrentStatus('Conectando...');
-    
-    setIsAtBottom(true);
-    setTimeout(() => scrollToBottom(), 50);
+    if (!textOverride) setInput('');
+    
+    setMessages(prev => [...prev, { role: 'user', content: textToSend }]);
+    setIsTyping(true);
+    setCurrentStatus('Conectando...');
+    
+    setIsAtBottom(true);
+    setTimeout(() => scrollToBottom(), 50);
 
-    try {
-      let currentChatId = chatId;
-      let isNewConversation = false;
-      
-      if (!currentChatId) {
-        currentChatId = await startConversation();
-        isNewConversation = true; 
-      }
+    try {
+      let currentChatId = chatId;
+      let isNewConversation = false;
+      
+      if (!currentChatId) {
+        currentChatId = await startConversation();
+        isNewConversation = true; 
+      }
 
-      const token = await user.getIdToken();
-      
-      if (isNewConversation) {
-        try {
-          await fetch(`${API_CHAT}/conversations/${currentChatId}/title`, {
-            method: 'PATCH',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: textToSend.substring(0, 40) })
-          });
-          if (refreshHistory) refreshHistory();
-        } catch (err) {
-          console.error("Error actualizando título:", err);
-        }
-      }
+      const token = await user.getIdToken();
+      
+      if (isNewConversation) {
+        try {
+          await fetch(`${API_CHAT}/conversations/${currentChatId}/title`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: textToSend.substring(0, 40) })
+          });
+          if (refreshHistory) refreshHistory();
+        } catch (err) {
+          console.error("Error actualizando título:", err);
+        }
+      }
 
-      const res = await fetch(`${API_CHAT}/chat-stream/${currentChatId}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: textToSend })
-      });
+      const res = await fetch(`${API_CHAT}/chat-stream/${currentChatId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: textToSend })
+      });
 
-      if (!res.ok) {
-        if (res.status === 403 || res.status === 402 || res.status === 429) {
-             throw new Error("Has alcanzado tu límite de consultas o tu suscripción no está activa.");
-        }
-        throw new Error(`Error del servidor (${res.status})`);
-      }
+      if (!res.ok) {
+        if (res.status === 403 || res.status === 402 || res.status === 429) {
+             throw new Error("Has alcanzado tu límite de consultas o tu suscripción no está activa.");
+        }
+        throw new Error(`Error del servidor (${res.status})`);
+      }
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "";
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n\n');
-        
-        for (const line of lines) {
-          if (line.startsWith('data:')) {
-            try {
-              const data = JSON.parse(line.substring(6));
-              
-              if (data.event === 'status' && data.message) {
-                setCurrentStatus(data.message);
-              } 
-              else if (data.text) {
-                const chars = data.text;
-                const step = 10; 
-                for (let i = 0; i < chars.length; i += step) {
-                  fullText += chars.substring(i, i + step);
-                  
-                  setMessages(prev => {
-                    const lastMsg = prev[prev.length - 1];
-                    if (lastMsg && lastMsg.role === 'model') {
-                      return [...prev.slice(0, -1), { ...lastMsg, content: fullText }];
-                    } else {
-                      return [...prev, { role: 'model', content: fullText }];
-                    }
-                  });
-                  
-                  await new Promise(resolve => setTimeout(resolve, 2));
-                }
-              }
-            } catch (e) {}
-          }
-        }
-      }
-    } catch (error) {
-      console.error(error);
-      setMessages(prev => [...prev, { role: 'model', content: `❌ **Ocurrió un problema:** ${error.message}` }]);
-    } finally {
-      setIsTyping(false);
-    }
-  };
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            try {
+              const data = JSON.parse(line.substring(6));
+              
+              if (data.event === 'status' && data.message) {
+                setCurrentStatus(data.message);
+              } 
+              else if (data.text) {
+                const chars = data.text;
+                const step = 10; 
+                for (let i = 0; i < chars.length; i += step) {
+                  fullText += chars.substring(i, i + step);
+                  
+                  setMessages(prev => {
+                    const lastMsg = prev[prev.length - 1];
+                    if (lastMsg && lastMsg.role === 'model') {
+                      return [...prev.slice(0, -1), { ...lastMsg, content: fullText }];
+                    } else {
+                      return [...prev, { role: 'model', content: fullText }];
+                    }
+                  });
+                  
+                  await new Promise(resolve => setTimeout(resolve, 2));
+                }
+              }
+            } catch (e) {}
+          }
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      setMessages(prev => [...prev, { role: 'model', content: `❌ **Ocurrió un problema:** ${error.message}` }]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
 
-  const handleBackendDownload = async (format) => {
-    if (!chatId) {
-      alert("Por favor, interactúa en el chat antes de descargarlo.");
-      return;
-    }
-    try {
-      const token = await user.getIdToken();
-      const formData = new FormData();
-      formData.append("convo_id", chatId);
-      formData.append("file_format", format);
+  const handleBackendDownload = async (format) => {
+    if (!chatId) {
+      alert("Por favor, interactúa en el chat antes de descargarlo.");
+      return;
+    }
+    try {
+      const token = await user.getIdToken();
+      const formData = new FormData();
+      formData.append("convo_id", chatId);
+      formData.append("file_format", format);
 
-      const res = await fetch(`${API_CHAT}/download-chat`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-      });
+      const res = await fetch(`${API_CHAT}/download-chat`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
 
-      if (!res.ok) throw new Error("Error en el servidor al generar el documento.");
+      if (!res.ok) throw new Error("Error en el servidor al generar el documento.");
 
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `${getTimestampedName("Experto_PIDA")}.${format}`; 
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error(error);
-      alert("Hubo un problema descargando el archivo.");
-    }
-  };
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${getTimestampedName("Experto_PIDA")}.${format}`; 
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      alert("Hubo un problema descargando el archivo.");
+    }
+  };
 
-  const handleTXTDownload = () => {
-    const cleanMessages = messages.map(msg => {
-      if (msg.role !== 'model') return msg;
-      
-      let content = msg.content.replace(/_Fin del análisis\._/g, "");
-      
-      content = content.replace(/<pida_questions>([\s\S]*?)<\/pida_questions>/g, (match, p1) => {
-          const qs = p1.split('|').map(q => q.trim()).filter(q => q);
-          if (qs.length === 0) return "";
-          return "\n\nPreguntas de seguimiento sugeridas:\n" + qs.map(q => `- ${q}`).join('\n');
-      });
+  const handleTXTDownload = () => {
+    const cleanMessages = messages.map(msg => {
+      if (msg.role !== 'model') return msg;
+      
+      let content = msg.content.replace(/_Fin del análisis\._/g, "");
+      
+      content = content.replace(/<pida_questions>([\s\S]*?)<\/pida_questions>/g, (match, p1) => {
+          const qs = p1.split('|').map(q => q.trim()).filter(q => q);
+          if (qs.length === 0) return "";
+          return "\n\nPreguntas de seguimiento sugeridas:\n" + qs.map(q => `- ${q}`).join('\n');
+      });
 
-      content = content.replace(/^\|?[\s\-:]+\|[\s\-:|]+$/gm, "");
+      content = content.replace(/^\|?[\s\-:]+\|[\s\-:|]+$/gm, "");
 
-      content = content.replace(/\|/g, " - ");
+      content = content.replace(/\|/g, " - ");
 
-      content = content.replace(/\*\*/g, "");
+      content = content.replace(/\*\*/g, "");
 
-      return { ...msg, content };
-    });
+      return { ...msg, content };
+    });
 
-    Exporter.downloadTXT(getTimestampedName("Experto_PIDA"), "Reporte Experto Jurídico", cleanMessages);
-  };
+    Exporter.downloadTXT(getTimestampedName("Experto_PIDA"), "Reporte Experto Jurídico", cleanMessages);
+  };
 
-  const renderMessageContent = (msg, index) => {
-    if (msg.role === 'user') {
-      return <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{msg.content}</ReactMarkdown>;
-    }
+  const renderMessageContent = (msg, index) => {
+    if (msg.role === 'user') {
+      return <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{msg.content}</ReactMarkdown>;
+    }
 
-    const isCurrentlyTypingThis = isTyping && index === messages.length - 1;
-    let displayContent = msg.content;
-    let questions = [];
+    const isCurrentlyTypingThis = isTyping && index === messages.length - 1;
+    let displayContent = msg.content;
+    let questions = [];
 
-    const tagStart = "<pida_questions>";
-    const tagEnd = "</pida_questions>";
+    const tagStart = "<pida_questions>";
+    const tagEnd = "</pida_questions>";
 
-    if (displayContent.includes(tagStart)) {
-      const parts = displayContent.split(tagStart);
-      let textBeforeTags = parts[0];
-      let textInsideAndAfter = parts[1] || "";
-      
-      let qString = "";
-      let textAfterTags = ""; 
+    if (displayContent.includes(tagStart)) {
+      const parts = displayContent.split(tagStart);
+      let textBeforeTags = parts[0];
+      let textInsideAndAfter = parts[1] || "";
+      
+      let qString = "";
+      let textAfterTags = ""; 
 
-      if (textInsideAndAfter.includes(tagEnd)) {
-        const subParts = textInsideAndAfter.split(tagEnd);
-        qString = subParts[0]; 
-        textAfterTags = subParts.slice(1).join(tagEnd); 
-      } else {
-        qString = textInsideAndAfter;
-      }
+      if (textInsideAndAfter.includes(tagEnd)) {
+        const subParts = textInsideAndAfter.split(tagEnd);
+        qString = subParts[0]; 
+        textAfterTags = subParts.slice(1).join(tagEnd); 
+      } else {
+        qString = textInsideAndAfter;
+      }
 
-      displayContent = textBeforeTags + "\n" + textAfterTags;
+      displayContent = textBeforeTags + "\n" + textAfterTags;
 
-      if (!isCurrentlyTypingThis && textInsideAndAfter.includes(tagEnd)) {
-        questions = qString.split('|').map(q => q.trim()).filter(q => q.length > 0);
-      }
-    }
+      if (!isCurrentlyTypingThis && textInsideAndAfter.includes(tagEnd)) {
+        questions = qString.split('|').map(q => q.trim()).filter(q => q.length > 0);
+      }
+    }
 
-    displayContent = displayContent.replace(/["']br["']/g, '<br />');
+    displayContent = displayContent.replace(/["']br["']/g, '<br />');
 
-    if (displayContent.includes('## Fuentes y Jurisprudencia')) {
-      const splitPoint = '## Fuentes y Jurisprudencia';
-      const parts = displayContent.split(splitPoint);
-      let fuentesText = parts[1];
-      
-      fuentesText = fuentesText.replace(/\|?\s*:?-{2,}:?\s*\|?/g, '');
-      fuentesText = fuentesText.replace(/\|/g, ' • ');
-      
-      displayContent = parts[0] + splitPoint + fuentesText;
-    }
+    if (displayContent.includes('## Fuentes y Jurisprudencia')) {
+      const splitPoint = '## Fuentes y Jurisprudencia';
+      const parts = displayContent.split(splitPoint);
+      let fuentesText = parts[1];
+      
+      fuentesText = fuentesText.replace(/\|?\s*:?-{2,}:?\s*\|?/g, '');
+      fuentesText = fuentesText.replace(/\|/g, ' • ');
+      
+      displayContent = parts[0] + splitPoint + fuentesText;
+    }
 
-    return (
-      <>
-        <div className="markdown-content">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
-            {displayContent}
-          </ReactMarkdown>
-        </div>
-        
-        {questions.length > 0 && (
-          <div className="follow-up-section">
-            <strong style={{ display: 'block', marginTop: '15px', marginBottom: '10px', color: 'var(--pida-primary)' }}>
-              Preguntas de seguimiento sugeridas:
-            </strong>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {questions.map((q, i) => (
-                <button 
-                  key={i} 
-                  className="follow-up-btn"
-                  onClick={(e) => handleSend(e, q)}
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </>
-    );
-  };
+    return (
+      <>
+        <div className="markdown-content">
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+            {displayContent}
+          </ReactMarkdown>
+        </div>
+        
+        {questions.length > 0 && (
+          <div className="follow-up-section">
+            <strong style={{ display: 'block', marginTop: '15px', marginBottom: '10px', color: 'var(--pida-primary)' }}>
+              Preguntas de seguimiento sugeridas:
+            </strong>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {questions.map((q, i) => (
+                <button 
+                  key={i} 
+                  className="follow-up-btn"
+                  onClick={(e) => handleSend(e, q)}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
 
-  return (
-    <div className="pida-view" style={{ position: 'relative' }}>
-      
-      <div className="pida-view-content" ref={chatContainerRef} onScroll={handleScroll}>
-        <div id="pida-chat-box">
-          
-          {messages.length === 0 && (
-            <div className="pida-bubble pida-message-bubble">
-              <div className="pida-welcome-content">
-                <div className="pida-welcome-text">
-                  <h3>¡Hola! Soy PIDA, tu asistente experto en Derechos Humanos y temas afines.</h3>
-                  <p>Estoy para apoyarte y responder cualquier pregunta que me hagas, incluyendo investigaciones, análisis de casos, búsqueda de jurisprudencia y redacción legal de todo tipo de documentos, cartas, informes, elaboración de proyectos y seguimiento y monitoreo.</p>
-                  <strong>¿Qué te gustaría pedirme ahora?</strong>
-                </div>
-              </div>
-            </div>
-          )}
+  return (
+    <div className="pida-view" style={{ position: 'relative' }}>
+      
+      <div className="pida-view-content" ref={chatContainerRef} onScroll={handleScroll}>
+        <div id="pida-chat-box">
+          
+          {messages.length === 0 && (
+            <div className="pida-bubble pida-message-bubble">
+              <div className="pida-welcome-content">
+                <div className="pida-welcome-text">
+                  <h3>¡Hola! Soy PIDA, tu asistente experto en Derechos Humanos y temas afines.</h3>
+                  <p>Estoy para apoyarte y responder cualquier pregunta que me hagas, incluyendo investigaciones, análisis de casos, búsqueda de jurisprudencia y redacción legal de todo tipo de documentos, cartas, informes, elaboración de proyectos y seguimiento y monitoreo.</p>
+                  <strong>¿Qué te gustaría pedirme ahora?</strong>
+                </div>
+              </div>
+            </div>
+          )}
 
-          {messages.map((msg, idx) => (
-            <div key={idx} className={`pida-bubble ${msg.role === 'user' ? 'user-message-bubble' : 'pida-message-bubble'}`}>
-              {renderMessageContent(msg, idx)}
-            </div>
-          ))}
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`pida-bubble ${msg.role === 'user' ? 'user-message-bubble' : 'pida-message-bubble'}`}>
+              {renderMessageContent(msg, idx)}
+            </div>
+          ))}
 
-          {isTyping && (messages.length === 0 || messages[messages.length - 1].role === 'user' || messages[messages.length - 1].content === '') && (
-            <div className="pida-bubble pida-message-bubble">
-              <Box sx={{ 
-                width: '320px', 
-                maxWidth: '100%',
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 2, 
-                py: 1, 
-                px: 2,
-                color: '#475569' 
-              }}>
-                <CircularProgress size={20} sx={{ color: 'var(--pida-primary)' }} />
-                <Typography variant="body2" sx={{ fontWeight: 500, fontStyle: 'italic' }}>
-                  {currentStatus}
-                </Typography>
-              </Box>
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} style={{ height: '1px' }} />
-        </div>
-      </div>
+          {isTyping && (messages.length === 0 || messages[messages.length - 1].role === 'user' || messages[messages.length - 1].content === '') && (
+            <div className="pida-bubble pida-message-bubble">
+              <Box sx={{ 
+                width: '320px', 
+                maxWidth: '100%',
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 2, 
+                py: 1, 
+                px: 2,
+                color: '#475569' 
+              }}>
+                <CircularProgress size={20} sx={{ color: 'var(--pida-primary)' }} />
+                <Typography variant="body2" sx={{ fontWeight: 500, fontStyle: 'italic' }}>
+                  {currentStatus}
+                </Typography>
+              </Box>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} style={{ height: '1px' }} />
+        </div>
+      </div>
 
-      {!isAtBottom && messages.length > 0 && (
-        <Fab
-          color="primary"
-          size="medium"
-          onClick={(e) => {
-            e.preventDefault();
-            setIsAtBottom(true);
-            scrollToBottom();
-          }}
-          sx={{
-            position: 'absolute',
-            bottom: '120px',
-            right: '25px',
-            zIndex: 900,
-            opacity: 0.9,
-            backgroundColor: '#0056B3',
-            '&:hover': { backgroundColor: '#004494', opacity: 1 }
-          }}
-          title="Ir al último mensaje"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <polyline points="19 12 12 19 5 12"></polyline>
-          </svg>
-        </Fab>
-      )}
+      {!isAtBottom && messages.length > 0 && (
+        <Fab
+          color="primary"
+          size="medium"
+          onClick={(e) => {
+            e.preventDefault();
+            setIsAtBottom(true);
+            scrollToBottom();
+          }}
+          sx={{
+            position: 'absolute',
+            bottom: '120px',
+            right: '25px',
+            zIndex: 900,
+            opacity: 0.9,
+            backgroundColor: '#0056B3',
+            '&:hover': { backgroundColor: '#004494', opacity: 1 }
+          }}
+          title="Ir al último mensaje"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <polyline points="19 12 12 19 5 12"></polyline>
+          </svg>
+        </Fab>
+      )}
 
-      <form className="pida-view-form" onSubmit={(e) => handleSend(e)}>
-        
-        {messages.length > 0 && (
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
-            <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
-              {/* 👇 BOTONES DE DESCARGA CONECTADOS CORRECTAMENTE 👇 */}
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={handleTXTDownload}>TXT</Button>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('docx')}>DOCX</Button>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('pdf')}>PDF</Button>
-            </ButtonGroup>
-          </Box>
-        )}
+      <form className="pida-view-form" onSubmit={(e) => handleSend(e)}>
+        
+        {messages.length > 0 && (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
+            <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
+              {/* 👇 BOTONES DE DESCARGA CONECTADOS CORRECTAMENTE 👇 */}
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={handleTXTDownload}>TXT</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('docx')}>DOCX</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('pdf')}>PDF</Button>
+            </ButtonGroup>
+          </Box>
+        )}
 
-        <TextField 
-          multiline
-          minRows={2}
-          maxRows={5}
-          fullWidth
-          placeholder="Consulta a PIDA..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) handleSend(e); }}
-          sx={{ 
-            mb: 2, 
-            '& .MuiOutlinedInput-root': {
-              backgroundColor: '#FAFAFA',
-              borderRadius: 2,
-            }
-          }}
-        />
-        
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Button 
-            variant="text" 
-            onClick={() => { setMessages([]); setChatId(null); setInput(''); setIsAtBottom(true); }}
-            sx={{ color: 'text.secondary', fontWeight: 500, '&:hover': { textDecoration: 'underline', backgroundColor: 'transparent' } }}
-          >
-            Limpiar
-          </Button>
-          <Button 
-            type="submit" 
-            variant="contained" 
-            color="primary" 
-            disabled={isTyping}
-            sx={{ px: 4, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-accent)', '&:hover': { bgcolor: '#004494' } }}
-          >
-            Enviar
-          </Button>
-        </Box>
-      </form>
-    </div>
-  );
+        <TextField 
+          multiline
+          minRows={2}
+          maxRows={5}
+          fullWidth
+          placeholder="Consulta a PIDA..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) handleSend(e); }}
+          sx={{ 
+            mb: 2, 
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: '#FAFAFA',
+              borderRadius: 2,
+            }
+          }}
+        />
+        
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Button 
+            variant="text" 
+            onClick={() => { setMessages([]); setChatId(null); setInput(''); setIsAtBottom(true); }}
+            sx={{ color: 'text.secondary', fontWeight: 500, '&:hover': { textDecoration: 'underline', backgroundColor: 'transparent' } }}
+          >
+            Limpiar
+          </Button>
+          <Button 
+            type="submit" 
+            variant="contained" 
+            color="primary" 
+            disabled={isTyping}
+            sx={{ px: 4, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-accent)', '&:hover': { bgcolor: '#004494' } }}
+          >
+            Enviar
+          </Button>
+        </Box>
+      </form>
+    </div>
+  );
 }
