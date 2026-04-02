@@ -9,12 +9,17 @@ import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, 
 const API_CHAT = "https://chat-v20-perplexity-465781488910.us-central1.run.app";
 
 // =========================================================================
-// COMPONENTE DE TARJETA DE PREVISUALIZACIÓN (ESTILO PERPLEXITY)
+// COMPONENTE DE TARJETA DE PREVISUALIZACIÓN (ESTILO MINIMALISTA PROFESIONAL)
 // =========================================================================
 const PreviewLink = ({ href, children, node, title, ...props }) => {
   const [previewData, setPreviewData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
+  const [isScrapeBlocked, setIsScrapeBlocked] = useState(false);
+
+  // Extraemos el dominio limpio para mostrarlo siempre
+  let hostname = "";
+  try { hostname = new URL(href).hostname.replace('www.', ''); } catch (e) {}
 
   const fetchPreview = async () => {
     if (fetched || !href || !href.startsWith('http')) return;
@@ -24,11 +29,23 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
       const cleanHref = href.replace(/[\.\)]+$/, '');
       const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(cleanHref)}`);
       const data = await res.json();
+
       if (data.status === 'success') {
-        setPreviewData(data.data);
+        const returnedTitle = (data.data.title || '').toLowerCase();
+        // Filtro estricto para bloquear páginas de error de Cloudflare/WAF como el de la ONU
+        const blockedKeywords = ['error:', 'could not be satisfied', 'cloudflare', 'attention required', 'access denied', '403 forbidden', 'not acceptable'];
+
+        if (blockedKeywords.some(kw => returnedTitle.includes(kw))) {
+          setIsScrapeBlocked(true);
+        } else {
+          setPreviewData(data.data);
+        }
+      } else {
+        setIsScrapeBlocked(true);
       }
     } catch (e) {
       console.error("Error cargando preview:", e);
+      setIsScrapeBlocked(true);
     } finally {
       setLoading(false);
     }
@@ -38,58 +55,72 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
     <Tooltip
       placement="top"
       arrow
-      enterDelay={200}
+      enterDelay={300}
       onOpen={fetchPreview}
-      // 👇 SOLUCIÓN 1: Forzamos a que el Tooltip esté por encima de toda la interfaz
-      PopperProps={{
-        sx: { zIndex: 999999 } 
-      }}
+      PopperProps={{ sx: { zIndex: 999999 } }}
       title={
-        <Box sx={{ width: 280, p: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Box sx={{ width: 300, p: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
               <CircularProgress size={24} sx={{ color: '#60a5fa' }} />
             </Box>
-          ) : previewData ? (
-            <>
-              {previewData.image?.url && (
-                <img 
-                  src={previewData.image.url} 
-                  alt="preview" 
-                  style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '6px' }} 
-                />
-              )}
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.2, color: 'white' }}>
-                {previewData.title || new URL(href).hostname}
-              </Typography>
-              <Typography variant="body2" sx={{ fontSize: '0.75rem', color: '#94a3b8', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                {previewData.description || "Haz clic para visitar este sitio web."}
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#60a5fa', mt: 0.5, wordBreak: 'break-all' }}>
-                {new URL(href).hostname}
-              </Typography>
-            </>
           ) : (
-            <Typography variant="body2" color="white">Visitar enlace externo...</Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              
+              {/* Encabezado: Logotipo pequeño (Favicon) + URL */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                <img 
+                  src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`} 
+                  alt="icon" 
+                  style={{ width: 16, height: 16, borderRadius: '2px', backgroundColor: 'white' }} 
+                />
+                <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                  {hostname}
+                </Typography>
+              </Box>
+
+              {/* Cuerpo de la tarjeta: Dinámico según si hubo error o éxito */}
+              {!isScrapeBlocked && previewData ? (
+                <>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.3, color: 'white' }}>
+                    {previewData.title || "Fuente de información"}
+                  </Typography>
+                  {previewData.description && (
+                    <Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#cbd5e1', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', mt: 0.5 }}>
+                      {previewData.description}
+                    </Typography>
+                  )}
+                </>
+              ) : (
+                // Fallback Elegante: Si la ONU u otro sitio bloquea el acceso, mostramos esto
+                <>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.3, color: 'white' }}>
+                    Documento Institucional Externo
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#cbd5e1', mt: 0.5 }}>
+                    Haz clic para acceder y validar la información directamente en el sitio web original.
+                  </Typography>
+                </>
+              )}
+            </Box>
           )}
         </Box>
       }
       componentsProps={{
         tooltip: {
           sx: {
-            bgcolor: '#1e293b', 
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)', // Sombra más pronunciada
-            borderRadius: '12px',
+            bgcolor: '#0f172a', // Un azul casi negro, muy premium
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7)',
+            borderRadius: '8px',
             border: '1px solid #334155',
-            p: 1,
+            p: 1.5,
           }
         },
         arrow: {
-          sx: { color: '#1e293b' }
+          sx: { color: '#0f172a' }
         }
       }}
     >
-      {/* 👇 SOLUCIÓN 2: Envolvemos en un <span> para garantizar que Material-UI capture el Hover */}
       <span style={{ display: 'inline' }}>
         <a 
           href={href} 
