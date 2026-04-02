@@ -1,11 +1,138 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw'; 
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
-// Importaciones de Material-UI añadidas
-import { Box, TextField, Button, ButtonGroup, Fab, MenuItem } from '@mui/material';
+// Importaciones de Material-UI
+import { Box, TextField, Button, ButtonGroup, Fab, MenuItem, Tooltip, CircularProgress, Typography } from '@mui/material';
 
 const API_PRE = "https://precalifier-v20-stripe-elements-465781488910.us-central1.run.app";
+
+// =========================================================================
+// COMPONENTE DE VISTA PREVIA (MICROLINK)
+// =========================================================================
+const PreviewLink = ({ href, children, node, title, ...props }) => {
+  const [previewData, setPreviewData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [fetchedUrl, setFetchedUrl] = useState(null);
+
+  const MICROLINK_API_KEY = import.meta.env.VITE_MICROLINK_KEY || "";
+
+  let hostname = "";
+  try { hostname = new URL(href).hostname.replace('www.', ''); } catch (e) {}
+
+  const fetchPreview = async () => {
+    if (!href || !href.startsWith('http') || fetchedUrl === href) return;
+    
+    setFetchedUrl(href); 
+    setLoading(true);
+    try {
+      const cleanHref = href.replace(/[\.\)]+$/, '');
+      const res = await fetch(`https://pro.microlink.io?url=${encodeURIComponent(cleanHref)}`, {
+        headers: MICROLINK_API_KEY ? { 'x-api-key': MICROLINK_API_KEY } : {}
+      });
+      
+      const data = await res.json();
+      if (data.status === 'success') {
+        setPreviewData(data.data);
+      }
+    } catch (e) {
+      console.error("Error cargando preview:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchPreview();
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [href]);
+
+  return (
+    <Tooltip
+      placement="top"
+      arrow
+      enterDelay={100} 
+      PopperProps={{ sx: { zIndex: 999999 } }}
+      title={
+        <Box sx={{ width: 380, p: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+              <CircularProgress size={24} sx={{ color: '#60a5fa' }} />
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                <img 
+                  src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`} 
+                  alt="icon" 
+                  style={{ width: 16, height: 16, borderRadius: '2px', backgroundColor: 'white' }} 
+                />
+                <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                  {hostname}
+                </Typography>
+              </Box>
+
+              {previewData ? (
+                <>
+                  <Typography 
+                    variant="subtitle2" 
+                    sx={{ 
+                      fontWeight: 'bold', lineHeight: 1.3, color: 'white',
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                    }}
+                  >
+                    {previewData.title || "Fuente de información"}
+                  </Typography>
+                  {previewData.description && (
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        fontSize: '0.8rem', color: '#cbd5e1', mt: 0.5,
+                        display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4
+                      }}
+                    >
+                      {previewData.description}
+                    </Typography>
+                  )}
+                </>
+              ) : (
+                <Typography variant="body2" sx={{ color: '#cbd5e1', fontStyle: 'italic' }}>
+                  Documento Institucional Externo
+                </Typography>
+              )}
+            </Box>
+          )}
+        </Box>
+      }
+      slotProps={{
+        tooltip: {
+          sx: {
+            maxWidth: 420, maxHeight: 500, overflowY: 'auto',
+            bgcolor: '#0f172a', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7)',
+            borderRadius: '8px', border: '1px solid #334155', p: 1.5,
+            '&::-webkit-scrollbar': { width: '4px' },
+            '&::-webkit-scrollbar-thumb': { backgroundColor: '#334155', borderRadius: '10px' }
+          }
+        },
+        arrow: { sx: { color: '#0f172a' } }
+      }}
+    >
+      <span style={{ display: 'inline' }}>
+        <a 
+          href={href} target="_blank" rel="noopener noreferrer" 
+          style={{ color: 'var(--pida-primary)', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' }}
+          {...props}
+        >
+          {children}
+        </a>
+      </span>
+    </Tooltip>
+  );
+};
 
 export default function PrequalifierInterface({ user, resetSignal, loadPreData }) {
   const [title, setTitle] = useState('');
@@ -17,14 +144,10 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
   const [resultText, setResultText] = useState('');
   const [error, setError] = useState('');
 
-  // =========================================================================
-  // REFS Y ESTADOS PARA EL SMART SCROLLING
-  // =========================================================================
   const resultEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
 
-  // Escucha el evento de scroll del usuario
   const handleScroll = () => {
     if (chatContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
@@ -43,8 +166,9 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
     }
   }, [resultText, isAnalyzing]);
 
+  // CONFIGURACIÓN DE COMPONENTES MARKDOWN
   const markdownComponents = {
-    a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />
+    a: ({ node, ...props }) => <PreviewLink href={props.href} {...props}>{props.children}</PreviewLink>
   };
 
   const handleClear = () => {
@@ -154,10 +278,8 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
   const formatMarkdown = (text) => {
     if (!text) return "";
     let clean = text;
-
     clean = clean.replace(/([^\n])\s*\n*(#{1,6}\s+)/g, '$1\n\n$2');
     clean = clean.replace(/^\s*\*\*\s*$/gm, '');
-
     const lines = clean.split('\n');
     const fixedLines = lines.map(line => {
       const count = (line.match(/\*\*/g) || []).length;
@@ -167,7 +289,6 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
       }
       return line;
     });
-    
     clean = fixedLines.join('\n');
     return clean;
   };
@@ -200,7 +321,13 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
 
           {resultText && (
             <div className="pida-bubble pida-message-bubble markdown-content" style={{ marginTop: '20px', maxWidth: '100%', padding: '20px' }}>
-              <ReactMarkdown components={markdownComponents}>{formatMarkdown(resultText)}</ReactMarkdown>
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm]} 
+                rehypePlugins={[rehypeRaw]} 
+                components={markdownComponents}
+              >
+                {formatMarkdown(resultText)}
+              </ReactMarkdown>
             </div>
           )}
 
