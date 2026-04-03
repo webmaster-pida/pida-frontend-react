@@ -418,6 +418,20 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
     const isCurrentlyTypingThis = isTyping && index === messages.length - 1;
     let displayContent = msg.content;
+
+    // 👇 NUEVO FILTRO: Limpiador de Negritas Huérfanas 👇
+    // Revisa línea por línea. Si encuentra un número impar de '**' (es decir, 
+    // se abrió la negrita pero nunca se cerró), simplemente elimina los asteriscos 
+    // para que el texto se renderice limpio y normal.
+    displayContent = displayContent.split('\n').map(line => {
+      const count = (line.match(/\*\*/g) || []).length;
+      if (count % 2 !== 0) {
+        return line.replace(/\*\*/g, ''); 
+      }
+      return line;
+    }).join('\n');
+    // 👆 FIN DEL NUEVO FILTRO
+
     let questions = [];
 
     const tagStart = "<pida_questions>";
