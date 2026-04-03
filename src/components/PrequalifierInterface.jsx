@@ -7,7 +7,7 @@ import { Exporter, getTimestampedName } from '../utils/exporter';
 // Importaciones de Material-UI
 import { Box, TextField, Button, ButtonGroup, Fab, MenuItem, Tooltip, CircularProgress, Typography } from '@mui/material';
 
-const API_PRE = "https://precalifier-v20-stripe-elements-465781488910.us-central1.run.app";
+const API_PRE = "https://precalifier-v20-perplexity-465781488910.us-central1.run.app";
 
 // =========================================================================
 // COMPONENTE DE VISTA PREVIA (MICROLINK) CON FILTRO DE ERRORES

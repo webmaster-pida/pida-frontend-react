@@ -1,7 +1,7 @@
 export const PIDA_CONFIG = {
     API_CHAT: "https://chat-v20-perplexity-465781488910.us-central1.run.app",
     API_ANA: "https://analize-v20-strong-465781488910.us-central1.run.app",
-    API_PRE: "https://precalifier-v20-stripe-elements-465781488910.us-central1.run.app"
+    API_PRE: "https://precalifier-v20-perplexity-465781488910.us-central1.run.app"
 };
 
 export const STRIPE_PRICES = {
