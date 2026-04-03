@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { STRIPE_PRICES } from '../config/constants';
 import { db } from '../config/firebase'; 
 
 // Importaciones de Material-UI
-import { Box, TextField, Button, Menu, MenuItem, SvgIcon } from '@mui/material';
+import { Box, TextField, Button, Menu, MenuItem, SvgIcon, Card, CardMedia, IconButton, Fade } from '@mui/material';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
+import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 
 export default function LandingPage({ onOpenAuth }) {
   const [interval, setInterval] = useState('monthly'); 
@@ -15,6 +16,17 @@ export default function LandingPage({ onOpenAuth }) {
 
   // ESTADO: Controla si el menú móvil está abierto
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // ESTADOS Y REF PARA EL VIDEO
+  const videoRef = useRef(null);
+  const [hasStarted, setHasStarted] = useState(false); // <--- Control definitivo
+
+  const handlePlayVideo = () => {
+    if (videoRef.current) {
+      videoRef.current.play();
+      setHasStarted(true); // Una vez que inicia, no vuelve a mostrar el botón gigante
+    }
+  };
 
   // ESTADOS MUI: Controlan el menú desplegable del Newsletter
   const [anchorEl, setAnchorEl] = useState(null);
@@ -135,14 +147,14 @@ export default function LandingPage({ onOpenAuth }) {
     fontWeight: 600,
     fontSize: '0.95rem',
     borderRadius: '8px',
-    padding: '10px 24px',
-    boxShadow: '0 2px 10px rgba(29, 53, 87, 0.2)',
+    padding: '6px 22px', // <-- Menos grueso verticalmente (antes era 10px)
+    boxShadow: '0px 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14)', // Sombra normal y neutra (estilo Material Design estándar)
     fontFamily: 'var(--font-body)',
+    transition: 'background-color 250ms ease, box-shadow 250ms ease', // Transición suave y normal
     '&:hover': {
-      backgroundColor: 'var(--cyan)',
-      color: 'var(--navy-dark)',
-      transform: 'translateY(-2px)',
-      boxShadow: '0 5px 20px rgba(0, 195, 255, 0.3)',
+      backgroundColor: '#122238', // Un azul marino ligeramente más oscuro al pasar el mouse
+      boxShadow: '0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14)', // Sombra un poco más pronunciada, pero gris
+      // Se eliminó el "transform: translateY" y la sombra azulada brillante
     }
   };
 
@@ -154,13 +166,14 @@ export default function LandingPage({ onOpenAuth }) {
     fontWeight: 600,
     fontSize: '0.95rem',
     borderRadius: '8px',
-    padding: '10px 24px',
+    padding: '5px 21px', // <-- Menos grueso (5px porque el borde sólido añade 1px extra)
     fontFamily: 'var(--font-body)',
+    transition: 'background-color 250ms ease',
     '&:hover': {
-      backgroundColor: '#f8fafc',
+      backgroundColor: 'rgba(29, 53, 87, 0.08)', // Fondo gris/azulado muy sutil y estándar (como botones Outlined de MUI)
       borderColor: 'var(--navy)',
     }
-  };
+  }
 
   return (
     <div id="landing-page-root">
@@ -273,12 +286,12 @@ export default function LandingPage({ onOpenAuth }) {
                 </Menu>
               </div>
 
-              {/* Botón LOGIN - Actualizado con estilos directos MUI para no romper el layout */}
+              {/* Botón LOGIN */}
               <Button 
                 onClick={() => { setIsMenuOpen(false); onOpenAuth('login'); }}
                 sx={{
                   ...muiGhostBtnStyle,
-                  padding: { xs: '12px', sm: '6px 18px' }, // Ajuste responsive
+                  padding: { xs: '8px', sm: '4px 16px' },
                   width: { xs: '100%', sm: 'auto' },
                   mt: { xs: '15px', sm: '0' },
                   ml: { xs: '0', sm: '15px' },
@@ -358,7 +371,6 @@ export default function LandingPage({ onOpenAuth }) {
               </p>
               
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
-                {/* BOTONES HERO - Actualizados a MUI */}
                 <Button 
                   onClick={() => document.getElementById('planes').scrollIntoView({ behavior: 'smooth' })}
                   sx={muiPrimaryBtnStyle}
@@ -375,31 +387,73 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
             
             <div className="hero-visual-column" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <div style={{
-                width: '100%',
-                maxWidth: '500px',
-                backgroundColor: '#FFFFFF',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                boxShadow: '0 20px 40px rgba(29, 53, 87, 0.1)',
-                border: '1px solid var(--pida-border)'
-              }}>
-                <video 
-                  controls 
+              <Card 
+                elevation={0}
+                sx={{
+                  width: '100%',
+                  maxWidth: '500px',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 40px rgba(29, 53, 87, 0.1)',
+                  border: '1px solid var(--pida-border)',
+                  position: 'relative', 
+                  backgroundColor: '#FFFFFF'
+                }}
+              >
+                {/* Capa superpuesta: Desaparece permanentemente al darle Play */}
+                <Fade in={!hasStarted}>
+                  <Box
+                    onClick={handlePlayVideo}
+                    sx={{
+                      position: 'absolute',
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      display: 'flex',
+                      alignItems: 'flex-end', // Mueve el contenido hacia abajo
+                      justifyContent: 'flex-end', // Mueve el contenido hacia la derecha
+                      p: 2.5, // Agrega un poco de margen para que no toque los bordes
+                      backgroundColor: 'transparent', 
+                      zIndex: 2,
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      '&:hover': { 
+                        '& .play-button': { 
+                          transform: 'scale(1.15)',
+                          backgroundColor: '#FFFFFF'
+                        } 
+                      }
+                    }}
+                  >
+                    <IconButton 
+                      className="play-button"
+                      sx={{ 
+                        color: 'var(--pida-primary)', 
+                        backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.2)', // Agrega una sombra elegante
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      {/* Tamaño reducido a 3rem */}
+                      <PlayCircleIcon sx={{ fontSize: '3rem' }} />
+                    </IconButton>
+                  </Box>
+                </Fade>
+
+                <CardMedia
+                  component="video"
+                  ref={videoRef}
+                  controls={hasStarted} // Los controles nativos asumen el mando total después del primer clic
                   preload="metadata"
-                  poster="/img/PIDA-MASCOTA-576-trans.png"
-                  style={{ 
-                    width: '100%', 
-                    display: 'block', 
+                  poster="/img/PIDA-MASCOTA-576-trans.png" 
+                  src="https://storage.googleapis.com/img-pida/PIDA.mp4"
+                  sx={{
+                    display: 'block',
                     aspectRatio: '16/9',
-                    objectFit: 'contain', 
-                    backgroundColor: '#FFFFFF' 
+                    objectFit: 'contain',
+                    backgroundColor: '#FFFFFF',
+                    width: '100%'
                   }}
-                >
-                  <source src="https://storage.googleapis.com/img-pida/PIDA.mp4" type="video/mp4" />
-                  Tu navegador no soporta la reproducción de videos.
-                </video>
-              </div>
+                />
+              </Card>
             </div>
 
           </div>
