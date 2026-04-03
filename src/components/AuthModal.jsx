@@ -3,6 +3,7 @@ import { auth, googleProvider } from '../config/firebase';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { STRIPE_PRICES, PIDA_CONFIG } from '../config/constants';
+import { Box, TextField, Button } from '@mui/material'; // Nuevas importaciones de MUI
 
 const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3kjrZGFGln3bhwEQKnpoNXf2MnLXGHylM1OQ6SvWJmNVCNqhCxg6x000l605E1B');
 
@@ -238,24 +239,27 @@ function AuthFormContent({ onClose, initialMode }) {
 
       <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
         
+        {/* Campos de Nombre convertidos a MUI */}
         {mode === 'register' && (
-          <div className="form-group-row">
-            <input type="text" className="form-input no-margin" placeholder="Nombre" required value={firstName} onChange={e => setFirstName(e.target.value)} />
-            <input type="text" className="form-input no-margin" placeholder="Apellido" required value={lastName} onChange={e => setLastName(e.target.value)} />
-          </div>
+          <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+            <TextField label="Nombre" variant="outlined" size="small" fullWidth required value={firstName} onChange={e => setFirstName(e.target.value)} sx={{ bgcolor: '#FAFAFA' }} />
+            <TextField label="Apellido" variant="outlined" size="small" fullWidth required value={lastName} onChange={e => setLastName(e.target.value)} sx={{ bgcolor: '#FAFAFA' }} />
+          </Box>
         )}
 
-        <input type="email" className="form-input" placeholder="Correo electrónico" required value={email} onChange={e => setEmail(e.target.value)} />
+        {/* Campo de Correo convertido a MUI */}
+        <TextField type="email" label="Correo electrónico" variant="outlined" size="small" fullWidth required value={email} onChange={e => setEmail(e.target.value)} sx={{ bgcolor: '#FAFAFA', mb: 2 }} />
         
+        {/* Campo de Contraseña convertido a MUI */}
         {mode !== 'reset' && (
-          <div style={{ position: 'relative' }}>
-            <input type="password" className="form-input" placeholder="Contraseña" required value={password} onChange={e => setPassword(e.target.value)} />
+          <Box sx={{ position: 'relative', mb: 2 }}>
+            <TextField type="password" label="Contraseña" variant="outlined" size="small" fullWidth required value={password} onChange={e => setPassword(e.target.value)} sx={{ bgcolor: '#FAFAFA' }} />
             {mode === 'login' && (
-              <div style={{ textAlign: 'right', marginTop: '-5px', marginBottom: '20px' }}>
+              <div style={{ textAlign: 'right', marginTop: '8px', marginBottom: '8px' }}>
                 <span onClick={() => { setMode('reset'); setError(''); }} style={{ fontSize: '0.85rem', color: 'var(--pida-accent)', cursor: 'pointer', fontWeight: '500' }}>¿Olvidaste tu contraseña?</span>
               </div>
             )}
-          </div>
+          </Box>
         )}
 
         {mode === 'register' && (
@@ -267,7 +271,8 @@ function AuthFormContent({ onClose, initialMode }) {
                 {['basico', 'avanzado', 'premium'].map((p) => (
                   <button key={p} type="button" onClick={() => { setPlan(p); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} style={{
                     padding: '10px 2px', borderRadius: '8px', border: `2px solid ${plan === p ? 'var(--pida-primary)' : '#E2E8F0'}`,
-                    background: plan === p ? '#F0F7FF' : 'white', cursor: 'pointer', transition: '0.2s', fontWeight: plan === p ? '800' : '500',
+                    background: plan === p ? '#F0F7FF' : 'white', cursor: 'pointer', transition: '0.2s', 
+                    fontWeight: '600', // <- GROSOR FIJO PARA EVITAR EL SALTO DE DISEÑO
                     color: plan === p ? 'var(--pida-primary)' : '#64748B', fontSize: '0.8rem', textTransform: 'capitalize', textAlign: 'center'
                   }}>
                     {p === 'basico' ? 'Básico' : p}
@@ -279,12 +284,16 @@ function AuthFormContent({ onClose, initialMode }) {
               <div style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
                 <button type="button" onClick={() => { setInterval('monthly'); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} style={{
                   flex: 1, padding: '10px', borderRadius: '8px', border: `2px solid ${interval === 'monthly' ? 'var(--pida-primary)' : '#E2E8F0'}`,
-                  background: interval === 'monthly' ? '#F0F7FF' : 'white', cursor: 'pointer', fontWeight: interval === 'monthly' ? '700' : '500', color: interval === 'monthly' ? 'var(--pida-primary)' : '#64748B', fontSize: '0.85rem'
+                  background: interval === 'monthly' ? '#F0F7FF' : 'white', cursor: 'pointer', 
+                  fontWeight: '600', // <- GROSOR FIJO
+                  color: interval === 'monthly' ? 'var(--pida-primary)' : '#64748B', fontSize: '0.85rem'
                 }}>Mensual</button>
                 
                 <button type="button" onClick={() => { setInterval('annual'); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} style={{
                   flex: 1, padding: '10px', borderRadius: '8px', border: `2px solid ${interval === 'annual' ? 'var(--pida-primary)' : '#E2E8F0'}`,
-                  background: interval === 'annual' ? '#F0F7FF' : 'white', cursor: 'pointer', position: 'relative', fontWeight: interval === 'annual' ? '700' : '500', color: interval === 'annual' ? 'var(--pida-primary)' : '#64748B', fontSize: '0.85rem'
+                  background: interval === 'annual' ? '#F0F7FF' : 'white', cursor: 'pointer', position: 'relative', 
+                  fontWeight: '600', // <- GROSOR FIJO
+                  color: interval === 'annual' ? 'var(--pida-primary)' : '#64748B', fontSize: '0.85rem'
                 }}>
                   Anual
                   <span style={{ 
@@ -315,36 +324,30 @@ function AuthFormContent({ onClose, initialMode }) {
               <CardElement options={cardStyle} />
             </div>
 
+            {/* Campo del Código de Descuento convertido a MUI */}
             <div className="promo-group" style={{ display: 'flex', flexDirection: 'row', gap: '8px', marginBottom: '10px', alignItems: 'stretch' }}>
-              <input 
-                type="text" 
-                className="form-input" 
-                style={{ flex: 1, padding: '10px 12px', fontSize: '0.85rem', textTransform: 'uppercase', margin: 0, minWidth: '0' }} 
-                placeholder="CÓDIGO DE DESCUENTO" 
+              <TextField 
+                label="Código de descuento"
+                variant="outlined"
+                size="small"
                 value={promoCode} 
                 onChange={e => setPromoCode(e.target.value)} 
-                disabled={!!discountData || isLoading} 
+                disabled={!!discountData || isLoading}
+                sx={{ flex: 1, bgcolor: '#FAFAFA', '& input': { textTransform: 'uppercase' } }}
               />
-              <button 
+              <Button 
                 type="button" 
-                style={{ 
-                  padding: '0 15px', 
-                  fontSize: '0.85rem', 
-                  fontWeight: '600', 
-                  width: 'auto', 
-                  margin: 0, 
-                  whiteSpace: 'nowrap', 
-                  background: 'transparent', 
-                  border: '1px solid #CBD5E1', 
-                  borderRadius: '6px', 
-                  color: 'var(--pida-text-muted)', 
-                  cursor: 'pointer' 
-                }} 
+                variant="outlined"
                 onClick={handleApplyPromo} 
                 disabled={!!discountData || !promoCode || isLoading}
+                sx={{ 
+                  textTransform: 'none', fontWeight: 600, px: 2, 
+                  borderColor: '#CBD5E1', color: 'var(--pida-text-muted)',
+                  '&:hover': { borderColor: 'var(--pida-primary)', backgroundColor: 'transparent' }
+                }}
               >
                 {discountData ? '✓ Aplicado' : 'Aplicar'}
-              </button>
+              </Button>
             </div>
             {promoMessage.text && <div style={{ fontSize: '0.8rem', color: promoMessage.type === 'error' ? '#EF4444' : '#10B981', marginBottom: '15px' }}>{promoMessage.text}</div>}
 
