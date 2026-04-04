@@ -161,9 +161,9 @@ export default function LandingPage({ onOpenAuth }) {
   const muiGhostBtnStyle = {
     backgroundColor: 'white',
     color: 'var(--navy)',
-    border: '1px solid var(--navy)',
+    border: '2px solid var(--navy)',
     textTransform: 'none',
-    fontWeight: 600,
+    fontWeight: 800,
     fontSize: '0.95rem',
     borderRadius: '8px',
     padding: '5px 21px', // <-- Menos grueso (5px porque el borde sólido añade 1px extra)
@@ -193,7 +193,7 @@ export default function LandingPage({ onOpenAuth }) {
         <div className="wrapper nav-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           
           <a href="/" style={{ display: 'flex', alignItems: 'center', flexShrink: 0, zIndex: 1001 }}>
-            <img src="/img/PIDA_logo-576.png" alt="Logo PIDA" style={{ height: '65px', width: 'auto', flexShrink: 0 }} />
+            <img src="/img/PIDA_logo-100.webp" alt="Logo PIDA" style={{ height: '100px', width: 'auto', flexShrink: 0 }} />
           </a>
 
           <button 
@@ -220,17 +220,17 @@ export default function LandingPage({ onOpenAuth }) {
             </svg>
           </button>
 
-          <div className={`nav-right-container ${isMenuOpen ? 'open' : ''}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+          <div className={`nav-right-container ${isMenuOpen ? 'open' : ''}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '22px' }}>
             
-            <div className="social-links-row" style={{ display: 'flex', gap: '15px', paddingRight: '8px', alignItems: 'center' }}>
+            <div className="social-links-row" style={{ display: 'flex', gap: '24px', paddingRight: '8px', alignItems: 'center' }}>
               <a href="https://www.facebook.com/ia.pida" target="_blank" rel="noreferrer" aria-label="Facebook PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s', display: 'flex' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pidared)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
-                <FacebookIcon sx={{ fontSize: 26 }} />
+                <FacebookIcon sx={{ fontSize: 36 }} />
               </a>
               <a href="https://www.instagram.com/pida.ia" target="_blank" rel="noreferrer" aria-label="Instagram PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s', display: 'flex' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pidared)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
-                <InstagramIcon sx={{ fontSize: 26 }} />
+                <InstagramIcon sx={{ fontSize: 36 }} />
               </a>
               <a href="https://www.tiktok.com/@pida.solucion" target="_blank" rel="noreferrer" aria-label="TikTok PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s', display: 'flex' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pidared)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
-                <SvgIcon sx={{ fontSize: 26 }}>
+                <SvgIcon sx={{ fontSize: 36 }}>
                   <path d="M19.589 6.686a4.793 4.793 0 0 1-3.976-4.686h-3.868v11.52a4.11 4.11 0 1 1-4.11-4.111c.287 0 .565.031.834.084v-3.9a7.978 7.978 0 1 0 7.142 7.927V9.752a8.683 8.683 0 0 0 3.978 1.054V6.686z"/>
                 </SvgIcon>
               </a>
@@ -375,14 +375,9 @@ export default function LandingPage({ onOpenAuth }) {
                   onClick={() => document.getElementById('planes').scrollIntoView({ behavior: 'smooth' })}
                   sx={muiPrimaryBtnStyle}
                 >
-                  Ver Planes
+                  Suscríbete
                 </Button>
-                <Button 
-                  onClick={() => onOpenAuth('login')}
-                  sx={muiGhostBtnStyle}
-                >
-                  Login PIDA
-                </Button>
+                
               </div>
             </div>
             
@@ -443,7 +438,7 @@ export default function LandingPage({ onOpenAuth }) {
                   ref={videoRef}
                   controls={hasStarted} // Los controles nativos asumen el mando total después del primer clic
                   preload="metadata"
-                  poster="/img/PIDA-MASCOTA-576-trans.png" 
+                  poster="/img/PIDA-MASCOTA-500-trans.webp" 
                   src="https://storage.googleapis.com/img-pida/PIDA.mp4"
                   sx={{
                     display: 'block',
