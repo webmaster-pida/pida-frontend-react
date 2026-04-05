@@ -64,12 +64,28 @@ export default function LandingPage({ onOpenAuth }) {
     detectLocation();
   }, []);
 
+  // --- NUEVA FUNCIÓN DE SCROLL DINÁMICO ---
+  const scrollToSection = (targetId) => {
+    const element = document.getElementById(targetId);
+    if (element) {
+      const navbar = document.getElementById('navbar');
+      // Calcula la altura del nav dinámicamente y suma 15px de margen visual
+      const headerOffset = navbar ? navbar.offsetHeight + 15 : 100;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.scrollY - headerOffset;
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   useEffect(() => {
     if (window.location.hash) {
       const targetId = window.location.hash.substring(1);
       setTimeout(() => {
-        const element = document.getElementById(targetId);
-        if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        scrollToSection(targetId);
       }, 300);
     }
   }, []);
@@ -134,8 +150,7 @@ export default function LandingPage({ onOpenAuth }) {
   const handleNavClick = (targetId) => {
     setIsMenuOpen(false);
     setTimeout(() => {
-      const element = document.getElementById(targetId);
-      if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollToSection(targetId);
     }, 100);
   };
 
@@ -375,7 +390,7 @@ export default function LandingPage({ onOpenAuth }) {
               
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
                 <Button 
-                  onClick={() => document.getElementById('planes').scrollIntoView({ behavior: 'smooth' })}
+                  onClick={() => scrollToSection('planes')}
                   sx={muiPrimaryBtnStyle}
                 >
                   Suscríbete
