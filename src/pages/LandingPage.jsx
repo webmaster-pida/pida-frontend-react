@@ -19,12 +19,12 @@ export default function LandingPage({ onOpenAuth }) {
 
   // ESTADOS Y REF PARA EL VIDEO
   const videoRef = useRef(null);
-  const [hasStarted, setHasStarted] = useState(false); // <--- Control definitivo
+  const [hasStarted, setHasStarted] = useState(false); 
 
   const handlePlayVideo = () => {
     if (videoRef.current) {
       videoRef.current.play();
-      setHasStarted(true); // Una vez que inicia, no vuelve a mostrar el botón gigante
+      setHasStarted(true); 
     }
   };
 
@@ -64,12 +64,11 @@ export default function LandingPage({ onOpenAuth }) {
     detectLocation();
   }, []);
 
-  // --- NUEVA FUNCIÓN DE SCROLL DINÁMICO ---
+  // --- NUEVA FUNCIÓN PARA NAVEGAR EVITANDO QUE LA BARRA TAPE EL TÍTULO ---
   const scrollToSection = (targetId) => {
     const element = document.getElementById(targetId);
     if (element) {
       const navbar = document.getElementById('navbar');
-      // Calcula la altura del nav dinámicamente y suma 15px de margen visual
       const headerOffset = navbar ? navbar.offsetHeight + 15 : 100;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.scrollY - headerOffset;
@@ -97,7 +96,6 @@ export default function LandingPage({ onOpenAuth }) {
     return () => window.clearInterval(timer);
   }, []);
 
-  // Bloquear el scroll del cuerpo si el menú móvil está abierto
   useEffect(() => {
     if (isMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -107,7 +105,6 @@ export default function LandingPage({ onOpenAuth }) {
     return () => { document.body.style.overflow = 'unset'; };
   }, [isMenuOpen]);
 
-  // Funciones para manejar el menú de Newsletter de MUI
   const handleNewsletterClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -154,7 +151,6 @@ export default function LandingPage({ onOpenAuth }) {
     }, 100);
   };
 
-  // --- Estilos reutilizables de MUI para los botones ---
   const muiPrimaryBtnStyle = {
     backgroundColor: 'var(--navy)',
     color: 'var(--white)',
@@ -163,11 +159,11 @@ export default function LandingPage({ onOpenAuth }) {
     fontSize: '0.95rem',
     borderRadius: '8px',
     padding: '6px 22px', 
-    boxShadow: '0px 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14)',
+    boxShadow: '0px 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14)', 
     fontFamily: 'var(--font-body)',
     transition: 'background-color 250ms ease, box-shadow 250ms ease',
     '&:hover': {
-      backgroundColor: '#122238',
+      backgroundColor: '#122238', 
       boxShadow: '0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14)',
     }
   };
@@ -273,7 +269,7 @@ export default function LandingPage({ onOpenAuth }) {
                     fontSize: '0.9rem',
                     fontWeight: 500,
                     color: '#64748B',
-                    '&:hover': { backgroundColor: 'transparent', color: 'var(--navy)' }
+                    '&:hover': { backgroundColor: 'transparent' }
                   }}
                 >
                   Newsletter <span style={{ fontSize: '0.7em', marginLeft: '5px' }}>▼</span>
@@ -318,6 +314,7 @@ export default function LandingPage({ onOpenAuth }) {
           </div>
         </div>
 
+        {/* ESTILOS EN LÍNEA CORREGIDOS SOLO PARA EL MENÚ MÓVIL */}
         <style>
           {`
             @media (max-width: 1024px) {
@@ -421,9 +418,9 @@ export default function LandingPage({ onOpenAuth }) {
                       position: 'absolute',
                       top: 0, left: 0, right: 0, bottom: 0,
                       display: 'flex',
-                      alignItems: 'flex-end', // Mueve el contenido hacia abajo
-                      justifyContent: 'flex-end', // Mueve el contenido hacia la derecha
-                      p: 2.5, // Agrega un poco de margen para que no toque los bordes
+                      alignItems: 'flex-end',
+                      justifyContent: 'flex-end', 
+                      p: 2.5,
                       backgroundColor: 'transparent', 
                       zIndex: 2,
                       cursor: 'pointer',
@@ -441,11 +438,10 @@ export default function LandingPage({ onOpenAuth }) {
                       sx={{ 
                         color: 'var(--pida-primary)', 
                         backgroundColor: 'rgba(255, 255, 255, 0.8)', 
-                        boxShadow: '0 4px 15px rgba(0,0,0,0.2)', // Agrega una sombra elegante
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
                         transition: 'all 0.3s ease',
                       }}
                     >
-                      {/* Tamaño reducido a 3rem */}
                       <PlayCircleIcon sx={{ fontSize: '3rem' }} />
                     </IconButton>
                   </Box>
@@ -454,7 +450,7 @@ export default function LandingPage({ onOpenAuth }) {
                 <CardMedia
                   component="video"
                   ref={videoRef}
-                  controls={hasStarted} // Los controles nativos asumen el mando total después del primer clic
+                  controls={hasStarted} 
                   preload="metadata"
                   poster="/img/PIDA-MASCOTA-500-trans.webp" 
                   src="https://storage.googleapis.com/img-pida/PIDA.mp4"
@@ -560,7 +556,7 @@ export default function LandingPage({ onOpenAuth }) {
               <h2>Planes Flexibles</h2>
               <p style={{ marginBottom: '10px' }}>Selecciona el plan que mejor se adapte a tu nivel de investigación.</p>
               <p style={{ color: '#0284C7', fontWeight: 700, fontSize: '1.1rem', marginBottom: '20px' }}>
-                Todos los planes incluyen 5 días de prueba sin costo
+                Todos los planes incluyen 5 días de prueba ¡Gratis!
               </p>
             </div>
 
