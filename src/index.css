@@ -821,3 +821,50 @@ textarea.form-input { resize: vertical; }
     border-left-color: var(--pidared);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(185, 47, 50, 0.2);
 }
+
+/* =========================================
+   ACTUALIZACIÓN A AZUL VIVO EN TEXTOS DESTACADOS
+   ========================================= */
+
+/* Títulos generales (h1, h2, h3, h4) */
+h1, h2, h3, h4 { 
+    color: var(--pida-accent); 
+}
+
+/* El degradado del texto principal del Hero */
+.text-gradient { 
+    background: linear-gradient(135deg, var(--pida-accent) 0%, #b92f32 100%); 
+    -webkit-background-clip: text; 
+    background-clip: text; 
+    -webkit-text-fill-color: transparent; 
+    color: transparent; 
+}
+
+/* Títulos de las tarjetas (Bondades) */
+.bento-title { 
+    color: var(--pida-accent); 
+}
+
+/* El precio de los planes */
+.price-val { 
+    color: var(--pida-accent) !important; 
+}
+
+/* Testimonios: Texto y las comillas de fondo */
+.testimonial-text { 
+    color: var(--pida-accent); 
+}
+.quote-icon { 
+    color: var(--pida-accent); 
+    opacity: 0.15; /* Subimos un poco la opacidad para que resalte el nuevo azul */
+}
+
+/* Títulos en modales (como el de Contacto Corporativo) */
+.modal-title { 
+    color: var(--pida-accent); 
+}
+
+/* Etiquetas y pequeñas insignias */
+.badge-pill, .label { 
+    color: var(--pida-accent); 
+}

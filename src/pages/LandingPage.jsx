@@ -152,7 +152,7 @@ export default function LandingPage({ onOpenAuth }) {
   };
 
   const muiPrimaryBtnStyle = {
-    backgroundColor: 'var(--navy)',
+    backgroundColor: 'var(--pida-accent)', // Azul más vivo y corporativo
     color: 'var(--white)',
     textTransform: 'none',
     fontWeight: 600,
@@ -161,10 +161,11 @@ export default function LandingPage({ onOpenAuth }) {
     padding: '6px 22px', 
     boxShadow: '0px 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14)', 
     fontFamily: 'var(--font-body)',
-    transition: 'background-color 250ms ease, box-shadow 250ms ease',
+    transition: 'background-color 250ms ease, box-shadow 250ms ease, color 250ms ease',
     '&:hover': {
-      backgroundColor: '#122238', 
-      boxShadow: '0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14)',
+      backgroundColor: '#38BDF8', // Nuevo color al pasar el cursor
+      color: '#ffffff',
+      boxShadow: '0px 4px 12px rgba(56, 189, 248, 0.35)', // Resplandor acorde al nuevo color
     }
   };
 
@@ -319,9 +320,9 @@ export default function LandingPage({ onOpenAuth }) {
                     }
                   }}
                 >
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-001.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Enero 2026</MenuItem>
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-002.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Febrero 2026</MenuItem>
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-003.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Marzo 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-001.pdf" target="_blank" rel="noreferrer" sx={{ color: 'var(--pida-accent)', fontSize: '0.95rem', py: 1.5 }}>📄 Enero 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-002.pdf" target="_blank" rel="noreferrer" sx={{ color: 'var(--pida-accent)', fontSize: '0.95rem', py: 1.5 }}>📄 Febrero 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-003.pdf" target="_blank" rel="noreferrer" sx={{ color: 'var(--pida-accent)', fontSize: '0.95rem', py: 1.5 }}>📄 Marzo 2026</MenuItem>
                 </Menu>
               </div>
 
@@ -382,7 +383,7 @@ export default function LandingPage({ onOpenAuth }) {
               .nav-right-container .nav-link {
                 font-size: 1.1rem !important;
                 font-weight: 600 !important;
-                color: var(--pida-primary) !important;
+                color: var(--pida-accent) !important; /* <--- Cambiado aquí */
                 width: 100%;
                 padding: 5px 0;
                 border-bottom: 1px solid #f1f5f9;
@@ -692,7 +693,7 @@ export default function LandingPage({ onOpenAuth }) {
 
         <section id="info-corporativa" style={{ marginTop: '60px', padding: '60px 20px', background: '#F8FAFC', borderRadius: '16px', border: '1px solid var(--pida-border)', textAlign: 'center' }}>
             <div className="wrapper" style={{ maxWidth: '900px', margin: '0 auto' }}>
-                <h3 style={{ color: 'var(--pida-primary)', fontSize: '2rem', marginBottom: '20px' }}>¿Necesitas PIDA para tu Organización o Institución?</h3>
+                <h3 style={{ color: 'var(--pida-accent)', fontSize: '2rem', marginBottom: '20px' }}>¿Necesitas PIDA para tu Organización o Institución?</h3>
                 <p style={{ color: 'var(--pida-text-muted)', fontSize: '1.15rem', lineHeight: '1.7', marginBottom: '35px' }}>
                     PIDA está diseñado para escalar con las necesidades de grandes equipos de litigio que requieren de mucha investigación y redacción. Si representas a una firma legal, una organización de defensa de derechos humanos, una fiscalía o formas parte de cualquier órgano de gobierno o bien, perteneces a una institución académica, ofrecemos esquemas de licenciamiento por volumen. 
                     <br /><br />
@@ -752,10 +753,10 @@ export default function LandingPage({ onOpenAuth }) {
 
         <div className="wrapper">                  
             <div className="copyright">
-                <span>&copy; 2025 IIRESODH PAYMENTS, LLC.</span>
-                <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Términos de uso</a>
-                <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Política de privacidad</a>
-                <a href="mailto:contacto@pida-ai.com" style={{ color: 'var(--navy)', textDecoration: 'none' }}>contacto@pida-ai.com</a>
+                <span>&copy; 2026 IIRESODH PAYMENTS, LLC.</span>
+                <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-accent)', textDecoration: 'none', fontWeight: '500' }}>Términos de uso</a>
+                <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-accent)', textDecoration: 'none', fontWeight: '500' }}>Política de privacidad</a>
+                <a href="mailto:contacto@pida-ai.com" style={{ color: 'var(--pida-accent)', textDecoration: 'none', fontWeight: '500' }}>contacto@pida-ai.com</a>
             </div>
             <br />&nbsp;
         </div>
