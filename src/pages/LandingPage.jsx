@@ -64,20 +64,25 @@ export default function LandingPage({ onOpenAuth }) {
     detectLocation();
   }, []);
 
-  // --- NUEVA FUNCIÓN PARA NAVEGAR EVITANDO QUE LA BARRA TAPE EL TÍTULO ---
+  // --- FUNCIÓN OPTIMIZADA PARA EVITAR FORCED REFLOW ---
   const scrollToSection = (targetId) => {
-    const element = document.getElementById(targetId);
-    if (element) {
-      const navbar = document.getElementById('navbar');
-      const headerOffset = navbar ? navbar.offsetHeight + 15 : 100;
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.scrollY - headerOffset;
-      
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-    }
+    // Usamos requestAnimationFrame para sincronizarnos con el motor de dibujado del navegador
+    window.requestAnimationFrame(() => {
+      const element = document.getElementById(targetId);
+      if (element) {
+        // En lugar de forzar al navegador a medir el navbar (offsetHeight), 
+        // usamos un valor fijo estimado (100px) que es lo que mide tu header.
+        const headerOffset = 100; 
+        
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.scrollY - headerOffset;
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
+    });
   };
 
   useEffect(() => {
@@ -199,18 +204,18 @@ export default function LandingPage({ onOpenAuth }) {
 
   const muiGhostBtnStyle = {
     backgroundColor: 'white',
-    color: 'var(--navy)',
-    border: '2px solid var(--navy)',
+    color: 'var(--pida-accent)', // Texto en azul vibrante
+    border: '2px solid var(--pida-accent)', // Borde en azul vibrante
     textTransform: 'none',
     fontWeight: 800,
     fontSize: '0.95rem',
     borderRadius: '8px',
     padding: '5px 21px', 
     fontFamily: 'var(--font-body)',
-    transition: 'background-color 250ms ease',
+    transition: 'all 250ms ease',
     '&:hover': {
-      backgroundColor: 'rgba(29, 53, 87, 0.08)',
-      borderColor: 'var(--navy)',
+      backgroundColor: 'var(--pida-accent)', // Se rellena del color vibrante al pasar el mouse
+      color: 'white', // El texto pasa a blanco para contrastar
     }
   }
 
@@ -262,13 +267,13 @@ export default function LandingPage({ onOpenAuth }) {
           <div className={`nav-right-container ${isMenuOpen ? 'open' : ''}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '22px' }}>
             
             <div className="social-links-row" style={{ display: 'flex', gap: '24px', paddingRight: '8px', alignItems: 'center' }}>
-              <a href="https://www.facebook.com/ia.pida" target="_blank" rel="noreferrer" aria-label="Facebook PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s', display: 'flex' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pidared)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
+              <a href="https://www.facebook.com/ia.pida" target="_blank" rel="noreferrer" aria-label="Facebook PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s', display: 'flex' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pida-accent)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
                 <FacebookIcon sx={{ fontSize: 36 }} />
               </a>
-              <a href="https://www.instagram.com/pida.ia" target="_blank" rel="noreferrer" aria-label="Instagram PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s', display: 'flex' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pidared)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
+              <a href="https://www.instagram.com/pida.ia" target="_blank" rel="noreferrer" aria-label="Instagram PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s', display: 'flex' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pida-accent)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
                 <InstagramIcon sx={{ fontSize: 36 }} />
               </a>
-              <a href="https://www.tiktok.com/@pida.solucion" target="_blank" rel="noreferrer" aria-label="TikTok PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s', display: 'flex' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pidared)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
+              <a href="https://www.tiktok.com/@pida.solucion" target="_blank" rel="noreferrer" aria-label="TikTok PIDA" style={{ color: 'var(--pida-primary)', transition: 'color 0.2s', display: 'flex' }} onMouseOver={e => e.currentTarget.style.color = 'var(--pida-accent)'} onMouseOut={e => e.currentTarget.style.color = 'var(--pida-primary)'}>
                 <SvgIcon sx={{ fontSize: 36 }}>
                   <path d="M19.589 6.686a4.793 4.793 0 0 1-3.976-4.686h-3.868v11.52a4.11 4.11 0 1 1-4.11-4.111c.287 0 .565.031.834.084v-3.9a7.978 7.978 0 1 0 7.142 7.927V9.752a8.683 8.683 0 0 0 3.978 1.054V6.686z"/>
                 </SvgIcon>
@@ -320,9 +325,9 @@ export default function LandingPage({ onOpenAuth }) {
                     }
                   }}
                 >
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-001.pdf" target="_blank" rel="noreferrer" sx={{ color: 'var(--pida-accent)', fontSize: '0.95rem', py: 1.5 }}>📄 Enero 2026</MenuItem>
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-002.pdf" target="_blank" rel="noreferrer" sx={{ color: 'var(--pida-accent)', fontSize: '0.95rem', py: 1.5 }}>📄 Febrero 2026</MenuItem>
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-003.pdf" target="_blank" rel="noreferrer" sx={{ color: 'var(--pida-accent)', fontSize: '0.95rem', py: 1.5 }}>📄 Marzo 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-001.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Enero 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-002.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Febrero 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-003.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Marzo 2026</MenuItem>
                 </Menu>
               </div>
 
@@ -383,7 +388,7 @@ export default function LandingPage({ onOpenAuth }) {
               .nav-right-container .nav-link {
                 font-size: 1.1rem !important;
                 font-weight: 600 !important;
-                color: var(--pida-accent) !important; /* <--- Cambiado aquí */
+                color: var(--pida-primary) !important; /* <--- De vuelta al original */
                 width: 100%;
                 padding: 5px 0;
                 border-bottom: 1px solid #f1f5f9;
@@ -693,7 +698,7 @@ export default function LandingPage({ onOpenAuth }) {
 
         <section id="info-corporativa" style={{ marginTop: '60px', padding: '60px 20px', background: '#F8FAFC', borderRadius: '16px', border: '1px solid var(--pida-border)', textAlign: 'center' }}>
             <div className="wrapper" style={{ maxWidth: '900px', margin: '0 auto' }}>
-                <h3 style={{ color: 'var(--pida-accent)', fontSize: '2rem', marginBottom: '20px' }}>¿Necesitas PIDA para tu Organización o Institución?</h3>
+                <h3 style={{ color: 'var(--pida-primary)', fontSize: '2rem', marginBottom: '20px' }}>¿Necesitas PIDA para tu Organización o Institución?</h3>
                 <p style={{ color: 'var(--pida-text-muted)', fontSize: '1.15rem', lineHeight: '1.7', marginBottom: '35px' }}>
                     PIDA está diseñado para escalar con las necesidades de grandes equipos de litigio que requieren de mucha investigación y redacción. Si representas a una firma legal, una organización de defensa de derechos humanos, una fiscalía o formas parte de cualquier órgano de gobierno o bien, perteneces a una institución académica, ofrecemos esquemas de licenciamiento por volumen. 
                     <br /><br />
@@ -754,9 +759,9 @@ export default function LandingPage({ onOpenAuth }) {
         <div className="wrapper">                  
             <div className="copyright">
                 <span>&copy; 2026 IIRESODH PAYMENTS, LLC.</span>
-                <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-accent)', textDecoration: 'none', fontWeight: '500' }}>Términos de uso</a>
-                <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-accent)', textDecoration: 'none', fontWeight: '500' }}>Política de privacidad</a>
-                <a href="mailto:contacto@pida-ai.com" style={{ color: 'var(--pida-accent)', textDecoration: 'none', fontWeight: '500' }}>contacto@pida-ai.com</a>
+                <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Términos de uso</a>
+                <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Política de privacidad</a>
+                <a href="mailto:contacto@pida-ai.com" style={{ color: 'var(--navy)', textDecoration: 'none' }}>contacto@pida-ai.com</a>
             </div>
             <br />&nbsp;
         </div>
