@@ -305,9 +305,11 @@ export default function LandingPage({ onOpenAuth }) {
 
         <style>
           {`
-            @media (max-width: 850px) {
+            @media (max-width: 1024px) {
               .header-logo {
                 height: 60px !important;
+                max-width: 220px;
+                object-fit: contain;
               }
               .mobile-menu-toggle {
                 display: block !important;
