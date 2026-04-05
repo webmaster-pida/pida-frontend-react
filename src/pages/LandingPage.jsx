@@ -595,6 +595,7 @@ export default function LandingPage({ onOpenAuth }) {
                       <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
                     </div>
                     <ul className="plan-features">
+                      <li>✅ ¡5 días de prueba Gratis!</li>
                       <li>✅ Newsletter mensual</li>
                       <li>✅ 5 consultas diarias</li>
                       <li>✅ 3 análisis de documentos</li>
@@ -619,6 +620,7 @@ export default function LandingPage({ onOpenAuth }) {
                       <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
                     </div>
                     <ul className="plan-features">
+                      <li>✅ ¡5 días de prueba Gratis!</li>
                       <li>✅ Newsletter mensual</li>
                       <li>✅ 20 consultas diarias</li>
                       <li>✅ 15 análisis de documentos</li>
@@ -643,6 +645,7 @@ export default function LandingPage({ onOpenAuth }) {
                       <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
                     </div>
                     <ul className="plan-features">
+                      <li>✅ ¡5 días de prueba Gratis!</li>
                       <li>✅ Newsletter mensual</li>
                       <li>✅ 100 consultas diarias</li>
                       <li>✅ 25 análisis de documentos</li>
