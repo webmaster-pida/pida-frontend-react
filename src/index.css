@@ -787,7 +787,7 @@ textarea.form-input { resize: vertical; }
     background-color: #0a0a1a; 
     
     /* AQUÍ PONES LA RUTA A LA IMAGEN QUE DESCARGASTE */
-    background-image: url('/img/iStock-1425809737.jpg');
+    background-image: url('/img/iStock-1425809737.webp');
     
     /* Ajustes para que la imagen se vea perfecta como fondo */
     background-size: cover;
