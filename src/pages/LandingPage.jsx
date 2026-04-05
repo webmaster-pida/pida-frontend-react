@@ -168,6 +168,34 @@ export default function LandingPage({ onOpenAuth }) {
     }
   };
 
+  const muiCardBaseStyle = {
+    padding: '35px',
+    borderRadius: '20px',
+    border: '1px solid #e2e8f0',
+    display: 'flex',
+    flexDirection: 'column',
+    textAlign: 'left',
+    overflow: 'visible', // Fundamental para que el badge "Más Popular" no se corte
+    backgroundColor: '#ffffff',
+    transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    '&:hover': {
+      transform: 'translateY(-8px)',
+      boxShadow: '0 22px 45px rgba(29, 53, 87, 0.12)', // Sombra elegante al levantar
+    }
+  };
+
+  const muiFeaturedCardStyle = {
+    ...muiCardBaseStyle,
+    border: '2.5px solid var(--pida-primary)',
+    boxShadow: '0 15px 30px rgba(29, 53, 87, 0.08)',
+    position: 'relative',
+    transform: { xs: 'none', md: 'scale(1.04)' }, // Ligeramente más grande en PC
+    '&:hover': {
+      transform: { xs: 'translateY(-8px)', md: 'scale(1.04) translateY(-8px)' },
+      boxShadow: '0 25px 50px rgba(29, 53, 87, 0.18)', // Sombra más pronunciada
+    }
+  };
+
   const muiGhostBtnStyle = {
     backgroundColor: 'white',
     color: 'var(--navy)',
@@ -498,52 +526,53 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
-        <section id="ecosistema" style={{ backgroundColor: '#FFFFFF', padding: '40px 0' }}>
-            <div className="wrapper">
+        <section id="ecosistema" className="bg-ai-mesh" style={{ padding: '80px 0' }}>
+            <div className="wrapper" style={{ position: 'relative', zIndex: 1 }}>
                 <div className="section-intro" style={{ marginBottom: '60px' }}>
-                    <h2 style={{ color: 'var(--navy)', fontSize: '2.5rem', marginBottom: '15px' }}>El Ecosistema PIDA</h2>
-                    <p style={{ fontSize: '1.2rem', color: '#4B5563', maxWidth: '800px', margin: '0 auto' }}>
+                    <h2 style={{ color: '#FFFFFF', fontSize: '2.8rem', marginBottom: '15px' }}>El Ecosistema PIDA</h2>
+                    <p style={{ fontSize: '1.2rem', color: '#CBD5E1', maxWidth: '800px', margin: '0 auto' }}>
                         PIDA integra tres motores especializados que trabajan en conjunto para cubrir el ciclo completo de la defensa legal: investigación, análisis documental y diagnóstico de casos.
                     </p>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '50px', maxWidth: '900px', margin: '0 auto' }}>
-                    <div style={{ borderLeft: '4px solid #0284C7', paddingLeft: '30px' }}>
-                        <h3 style={{ color: 'var(--navy)', fontSize: '1.5rem', marginBottom: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '30px', maxWidth: '900px', margin: '0 auto' }}>
+                    
+                    <div className="glass-card">
+                        <h3 style={{ color: '#FFFFFF', fontSize: '1.5rem', marginBottom: '10px' }}>
                             1. Experto en Derechos Humanos
-                            <span style={{ display: 'block', fontSize: '1rem', color: '#0284C7', fontWeight: '600', marginTop: '5px' }}>TU CONSULTOR FUNDAMENTADO</span>
+                            <span style={{ display: 'block', fontSize: '0.85rem', color: '#38BDF8', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU CONSULTOR FUNDAMENTADO</span>
                         </h3>
-                        <p style={{ fontSize: '1.05rem', color: '#374151', lineHeight: '1.7', marginBottom: '15px' }}>
-                            Este motor redefine la investigación jurídica. A diferencia de los chats genéricos que improvisan respuestas, PIDA actúa como un consultor senior conectado directamente a la <strong>biblioteca privada y curada del IIRESODH</strong>.
+                        <p style={{ fontSize: '1.05rem', color: '#E2E8F0', lineHeight: '1.7', marginBottom: '15px' }}>
+                            Este motor redefine la investigación jurídica. A diferencia de los chats genéricos que improvisan respuestas, PIDA actúa como un consultor senior conectado directamente a la <strong style={{ color: '#FFFFFF' }}>biblioteca privada y curada del IIRESODH</strong>.
                         </p>
-                        <p style={{ fontSize: '1rem', color: '#4B5563', lineHeight: '1.6' }}>
-                            <strong>Aplicación Práctica:</strong> Utilízalo para resolver dudas complejas sobre control de convencionalidad, buscar jurisprudencia específica de la Corte IDH o redactar argumentos sólidos para tus demandas. Cada respuesta está respaldada por una base de conocimiento autorizada, garantizando rigor técnico y reduciendo el riesgo de imprecisiones.
+                        <p style={{ fontSize: '1rem', color: '#94A3B8', lineHeight: '1.6' }}>
+                            <strong style={{ color: '#F8FAFC' }}>Aplicación Práctica:</strong> Utilízalo para resolver dudas complejas sobre control de convencionalidad, buscar jurisprudencia específica de la Corte IDH o redactar argumentos sólidos para tus demandas. Cada respuesta está respaldada por una base de conocimiento autorizada, garantizando rigor técnico y reduciendo el riesgo de imprecisiones.
                         </p>
                     </div>
 
-                    <div style={{ borderLeft: '4px solid #0284C7', paddingLeft: '30px' }}>
-                        <h3 style={{ color: 'var(--navy)', fontSize: '1.5rem', marginBottom: '10px' }}>
+                    <div className="glass-card">
+                        <h3 style={{ color: '#FFFFFF', fontSize: '1.5rem', marginBottom: '10px' }}>
                             2. Analizador de Documentos
-                            <span style={{ display: 'block', fontSize: '1rem', color: '#0284C7', fontWeight: '600', marginTop: '5px' }}>TU ESTRATEGA PROCESAL</span>
+                            <span style={{ display: 'block', fontSize: '0.85rem', color: '#38BDF8', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU ESTRATEGA PROCESAL</span>
                         </h3>
-                        <p style={{ fontSize: '1.05rem', color: '#374151', lineHeight: '1.7', marginBottom: '15px' }}>
+                        <p style={{ fontSize: '1.05rem', color: '#E2E8F0', lineHeight: '1.7', marginBottom: '15px' }}>
                             Capacidad de procesamiento masivo para el abogado moderno. Esta herramienta lee, comprende y procesa archivos voluminosos (PDF, Word) en segundos, actuando como un asistente analítico incansable.
                         </p>
-                        <p style={{ fontSize: '1rem', color: '#4B5563', lineHeight: '1.6' }}>
-                            <strong>Aplicación Práctica:</strong> Carga una sentencia extensa y pídele que encuentre contradicciones lógicas, extraiga los hechos probados para armar tu apelación o elabore una <strong>Teoría del Caso</strong> basada en las pruebas del expediente. Además, puedes instruirle para que redacte borradores de escritos legales (amparos, memorandos) utilizando estrictamente la información del documento subido.
+                        <p style={{ fontSize: '1rem', color: '#94A3B8', lineHeight: '1.6' }}>
+                            <strong style={{ color: '#F8FAFC' }}>Aplicación Práctica:</strong> Carga una sentencia extensa y pídele que encuentre contradicciones lógicas, extraiga los hechos probados para armar tu apelación o elabore una <strong style={{ color: '#FFFFFF' }}>Teoría del Caso</strong> basada en las pruebas del expediente. Además, puedes instruirle para que redacte borradores de escritos legales utilizando estrictamente la información del documento subido.
                         </p>
                     </div>
 
-                    <div style={{ borderLeft: '4px solid #0284C7', paddingLeft: '30px' }}>
-                        <h3 style={{ color: 'var(--navy)', fontSize: '1.5rem', marginBottom: '10px' }}>
+                    <div className="glass-card">
+                        <h3 style={{ color: '#FFFFFF', fontSize: '1.5rem', marginBottom: '10px' }}>
                             3. Precalificador de Conductas
-                            <span style={{ display: 'block', fontSize: '1rem', color: '#0284C7', fontWeight: '600', marginTop: '5px' }}>TU DIAGNÓSTICO INMEDIATO</span>
+                            <span style={{ display: 'block', fontSize: '0.85rem', color: '#38BDF8', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU DIAGNÓSTICO INMEDIATO</span>
                         </h3>
-                        <p style={{ fontSize: '1.05rem', color: '#374151', lineHeight: '1.7', marginBottom: '15px' }}>
+                        <p style={{ fontSize: '1.05rem', color: '#E2E8F0', lineHeight: '1.7', marginBottom: '15px' }}>
                             Una herramienta de encuadre jurídico diseñada para la etapa inicial de cualquier caso. Funciona como un puente inteligente entre los hechos fácticos y la tipificación legal.
                         </p>
-                        <p style={{ fontSize: '1rem', color: '#4B5563', lineHeight: '1.6' }}>
-                            <strong>Aplicación Práctica:</strong> Ideal para la primera entrevista con el cliente. Simplemente narra los hechos del caso y el sistema realizará un análisis preliminar instantáneo para identificar posibles <strong>delitos penales</strong> y <strong>violaciones a Derechos Humanos</strong> conforme a estándares internacionales. Esto te permite trazar una ruta de defensa clara desde el primer minuto.
+                        <p style={{ fontSize: '1rem', color: '#94A3B8', lineHeight: '1.6' }}>
+                            <strong style={{ color: '#F8FAFC' }}>Aplicación Práctica:</strong> Ideal para la primera entrevista con el cliente. Simplemente narra los hechos del caso y el sistema realizará un análisis preliminar instantáneo para identificar posibles <strong style={{ color: '#FFFFFF' }}>delitos penales</strong> y <strong style={{ color: '#FFFFFF' }}>violaciones a Derechos Humanos</strong> conforme a estándares internacionales. Esto te permite trazar una ruta de defensa clara desde el primer minuto.
                         </p>
                     </div>
                 </div>
@@ -584,7 +613,7 @@ export default function LandingPage({ onOpenAuth }) {
                 </div>
 
                 <div className="pricing-grid">
-                  <div className="pricing-card">
+                  <Card elevation={0} sx={muiCardBaseStyle}>
                     <h3>Básico</h3>
                     <div className="price-container">
                       <span className="price-val">{STRIPE_PRICES.basico[interval][currency].text}</span>
@@ -599,16 +628,15 @@ export default function LandingPage({ onOpenAuth }) {
                       <li>✅ 15 Mb por archivo</li>
                       <li>❌ Sin precalificador</li>
                     </ul>
-                    {/* BOTÓN TARJETA BÁSICA - Actualizado a MUI */}
                     <Button 
                       onClick={() => handleSelectPlan('basico')}
                       sx={{ ...muiPrimaryBtnStyle, width: '100%', mt: 'auto' }}
                     >
                       Elegir Básico
                     </Button>
-                  </div>
+                  </Card>
 
-                  <div className="pricing-card featured">
+                  <Card elevation={0} sx={muiFeaturedCardStyle}>
                     <div className="card-badge">Más Popular</div>
                     <h3>Avanzado</h3>
                     <div className="price-container">
@@ -625,16 +653,15 @@ export default function LandingPage({ onOpenAuth }) {
                       <li>✅ 20 precalificaciones diarias</li>
                       <li>✅ Descuentos en productos IIRESODH</li>
                     </ul>
-                    {/* BOTÓN TARJETA AVANZADA - Actualizado a MUI */}
                     <Button 
                       onClick={() => handleSelectPlan('avanzado')}
                       sx={{ ...muiPrimaryBtnStyle, width: '100%', mt: 'auto' }}
                     >
                       Elegir Avanzado
                     </Button>
-                  </div>
+                  </Card>
 
-                  <div className="pricing-card">
+                  <Card elevation={0} sx={muiCardBaseStyle}>
                     <h3>Premium</h3>
                     <div className="price-container">
                       <span className="price-val">{STRIPE_PRICES.premium[interval][currency].text}</span>
@@ -650,14 +677,13 @@ export default function LandingPage({ onOpenAuth }) {
                       <li>✅ 100 precalificaciones diarias</li>
                       <li>✅ Descuentos en productos IIRESODH</li>
                     </ul>
-                    {/* BOTÓN TARJETA PREMIUM - Actualizado a MUI */}
                     <Button 
                       onClick={() => handleSelectPlan('premium')}
                       sx={{ ...muiPrimaryBtnStyle, width: '100%', mt: 'auto' }}
                     >
                       Elegir Premium
                     </Button>
-                  </div>
+                  </Card>
                 </div>
               </>
             )}

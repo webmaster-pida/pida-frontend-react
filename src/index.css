@@ -525,8 +525,8 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 .stripe-error { color: #EF4444; font-size: 0.85rem; margin-top: 8px; font-weight: 500; display: none; }
 
 .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
-.pricing-card { background: white; padding: 35px; border-radius: 20px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; transition: transform 0.3s; text-align: left; }
-.pricing-card.featured { border: 2.5px solid var(--pida-primary); box-shadow: 0 15px 30px rgba(29, 53, 87, 0.1); position: relative; transform: scale(1.03); }
+/* .pricing-card { background: white; padding: 35px; border-radius: 20px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; transition: transform 0.3s; text-align: left; }
+.pricing-card.featured { border: 2.5px solid var(--pida-primary); box-shadow: 0 15px 30px rgba(29, 53, 87, 0.1); position: relative; transform: scale(1.03); } */
 .card-badge { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: var(--pida-primary); color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
 .price-val { font-size: 2rem; font-weight: 800; color: var(--pida-primary); }
 .price-period { color: #64748b; font-weight: 500; }
@@ -777,4 +777,47 @@ textarea.form-input { resize: vertical; }
 .not-found-actions {
   display: flex;
   justify-content: center;
+}
+
+/* =========================================
+   EFECTOS ECOSISTEMA (IA / DIGITAL) - IMAGEN 3D
+   ========================================= */
+.bg-ai-mesh {
+    /* Color oscuro de respaldo por si la imagen tarda en cargar */
+    background-color: #0a0a1a; 
+    
+    /* AQUÍ PONES LA RUTA A LA IMAGEN QUE DESCARGASTE */
+    background-image: url('/img/iStock-1425809737.jpg');
+    
+    /* Ajustes para que la imagen se vea perfecta como fondo */
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    position: relative;
+    
+    /* Nos aseguramos de que el contenido interno se posicione bien */
+    z-index: 1;
+}
+
+/* Tarjetas de Cristal con borde Rojo PIDA y esquina plana */
+.glass-card {
+    background: rgba(255, 255, 255, 0.05); /* Ligeramente más transparente para que luzca la imagen */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 4px solid var(--pidared);
+    border-radius: 0px 16px 16px 0px;
+    
+    padding: 35px;
+    position: relative;
+    z-index: 2; /* Para que quede por encima de la imagen y los resplandores */
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(255, 255, 255, 0.3);
+    border-left-color: var(--pidared);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(185, 47, 50, 0.2);
 }
