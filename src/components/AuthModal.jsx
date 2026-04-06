@@ -207,7 +207,7 @@ function AuthFormContent({ onClose, initialMode }) {
   return (
     <>
       <h2 className="modal-title">
-        {mode === 'login' && 'Bienvenido de nuevo'}
+        {mode === 'login' && ''}
         {mode === 'register' && ''} 
         {mode === 'reset' && 'Recuperar Contraseña'}
       </h2>
@@ -381,7 +381,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose }) {
     <div className="modal-backdrop" onClick={onClose} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px', width: '90%', padding: '30px', background: 'white', borderRadius: '16px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748B' }}>×</button>
-        <img src="/img/PIDA_logo-576.png" alt="PIDA Logo" style={{ width: '140px', marginBottom: '25px', display: 'block', margin: '0 auto' }} />
+        <img src="/img/PIDA_logo-100-cobalt-red.webp" alt="PIDA Logo" style={{ width: '140px', marginBottom: '25px', display: 'block', margin: '0 auto' }} />
         <Elements stripe={stripePromise}>
           <AuthFormContent onClose={onClose} initialMode={initialMode} />
         </Elements>
