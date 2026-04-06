@@ -13,7 +13,7 @@ const markdownComponents = {
   a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
   table: ({ node, ...props }) => (
     <TableContainer component={Paper} sx={{ my: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-      <Table size="small" {...props} />
+      <Table size="small" sx={{ width: '100%', tableLayout: 'auto' }} {...props} />
     </TableContainer>
   ),
   thead: ({ node, ...props }) => <TableHead sx={{ bgcolor: '#f1f5f9' }} {...props} />,
@@ -25,7 +25,8 @@ const markdownComponents = {
         fontWeight: 'bold', 
         color: 'var(--pida-primary)', 
         borderBottom: '2px solid #cbd5e1',
-        whiteSpace: 'nowrap'
+        lineHeight: 1.3 // Añadido para que los títulos largos se vean bien al saltar de línea
+        // whiteSpace: 'nowrap' <--- ELIMINADO PARA PERMITIR QUE EL TEXTO BAJE
       }} 
       {...props} 
     />
@@ -34,7 +35,8 @@ const markdownComponents = {
     <TableCell 
       sx={{ 
         borderColor: '#e2e8f0',
-        verticalAlign: 'top'
+        verticalAlign: 'top',
+        wordBreak: 'break-word' // Asegura que textos muy largos sin espacios no rompan la celda
       }} 
       {...props} 
     />
