@@ -11,10 +11,15 @@ const API_ANA = "https://analize-v20-strong-465781488910.us-central1.run.app";
 
 const markdownComponents = {
   a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
+  
+  // 1. Envolvemos la tabla en un Box con maxWidth: '100%' para BLINDAR la interfaz principal.
   table: ({ node, ...props }) => (
-    <TableContainer component={Paper} sx={{ my: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-      <Table size="small" sx={{ width: '100%', tableLayout: 'auto' }} {...props} />
-    </TableContainer>
+    <Box sx={{ maxWidth: '100%', overflowX: 'auto', my: 2 }}>
+      <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+        {/* 2. Asignamos un minWidth razonable. Así la tabla respira y es legible. */}
+        <Table size="small" sx={{ minWidth: 700 }} {...props} />
+      </TableContainer>
+    </Box>
   ),
   thead: ({ node, ...props }) => <TableHead sx={{ bgcolor: '#f1f5f9' }} {...props} />,
   tbody: ({ node, ...props }) => <TableBody {...props} />,
@@ -25,8 +30,8 @@ const markdownComponents = {
         fontWeight: 'bold', 
         color: 'var(--pida-primary)', 
         borderBottom: '2px solid #cbd5e1',
-        lineHeight: 1.3 // Añadido para que los títulos largos se vean bien al saltar de línea
-        // whiteSpace: 'nowrap' <--- ELIMINADO PARA PERMITIR QUE EL TEXTO BAJE
+        whiteSpace: 'normal', // Garantiza que los títulos bajen de línea
+        lineHeight: 1.3
       }} 
       {...props} 
     />
@@ -36,7 +41,8 @@ const markdownComponents = {
       sx={{ 
         borderColor: '#e2e8f0',
         verticalAlign: 'top',
-        wordBreak: 'break-word' // Asegura que textos muy largos sin espacios no rompan la celda
+        whiteSpace: 'normal', // Garantiza que el contenido baje de línea
+        wordBreak: 'break-word'
       }} 
       {...props} 
     />
