@@ -237,7 +237,7 @@ export default function LandingPage({ onOpenAuth }) {
         <div className="wrapper nav-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           
           <a href="/" style={{ display: 'flex', alignItems: 'center', flexShrink: 0, zIndex: 1001 }}>
-            <img className="header-logo" src="/img/PIDA_logo-100.webp" alt="Logo PIDA" style={{ height: '100px', width: 'auto', flexShrink: 0 }} />
+            <img className="header-logo" src="/img/PIDA_logo-100-cobalt-red.webp" alt="Logo PIDA" style={{ height: '100px', width: 'auto', flexShrink: 0 }} />
           </a>
 
           <button 
@@ -502,12 +502,18 @@ export default function LandingPage({ onOpenAuth }) {
           </div>
         </section>
 
-        <section id="diferencia" style={{ backgroundColor: '#FFFFFF', padding: '40px 0 10px 0' }}>
-            <div className="wrapper">
-                <div className="section-intro">
-                    <h2>¿Cuál es la gran diferencia de PIDA?</h2>
-                    <p>PIDA no improvisa buscando en el caos de internet. Su punto de partida es la biblioteca del <strong>IIRESODH</strong>, una institución referente con más de 30 años de experiencia en Litigio Estratégico Internacional.</p>
-                    <p>Primero, PIDA consulta este acervo validado por personas expertas en Derechos Humanos para obtener el fundamento correcto. Luego, usa la IA para construir tu respuesta. Así obtienes la velocidad de la tecnología, pero con la <strong>autoridad y el rigor técnico</strong> que solo el IIRESODH puede garantizar.</p>
+        <section id="diferencia" className="bg-ai-mesh" style={{ padding: '80px 0' }}>
+            <div className="wrapper" style={{ position: 'relative', zIndex: 1 }}>
+                <div className="section-intro" style={{ marginBottom: '0' }}>
+                    <h2 style={{ color: '#FFFFFF', fontSize: '2.8rem', marginBottom: '15px' }}>
+                        ¿Cuál es la gran diferencia de PIDA?
+                    </h2>
+                    <p style={{ fontSize: '1.2rem', color: '#CBD5E1', maxWidth: '800px', margin: '0 auto 20px auto' }}>
+                        PIDA no improvisa buscando en el caos de internet. Su punto de partida es la biblioteca del <strong style={{ color: '#FFFFFF' }}>IIRESODH</strong>, una institución referente con más de 30 años de experiencia en Litigio Estratégico Internacional.
+                    </p>
+                    <p style={{ fontSize: '1.2rem', color: '#CBD5E1', maxWidth: '800px', margin: '0 auto' }}>
+                        Primero, PIDA consulta este acervo validado por personas expertas en Derechos Humanos para obtener el fundamento correcto. Luego, usa la IA para construir tu respuesta. Así obtienes la velocidad de la tecnología, pero con la <strong style={{ color: '#FFFFFF' }}>autoridad y el rigor técnico</strong> que solo el IIRESODH puede garantizar.
+                    </p>
                 </div>
             </div>
         </section>
@@ -696,13 +702,15 @@ export default function LandingPage({ onOpenAuth }) {
           </div>
         </section>
 
-        <section id="info-corporativa" style={{ marginTop: '60px', padding: '60px 20px', background: '#F8FAFC', borderRadius: '16px', border: '1px solid var(--pida-border)', textAlign: 'center' }}>
-            <div className="wrapper" style={{ maxWidth: '900px', margin: '0 auto' }}>
-                <h3 style={{ color: 'var(--pida-primary)', fontSize: '2rem', marginBottom: '20px' }}>¿Necesitas PIDA para tu Organización o Institución?</h3>
-                <p style={{ color: 'var(--pida-text-muted)', fontSize: '1.15rem', lineHeight: '1.7', marginBottom: '35px' }}>
+        <section id="info-corporativa" className="bg-ai-mesh" style={{ padding: '80px 0', textAlign: 'center' }}>
+            <div className="wrapper" style={{ maxWidth: '900px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+                <h3 style={{ color: '#FFFFFF', fontSize: '2.5rem', marginBottom: '20px' }}>
+                    ¿Necesitas PIDA para tu Organización o Institución?
+                </h3>
+                <p style={{ color: '#CBD5E1', fontSize: '1.15rem', lineHeight: '1.7', marginBottom: '35px' }}>
                     PIDA está diseñado para escalar con las necesidades de grandes equipos de litigio que requieren de mucha investigación y redacción. Si representas a una firma legal, una organización de defensa de derechos humanos, una fiscalía o formas parte de cualquier órgano de gobierno o bien, perteneces a una institución académica, ofrecemos esquemas de licenciamiento por volumen. 
                     <br /><br />
-                    Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario.
+                    <strong style={{ color: '#FFFFFF' }}>Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario.</strong>
                 </p>
                 {/* BOTÓN CORPORATIVO - Actualizado a MUI */}
                 <Button 
