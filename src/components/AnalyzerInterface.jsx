@@ -1,14 +1,44 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
-// Importaciones de Material-UI añadidas
-import { Box, TextField, Button, ButtonGroup, Fab } from '@mui/material';
+// Importaciones de Material-UI añadidas (incluyendo componentes de Tabla)
+import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 
 const API_ANA = "https://analize-v20-strong-465781488910.us-central1.run.app";
 
 const markdownComponents = {
-  a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />
+  a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
+  table: ({ node, ...props }) => (
+    <TableContainer component={Paper} sx={{ my: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+      <Table size="small" {...props} />
+    </TableContainer>
+  ),
+  thead: ({ node, ...props }) => <TableHead sx={{ bgcolor: '#f1f5f9' }} {...props} />,
+  tbody: ({ node, ...props }) => <TableBody {...props} />,
+  tr: ({ node, ...props }) => <TableRow hover {...props} />,
+  th: ({ node, ...props }) => (
+    <TableCell 
+      sx={{ 
+        fontWeight: 'bold', 
+        color: 'var(--pida-primary)', 
+        borderBottom: '2px solid #cbd5e1',
+        whiteSpace: 'nowrap'
+      }} 
+      {...props} 
+    />
+  ),
+  td: ({ node, ...props }) => (
+    <TableCell 
+      sx={{ 
+        borderColor: '#e2e8f0',
+        verticalAlign: 'top'
+      }} 
+      {...props} 
+    />
+  )
 };
 
 // =========================================================================
@@ -487,7 +517,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       return (
         <>
           <div className="markdown-content">
-            <ReactMarkdown components={markdownComponents}>{formatMarkdown(mainContent)}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+              {formatMarkdown(mainContent)}
+            </ReactMarkdown>
           </div>
           
           {questions.length > 0 && (
@@ -511,7 +543,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
           {sources.length > 0 && (
             <div className="markdown-content" style={{ marginTop: '20px' }}>
-              <ReactMarkdown components={markdownComponents}>{sources.join('\n')}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+                {sources.join('\n')}
+              </ReactMarkdown>
             </div>
           )}
         </>
@@ -520,7 +554,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
     return (
         <div className="markdown-content">
-            <ReactMarkdown components={markdownComponents}>{formatMarkdown(text)}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+              {formatMarkdown(text)}
+            </ReactMarkdown>
         </div>
     );
   };
@@ -551,7 +587,11 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           {messages.map((msg, idx) => (
             <div key={idx} className={`pida-bubble ${msg.role === 'user' ? 'user-message-bubble' : 'pida-message-bubble'}`}>
                 {msg.role === 'user' 
-                    ? <div className="markdown-content"><ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown></div>
+                    ? <div className="markdown-content">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
                     : renderAnalysisContent(msg.content, idx)}
             </div>
           ))}
@@ -754,7 +794,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             <h2 className="modal-title" style={{ fontSize: '1.3rem', marginBottom: '15px', color: '#B91C1C' }}>{errorModal.title}</h2>
             
             <div className="modal-subtitle markdown-content" style={{ fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '30px', color: '#4B5563', textAlign: 'left' }}>
-              <ReactMarkdown components={markdownComponents}>{errorModal.message}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+                {errorModal.message}
+              </ReactMarkdown>
             </div>
 
             <button 
