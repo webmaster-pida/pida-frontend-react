@@ -524,15 +524,15 @@ export default function LandingPage({ onOpenAuth }) {
                 <div className="bento-grid">
                     <div className="bento-card">
                         <h3 className="bento-title">Respuestas Ancladas, no Adivinanzas</h3>
-                        <p style={{ color: '#555555'}}>Cada respuesta está fundamentada y prioriza el conocimiento del IIRESODH. Esto le da un nivel de fiabilidad y precisión que las IAs genéricas no pueden ofrecer, minimizando el riesgo de información incorrecta.</p>
+                        <p style={{ color: 'var(--text)'}}>Cada respuesta está fundamentada y prioriza el conocimiento del IIRESODH. Esto le da un nivel de fiabilidad y precisión que las IAs genéricas no pueden ofrecer, minimizando el riesgo de información incorrecta.</p>
                     </div>
                     <div className="bento-card">
                         <h3 className="bento-title">Lo Mejor de Dos Mundos</h3>
-                        <p style={{ color: '#555555' }}>Combina la sabiduría specializada del IIRESODH con la capacidad de razonamiento y redacción de un modelo de IA de vanguardia. Obtienes respuestas con calidad de experto, no solo texto genérico.</p>
+                        <p style={{ color: 'var(--text)'}}>Combina la sabiduría specializada del IIRESODH con la capacidad de razonamiento y redacción de un modelo de IA de vanguardia. Obtienes respuestas con calidad de experto, no solo texto genérico.</p>
                     </div>
                     <div className="bento-card">
                         <h3 className="bento-title">Eficiencia Acelerada</h3>
-                        <p style={{ color: '#555555' }}>El “Analizador de Documentos” sigue siendo tu experto incansable, capaz de procesar tus archivos y extraer información clave en minutos, liberándote para la estrategia y la acción.</p>
+                        <p style={{ color: 'var(--text)'}}>El “Analizador de Documentos” sigue siendo tu experto incansable, capaz de procesar tus archivos y extraer información clave en minutos, liberándote para la estrategia y la acción.</p>
                     </div>
                 </div>
             </div>

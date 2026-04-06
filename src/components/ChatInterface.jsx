@@ -525,7 +525,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
               <div className="pida-welcome-content">
                 <div className="pida-welcome-text">
                   <h3>¡Hola! Soy PIDA, tu asistente experto en Derechos Humanos y temas afines.</h3>
-                  <p>Estoy para apoyarte y responder cualquier pregunta que me hagas, incluyendo investigaciones, análisis de casos, búsqueda de jurisprudencia y redacción legal de todo tipo de documentos, cartas, informes, elaboración de proyectos y seguimiento y monitoreo.</p>
+                  <p style={{ color: 'var(--text)'}}>Estoy para apoyarte y responder cualquier pregunta que me hagas, incluyendo investigaciones, análisis de casos, búsqueda de jurisprudencia y redacción legal de todo tipo de documentos, cartas, informes, elaboración de proyectos y seguimiento y monitoreo.</p>
                   <strong>¿Qué te gustaría pedirme ahora?</strong>
                 </div>
               </div>

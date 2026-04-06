@@ -320,9 +320,7 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
               <div className="pida-welcome-content">
                 <div className="pida-welcome-text">
                   <h3>Precalificador Penal y de Derechos Humanos</h3>
-                  <p>
-                    Ingresa los hechos de tu caso. PIDA realizará un análisis preliminar para identificar <strong>posibles delitos penales</strong> y <strong>violaciones a derechos humanos</strong> conforme a estándares nacionales e internacionales.
-                  </p>
+                  <p style={{ color: 'var(--text)'}}>Ingresa los hechos de tu caso. PIDA realizará un análisis preliminar para identificar <strong>posibles delitos penales</strong> y <strong>violaciones a derechos humanos</strong> conforme a estándares nacionales e internacionales.</p>
                 </div>
               </div>
             </div>
