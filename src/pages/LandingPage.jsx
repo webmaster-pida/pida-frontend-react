@@ -325,9 +325,9 @@ export default function LandingPage({ onOpenAuth }) {
                     }
                   }}
                 >
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-001.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Enero 2026</MenuItem>
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-002.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Febrero 2026</MenuItem>
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-003.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Marzo 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-001.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.85rem', py: 1.5 }}>📄 Enero 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-002.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.85rem', py: 1.5 }}>📄 Febrero 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-003.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.85rem', py: 1.5 }}>📄 Marzo 2026</MenuItem>
                 </Menu>
               </div>
 
@@ -408,7 +408,7 @@ export default function LandingPage({ onOpenAuth }) {
       <main>
         <section id="pida"></section>
         
-        <section className="hero" style={{ paddingTop: '30px' }}>
+        <section className="hero" style={{ paddingTop: '50px' }}>
           <div className="wrapper hero-grid">
             <div className="hero-content">
               <h1 style={{ fontSize: '3.0rem', lineHeight: '1.15', marginBottom: '15px', marginTop: '15px' }}>

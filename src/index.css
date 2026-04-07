@@ -65,8 +65,8 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; line-height
 /* --- SECCIÓN CORREGIDA DEL HEADER Y NAVBAR --- */
 .nav-inner { display: flex; justify-content: space-between; align-items: center; }
 .nav-menu { display: flex; gap: 32px; align-items: center; }
-.nav-link { font-size: 0.9rem; font-weight: 500; color: #64748B; position: relative; transition: color 0.3s; text-decoration: none; }
-.nav-menu .nav-link:visited { font-size: 0.9rem; font-weight: 500; color: #64748B !important; text-decoration: none !important; position: relative; transition: color 0.3s; }
+.nav-link { font-size: 0.9rem; font-weight: 600; color: #64748B; position: relative; transition: color 0.3s; text-decoration: none; }
+.nav-menu .nav-link:visited { font-size: 0.9rem; font-weight: 600; color: #64748B !important; text-decoration: none !important; position: relative; transition: color 0.3s; }
 .nav-link:hover { color: var(--navy); }
 
 .header-logo { height: 100px; width: auto; flex-shrink: 0; transition: all 0.3s ease; }

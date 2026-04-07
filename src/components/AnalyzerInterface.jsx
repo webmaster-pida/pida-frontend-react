@@ -1,25 +1,58 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
-// Importaciones de Material-UI añadidas
-import { Box, TextField, Button, ButtonGroup, Fab } from '@mui/material';
+import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 
 const API_ANA = "https://analize-v20-strong-465781488910.us-central1.run.app";
 
 const markdownComponents = {
-  a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />
+  a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
+  
+  // EL VERDADERO BLINDAJE: Ahora sí, eliminado por completo 'max-content'.
+  // Se usa width: '100%' para que no rompa el contenedor padre.
+  table: ({ node, ...props }) => (
+    <div style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
+      <TableContainer component={Paper} sx={{ width: '100%', mb: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+        <Table size="small" sx={{ minWidth: 600 }} {...props} />
+      </TableContainer>
+    </div>
+  ),
+  thead: ({ node, ...props }) => <TableHead sx={{ bgcolor: '#f1f5f9' }} {...props} />,
+  tbody: ({ node, ...props }) => <TableBody {...props} />,
+  tr: ({ node, ...props }) => <TableRow hover {...props} />,
+  th: ({ node, ...props }) => (
+    <TableCell
+      sx={{
+        fontWeight: 'bold',
+        color: 'var(--pida-primary)',
+        borderBottom: '2px solid #cbd5e1',
+        whiteSpace: 'normal',
+        lineHeight: 1.3
+      }}
+      {...props}
+    />
+  ),
+  td: ({ node, ...props }) => (
+    <TableCell
+      sx={{
+        borderColor: '#e2e8f0',
+        verticalAlign: 'top',
+        whiteSpace: 'normal',
+        wordBreak: 'break-word'
+      }}
+      {...props}
+    />
+  )
 };
 
-// =========================================================================
-// MAPEO DE ERRORES UI/UX (DESEMPATE INTELIGENTE Y SIN EMOJIS)
-// =========================================================================
 const translateFileError = (errMsg, currentFiles = []) => {
   if (!errMsg) return { title: "Error Desconocido", message: "Ocurrió un error desconocido al procesar el archivo." };
 
   const lowerMsg = errMsg.toLowerCase();
 
-  // NUEVO: Manejo amigable de errores de JSON y red
   if (lowerMsg.includes('unterminated') || lowerMsg.includes('json') || lowerMsg.includes('parse')) {
     return { title: "Interrupción de Red", message: "La respuesta del servidor se cortó o llegó incompleta debido a una interrupción temporal en la conexión.\n\nPor favor, presiona el botón **'Analizar'** nuevamente para reintentarlo." };
   }
@@ -47,14 +80,14 @@ const translateFileError = (errMsg, currentFiles = []) => {
     }
     
     if (currentFiles && currentFiles.length > 0 && totalSizeMB < 10) {
-        return { 
-            title: "Archivo Corrupto o Dañado", 
-            message: "El motor de Inteligencia Artificial no pudo procesar el documento porque presenta **corrupción oculta en su estructura interna**.\n\n**Solución rápida:** Abre el documento en tu computadora, selecciona la opción **'Imprimir'**, elige **'Guardar como PDF'** y vuelve a subir esta nueva versión generada." 
+        return {
+            title: "Archivo Corrupto o Dañado",
+            message: "El motor de Inteligencia Artificial no pudo procesar el documento porque presenta **corrupción oculta en su estructura interna**.\n\n**Solución rápida:** Abre el documento en tu computadora, selecciona la opción **'Imprimir'**, elige **'Guardar como PDF'** y vuelve a subir esta nueva versión generada."
         };
     } else {
-        return { 
-            title: "Error de Lectura o Complejidad", 
-            message: "El motor de análisis rechazó el documento. Esto suele ocurrir por dos motivos:\n\n1. El archivo presenta **corrupción en su estructura interna**.\n2. El documento supera la **capacidad máxima de procesamiento** (ej. exceso de resolución visual o miles de páginas).\n\n**Solución:** Verifica que el archivo sea válido. Si el problema persiste, intenta comprimirlo, dividirlo en secciones o guardarlo nuevamente como PDF ('Imprimir > Guardar como PDF')." 
+        return {
+            title: "Error de Lectura o Complejidad",
+            message: "El motor de análisis rechazó el documento. Esto suele ocurrir por dos motivos:\n\n1. El archivo presenta **corrupción en su estructura interna**.\n2. El documento supera la **capacidad máxima de procesamiento** (ej. exceso de resolución visual o miles de páginas).\n\n**Solución:** Verifica que el archivo sea válido. Si el problema persiste, intenta comprimirlo, dividirlo en secciones o guardarlo nuevamente como PDF ('Imprimir > Guardar como PDF')."
         };
     }
   }
@@ -72,7 +105,6 @@ const translateFileError = (errMsg, currentFiles = []) => {
   return { title: "Error de Análisis", message: `Ocurrió un problema técnico durante el proceso:\n\n\`${errMsg}\`` };
 };
 
-
 export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [files, setFiles] = useState([]);
   const [instructions, setInstructions] = useState('');
@@ -81,14 +113,11 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [currentAnaId, setCurrentAnaId] = useState(null);
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [statusText, setStatusText] = useState(''); 
+  const [statusText, setStatusText] = useState('');
   
   const [errorModal, setErrorModal] = useState({ show: false, title: '', message: '' });
   const [showMissingFileModal, setShowMissingFileModal] = useState(false);
   
-  // =========================================================================
-  // REFS Y ESTADOS PARA EL SMART SCROLLING
-  // =========================================================================
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -126,7 +155,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         setErrorModal({ show: false, title: '', message: '' });
         setMessages([]);
         setCurrentAnaId(null);
-        setIsAtBottom(true); 
+        setIsAtBottom(true);
         
         try {
           const token = await user.getIdToken();
@@ -155,7 +184,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           }
           
           setCurrentAnaId(loadAnaId);
-          setFiles([]); 
+          setFiles([]);
           setTimeout(() => scrollToBottom('auto'), 100);
         } catch (err) {
           const mappedError = translateFileError(err.message, []);
@@ -169,7 +198,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
   }, [loadAnaId, user]);
 
-
   const handleFileChange = (e) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
@@ -177,10 +205,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       
       selectedFiles.forEach(file => {
         const fileSizeMB = file.size / (1024 * 1024);
-        if (fileSizeMB > 50) { 
-          setErrorModal({ 
-            show: true, 
-            title: "Archivo excede el límite máximo", 
+        if (fileSizeMB > 50) {
+          setErrorModal({
+            show: true,
+            title: "Archivo excede el límite máximo",
             message: `El archivo **${file.name}** pesa ${fileSizeMB.toFixed(2)} MB.\n\nEl límite máximo absoluto permitido en la plataforma es de **50 MB** por documento para garantizar el rendimiento del sistema. Por favor, divide tu archivo antes de subirlo.`
           });
         } else {
@@ -207,6 +235,42 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     setErrorModal({ show: false, title: '', message: '' });
     setStatusText('');
     setIsAtBottom(true);
+  };
+
+  const handleBackendDownload = async (format) => {
+    if (messages.length === 0) {
+      alert("Por favor, interactúa en el analizador antes de descargarlo.");
+      return;
+    }
+    try {
+      const token = await user.getIdToken();
+      const formData = new FormData();
+      
+      formData.append("history_json", JSON.stringify(messages));
+      formData.append("file_format", format);
+      if (currentAnaId) formData.append("analysis_id", currentAnaId);
+
+      const res = await fetch(`${API_ANA}/download-analysis`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+
+      if (!res.ok) throw new Error("Error en el servidor al generar el documento.");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${getTimestampedName("Analisis_PIDA")}.${format}`; 
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      alert("Hubo un problema descargando el archivo.");
+    }
   };
 
   const handleAnalyze = async (eOrInstruction = null) => {
@@ -352,7 +416,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       const decoder = new TextDecoder("utf-8");
       let fullText = "";
       
-      // 🛡️ NUEVO: El Búfer que evita que el JSON se corte a la mitad
       let streamBuffer = ""; 
       
       setStatusText(''); 
@@ -361,19 +424,13 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         const { value, done } = await reader.read();
         if (done) break;
         
-        // Usar { stream: true } asegura que caracteres especiales no se rompan
         streamBuffer += decoder.decode(value, { stream: true });
-        
-        // Separamos por el delimitador de Server-Sent Events (\n\n)
         const chunks = streamBuffer.split('\n\n');
-        
-        // El último elemento puede estar incompleto, lo dejamos en el búfer para la siguiente vuelta
         streamBuffer = chunks.pop();
         
         for (const chunk of chunks) {
           if (chunk.startsWith('data:')) {
             try {
-              // Limpiamos el 'data: ' del inicio para tener solo el JSON
               const jsonStr = chunk.replace(/^data:\s*/, '');
               const d = JSON.parse(jsonStr);
               
@@ -486,8 +543,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
       return (
         <>
-          <div className="markdown-content">
-            <ReactMarkdown components={markdownComponents}>{formatMarkdown(mainContent)}</ReactMarkdown>
+          <div className="markdown-content" style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto', wordBreak: 'break-word', boxSizing: 'border-box' }}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+              {formatMarkdown(mainContent)}
+            </ReactMarkdown>
           </div>
           
           {questions.length > 0 && (
@@ -510,8 +569,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           )}
 
           {sources.length > 0 && (
-            <div className="markdown-content" style={{ marginTop: '20px' }}>
-              <ReactMarkdown components={markdownComponents}>{sources.join('\n')}</ReactMarkdown>
+            <div className="markdown-content" style={{ marginTop: '20px', display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto', wordBreak: 'break-word', boxSizing: 'border-box' }}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+                {sources.join('\n')}
+              </ReactMarkdown>
             </div>
           )}
         </>
@@ -519,8 +580,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
 
     return (
-        <div className="markdown-content">
-            <ReactMarkdown components={markdownComponents}>{formatMarkdown(text)}</ReactMarkdown>
+        <div className="markdown-content" style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto', wordBreak: 'break-word', boxSizing: 'border-box' }}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+              {formatMarkdown(text)}
+            </ReactMarkdown>
         </div>
     );
   };
@@ -536,7 +599,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               <div className="pida-welcome-content">
                 <div className="pida-welcome-text">
                   <h3>Analizador de Documentos</h3>
-                  <p style={{ color: 'var(--text)'}}>Sube tus archivos (PDF, DOCX) y escribe una instrucción clara. PIDA leerá, resumirá y sistematizará el documento por ti. Podrás continuar haciendo preguntas de seguimiento.</p>
+                  <p>Sube tus archivos (PDF, DOCX) y escribe una instrucción clara. PIDA leerá, resumirá y sistematizará el documento por ti. Podrás continuar haciendo preguntas de seguimiento.</p>
                   <p style={{ marginTop: '15px', fontWeight: 'bold', color: '#1D3557' }}>Ejemplos de lo que puedes pedir:</p>
                   <ul style={{ margin: '8px 0 0 0', padding: 0, listStyleType: 'none', color: '#374151' }}>
                     <li style={{ marginBottom: '6px' }}>"Haz un resumen ejecutivo de este documento."</li>
@@ -549,9 +612,17 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           )}
 
           {messages.map((msg, idx) => (
-            <div key={idx} className={`pida-bubble ${msg.role === 'user' ? 'user-message-bubble' : 'pida-message-bubble'}`}>
+            <div 
+              key={idx} 
+              className={`pida-bubble ${msg.role === 'user' ? 'user-message-bubble' : 'pida-message-bubble'}`}
+              style={{ maxWidth: '100%', minWidth: 0, overflowX: 'hidden', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}
+            >
                 {msg.role === 'user' 
-                    ? <div className="markdown-content"><ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown></div>
+                    ? <div className="markdown-content" style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto', wordBreak: 'break-word', boxSizing: 'border-box' }}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
                     : renderAnalysisContent(msg.content, idx)}
             </div>
           ))}
@@ -569,7 +640,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         </div>
       </div>
 
-      {/* FAB de MUI para Scroll To Bottom */}
       {!isAtBottom && messages.length > 0 && (
         <Fab
           color="primary"
@@ -598,14 +668,12 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       )}
 
       <form className="pida-view-form" onSubmit={(e) => handleAnalyze(e)}>
-        
-        {/* Controles de Descarga agrupados con ButtonGroup de MUI */}
         {messages.length > 0 && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
             <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
               <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>TXT</Button>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>DOCX</Button>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>PDF</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('docx')}>DOCX</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('pdf')}>PDF</Button>
             </ButtonGroup>
           </Box>
         )}
@@ -659,7 +727,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           </div>
         )}
 
-        {/* Input con TextField de MUI, auto-crecimiento hasta 5 líneas */}
         <TextField 
           id="user-instructions"
           multiline
@@ -680,7 +747,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           }}
         />
         
-        {/* Botones de Limpiar y Analizar de MUI - Se eliminó pida-form-actions para estandarizar separación */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button 
             variant="text" 
@@ -702,7 +768,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         </Box>
       </form>
 
-      {/* --- MODALES INTACTOS --- */}
       {showMissingFileModal && (
         <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setShowMissingFileModal(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: '40px 30px', maxWidth: '420px', borderRadius: '16px' }}>
@@ -754,7 +819,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             <h2 className="modal-title" style={{ fontSize: '1.3rem', marginBottom: '15px', color: '#B91C1C' }}>{errorModal.title}</h2>
             
             <div className="modal-subtitle markdown-content" style={{ fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '30px', color: '#4B5563', textAlign: 'left' }}>
-              <ReactMarkdown components={markdownComponents}>{errorModal.message}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+                {errorModal.message}
+              </ReactMarkdown>
             </div>
 
             <button 
