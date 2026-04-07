@@ -9,7 +9,7 @@ const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3k
 
 const cardStyle = {
   style: {
-    base: { fontSize: '16px', fontFamily: '"Inter", sans-serif', color: '#1D3557', '::placeholder': { color: '#94A3B8' } },
+    base: { fontSize: '16px', fontFamily: '"Inter", sans-serif', color: 'var(--pida-primary)', '::placeholder': { color: '#94A3B8' } },
     invalid: { color: '#EF4444' },
   },
   hidePostalCode: true
@@ -381,7 +381,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose }) {
     <div className="modal-backdrop" onClick={onClose} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px', width: '90%', padding: '30px', background: 'white', borderRadius: '16px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748B' }}>×</button>
-        <img src="/img/PIDA_logo-100-cobalt-red.webp" alt="PIDA Logo" style={{ width: '140px', marginBottom: '25px', display: 'block', margin: '0 auto' }} />
+        <img src="/img/PIDA_logo-100-blue-red.webp" alt="PIDA Logo" style={{ width: '140px', marginBottom: '25px', display: 'block', margin: '0 auto' }} />
         <Elements stripe={stripePromise}>
           <AuthFormContent onClose={onClose} initialMode={initialMode} />
         </Elements>

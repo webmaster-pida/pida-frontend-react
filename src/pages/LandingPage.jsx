@@ -157,7 +157,7 @@ export default function LandingPage({ onOpenAuth }) {
   };
 
   const muiPrimaryBtnStyle = {
-    backgroundColor: 'var(--pida-accent)', // Azul más vivo y corporativo
+    backgroundColor: 'var(--navy)', // Azul más vivo y corporativo
     color: 'var(--white)',
     textTransform: 'none',
     fontWeight: 600,
@@ -168,7 +168,7 @@ export default function LandingPage({ onOpenAuth }) {
     fontFamily: 'var(--font-body)',
     transition: 'background-color 250ms ease, box-shadow 250ms ease, color 250ms ease',
     '&:hover': {
-      backgroundColor: '#0284C7', // Nuevo color al pasar el cursor
+      backgroundColor: 'var(--pida-accent)', // Nuevo color al pasar el cursor
       color: '#ffffff',
       boxShadow: '0px 4px 12px rgba(56, 189, 248, 0.35)', // Resplandor acorde al nuevo color
     }
@@ -204,8 +204,8 @@ export default function LandingPage({ onOpenAuth }) {
 
   const muiGhostBtnStyle = {
     backgroundColor: 'white',
-    color: 'var(--pida-accent)', // Texto en azul vibrante
-    border: '2px solid var(--pida-accent)', // Borde en azul vibrante
+    color: 'var(--navy)', // Texto en azul vibrante
+    border: '2px solid var(--navy)', // Borde en azul vibrante
     textTransform: 'none',
     fontWeight: 800,
     fontSize: '0.95rem',
@@ -214,7 +214,7 @@ export default function LandingPage({ onOpenAuth }) {
     fontFamily: 'var(--font-body)',
     transition: 'all 250ms ease',
     '&:hover': {
-      backgroundColor: 'var(--pida-accent)', // Se rellena del color vibrante al pasar el mouse
+      backgroundColor: 'var(--navy)', // Se rellena del color vibrante al pasar el mouse
       color: 'white', // El texto pasa a blanco para contrastar
     }
   }
@@ -237,7 +237,7 @@ export default function LandingPage({ onOpenAuth }) {
         <div className="wrapper nav-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           
           <a href="/" style={{ display: 'flex', alignItems: 'center', flexShrink: 0, zIndex: 1001 }}>
-            <img className="header-logo" src="/img/PIDA_logo-100-cobalt-red.webp" alt="Logo PIDA" style={{ height: '100px', width: 'auto', flexShrink: 0 }} />
+            <img className="header-logo" src="/img/PIDA_logo-100-blue-red.webp" alt="Logo PIDA" style={{ height: '100px', width: 'auto', flexShrink: 0 }} />
           </a>
 
           <button 
@@ -502,37 +502,31 @@ export default function LandingPage({ onOpenAuth }) {
           </div>
         </section>
 
-        <section id="diferencia" className="bg-ai-mesh" style={{ padding: '80px 0' }}>
-            <div className="wrapper" style={{ position: 'relative', zIndex: 1 }}>
-                <div className="section-intro" style={{ marginBottom: '0' }}>
-                    <h2 style={{ color: '#FFFFFF', fontSize: '2.8rem', marginBottom: '15px' }}>
-                        ¿Cuál es la gran diferencia de PIDA?
-                    </h2>
-                    <p style={{ fontSize: '1.2rem', color: '#CBD5E1', maxWidth: '800px', margin: '0 auto 20px auto' }}>
-                        PIDA no improvisa buscando en el caos de internet. Su punto de partida es la biblioteca del <strong style={{ color: '#FFFFFF' }}>IIRESODH</strong>, una institución referente con más de 30 años de experiencia en Litigio Estratégico Internacional.
-                    </p>
-                    <p style={{ fontSize: '1.2rem', color: '#CBD5E1', maxWidth: '800px', margin: '0 auto' }}>
-                        Primero, PIDA consulta este acervo validado por personas expertas en Derechos Humanos para obtener el fundamento correcto. Luego, usa la IA para construir tu respuesta. Así obtienes la velocidad de la tecnología, pero con la <strong style={{ color: '#FFFFFF' }}>autoridad y el rigor técnico</strong> que solo el IIRESODH puede garantizar.
-                    </p>
+        <section id="diferencia" className="bg-ai-mesh" style={{ padding: '40px 0 10px 0' }}>
+            <div className="wrapper">
+                <div className="section-intro">
+                    <h2 style={{color: 'var(--white)'}}>¿Cuál es la gran diferencia de PIDA?</h2>
+                    <p style={{ fontSize: '1.2rem', color: 'var(--white)', maxWidth: '900px', margin: '0 auto' }}>PIDA no improvisa buscando en el caos de internet. Su punto de partida es la biblioteca del <strong>IIRESODH</strong>, una institución referente con más de 30 años de experiencia en Litigio Estratégico Internacional.</p>
+                    <p style={{ fontSize: '1.2rem', color: 'var(--white)', maxWidth: '900px', margin: '0 auto' }}>Primero, PIDA consulta este acervo validado por personas expertas en Derechos Humanos para obtener el fundamento correcto. Luego, usa la IA para construir tu respuesta. Así obtienes la velocidad de la tecnología, pero con la <strong>autoridad y el rigor técnico</strong> que solo el <strong>IIRESODH</strong> puede garantizar.</p>
                 </div>
             </div>
         </section>
 
         <section id="bondades" style={{ background: '#FAFAFA', padding: '40px 0 10px 0' }}>
-            <div className="wrapper">
-                <h2 style={{ color: '#003399', fontSize: '2.8rem', marginBottom: '15px', textAlign: 'center'}}>Bondades únicas de PIDA</h2>
+            <div className="section-intro">
+                <h2 style={{ marginBottom: '40px', textAlign: 'center' }}>Bondades únicas de PIDA</h2>
                 <div className="bento-grid">
                     <div className="bento-card">
                         <h3 className="bento-title">Respuestas Ancladas, no Adivinanzas</h3>
-                        <p style={{ color: 'var(--text)'}}>Cada respuesta está fundamentada y prioriza el conocimiento del IIRESODH. Esto le da un nivel de fiabilidad y precisión que las IAs genéricas no pueden ofrecer, minimizando el riesgo de información incorrecta.</p>
+                        <p style={{color: '#555555' }}>Cada respuesta está fundamentada y prioriza el conocimiento del IIRESODH. Esto le da un nivel de fiabilidad y precisión que las IAs genéricas no pueden ofrecer, minimizando el riesgo de información incorrecta.</p>
                     </div>
                     <div className="bento-card">
                         <h3 className="bento-title">Lo Mejor de Dos Mundos</h3>
-                        <p style={{ color: 'var(--text)'}}>Combina la sabiduría specializada del IIRESODH con la capacidad de razonamiento y redacción de un modelo de IA de vanguardia. Obtienes respuestas con calidad de experto, no solo texto genérico.</p>
+                        <p style={{color: '#555555' }}>Combina la sabiduría especializada del IIRESODH con la capacidad de razonamiento y redacción de un modelo de IA de vanguardia. Obtienes respuestas con calidad de experto, no solo texto genérico.</p>
                     </div>
                     <div className="bento-card">
                         <h3 className="bento-title">Eficiencia Acelerada</h3>
-                        <p style={{ color: 'var(--text)'}}>El “Analizador de Documentos” sigue siendo tu experto incansable, capaz de procesar tus archivos y extraer información clave en minutos, liberándote para la estrategia y la acción.</p>
+                        <p style={{color: '#555555' }}>El “Analizador de Documentos” sigue siendo tu experto incansable, capaz de procesar tus archivos y extraer información clave en minutos, liberándote para la estrategia y la acción.</p>
                     </div>
                 </div>
             </div>
@@ -542,7 +536,7 @@ export default function LandingPage({ onOpenAuth }) {
             <div className="wrapper" style={{ position: 'relative', zIndex: 1 }}>
                 <div className="section-intro" style={{ marginBottom: '60px' }}>
                     <h2 style={{ color: '#FFFFFF', fontSize: '2.8rem', marginBottom: '15px' }}>El Ecosistema PIDA</h2>
-                    <p style={{ fontSize: '1.2rem', color: '#CBD5E1', maxWidth: '800px', margin: '0 auto' }}>
+                    <p style={{ fontSize: '1.2rem', color: 'var(--white)', maxWidth: '900px', margin: '0 auto' }}>
                         PIDA integra tres motores especializados que trabajan en conjunto para cubrir el ciclo completo de la defensa legal: investigación, análisis documental y diagnóstico de casos.
                     </p>
                 </div>
@@ -552,7 +546,7 @@ export default function LandingPage({ onOpenAuth }) {
                     <div className="glass-card">
                         <h3 style={{ color: '#FFFFFF', fontSize: '1.5rem', marginBottom: '10px' }}>
                             1. Experto en Derechos Humanos
-                            <span style={{ display: 'block', fontSize: '0.85rem', color: '#38BDF8', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU CONSULTOR FUNDAMENTADO</span>
+                            <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--red)', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU CONSULTOR FUNDAMENTADO</span>
                         </h3>
                         <p style={{ fontSize: '1.05rem', color: '#E2E8F0', lineHeight: '1.7', marginBottom: '15px' }}>
                             Este motor redefine la investigación jurídica. A diferencia de los chats genéricos que improvisan respuestas, PIDA actúa como un consultor senior conectado directamente a la <strong style={{ color: '#FFFFFF' }}>biblioteca privada y curada del IIRESODH</strong>.
@@ -565,7 +559,7 @@ export default function LandingPage({ onOpenAuth }) {
                     <div className="glass-card">
                         <h3 style={{ color: '#FFFFFF', fontSize: '1.5rem', marginBottom: '10px' }}>
                             2. Analizador de Documentos
-                            <span style={{ display: 'block', fontSize: '0.85rem', color: '#38BDF8', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU ESTRATEGA PROCESAL</span>
+                            <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--red)', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU ESTRATEGA PROCESAL</span>
                         </h3>
                         <p style={{ fontSize: '1.05rem', color: '#E2E8F0', lineHeight: '1.7', marginBottom: '15px' }}>
                             Capacidad de procesamiento masivo para el abogado moderno. Esta herramienta lee, comprende y procesa archivos voluminosos (PDF, Word) en segundos, actuando como un asistente analítico incansable.
@@ -578,7 +572,7 @@ export default function LandingPage({ onOpenAuth }) {
                     <div className="glass-card">
                         <h3 style={{ color: '#FFFFFF', fontSize: '1.5rem', marginBottom: '10px' }}>
                             3. Precalificador de Conductas
-                            <span style={{ display: 'block', fontSize: '0.85rem', color: '#38BDF8', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU DIAGNÓSTICO INMEDIATO</span>
+                            <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--red)', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU DIAGNÓSTICO INMEDIATO</span>
                         </h3>
                         <p style={{ fontSize: '1.05rem', color: '#E2E8F0', lineHeight: '1.7', marginBottom: '15px' }}>
                             Una herramienta de encuadre jurídico diseñada para la etapa inicial de cualquier caso. Funciona como un puente inteligente entre los hechos fácticos y la tipificación legal.
@@ -595,8 +589,8 @@ export default function LandingPage({ onOpenAuth }) {
           <div className="wrapper">
             <div className="section-intro">
               <h2>Planes Flexibles</h2>
-              <p style={{ marginBottom: '10px', color: '#555555'}}>Selecciona el plan que mejor se adapte a tu nivel de investigación.</p>
-              <p style={{ color: '#4caf50', fontWeight: 700, fontSize: '1.1rem', marginBottom: '20px' }}>
+              <p style={{ marginBottom: '10px' }}>Selecciona el plan que mejor se adapte a tu nivel de investigación.</p>
+              <p style={{ color: 'var(--red)', fontWeight: 700, fontSize: '1.1rem', marginBottom: '20px' }}>
                 Todos los planes incluyen 5 días de prueba ¡Gratis!
               </p>
             </div>
@@ -626,13 +620,13 @@ export default function LandingPage({ onOpenAuth }) {
 
                 <div className="pricing-grid">
                   <Card elevation={0} sx={muiCardBaseStyle}>
-                    <h3 style={{ color: 'var(--text)' }}>Básico</h3>
+                    <h3>Básico</h3>
                     <div className="price-container">
                       <span className="price-val">{STRIPE_PRICES.basico[interval][currency].text}</span>
                       <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
                     </div>
                     <ul className="plan-features">
-                      <li>✅ ¡5 días de prueba Gratis!</li>
+                      <li>✅ <strong>¡5 días de prueba Gratis!</strong></li>
                       <li>✅ Newsletter mensual</li>
                       <li>✅ 5 consultas diarias</li>
                       <li>✅ 3 análisis de documentos</li>
@@ -650,13 +644,13 @@ export default function LandingPage({ onOpenAuth }) {
 
                   <Card elevation={0} sx={muiFeaturedCardStyle}>
                     <div className="card-badge">Más Popular</div>
-                    <h3 style={{ color: 'var(--text)' }}>Avanzado</h3>
+                    <h3>Avanzado</h3>
                     <div className="price-container">
                       <span className="price-val">{STRIPE_PRICES.avanzado[interval][currency].text}</span>
                       <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
                     </div>
                     <ul className="plan-features">
-                      <li>✅ ¡5 días de prueba Gratis!</li>
+                      <li>✅ <strong>¡5 días de prueba Gratis!</strong></li>
                       <li>✅ Newsletter mensual</li>
                       <li>✅ 20 consultas diarias</li>
                       <li>✅ 15 análisis de documentos</li>
@@ -674,13 +668,13 @@ export default function LandingPage({ onOpenAuth }) {
                   </Card>
 
                   <Card elevation={0} sx={muiCardBaseStyle}>
-                    <h3 >Premium</h3>
+                    <h3>Premium</h3>
                     <div className="price-container">
                       <span className="price-val">{STRIPE_PRICES.premium[interval][currency].text}</span>
                       <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
                     </div>
                     <ul className="plan-features">
-                      <li>✅ ¡5 días de prueba Gratis!</li>
+                      <li>✅ <strong>¡5 días de prueba Gratis!</strong></li>
                       <li>✅ Newsletter mensual</li>
                       <li>✅ 100 consultas diarias</li>
                       <li>✅ 25 análisis de documentos</li>
@@ -702,15 +696,13 @@ export default function LandingPage({ onOpenAuth }) {
           </div>
         </section>
 
-        <section id="info-corporativa" className="bg-ai-mesh" style={{ padding: '80px 0', textAlign: 'center' }}>
-            <div className="wrapper" style={{ maxWidth: '900px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
-                <h3 style={{ color: '#FFFFFF', fontSize: '2.5rem', marginBottom: '20px' }}>
-                    ¿Necesitas PIDA para tu Organización o Institución?
-                </h3>
-                <p style={{ color: '#CBD5E1', fontSize: '1.15rem', lineHeight: '1.7', marginBottom: '35px' }}>
+        <section id="info-corporativa" style={{ marginTop: '60px', padding: '60px 20px', background: '#F8FAFC', borderRadius: '16px', border: '1px solid var(--pida-border)', textAlign: 'center' }}>
+            <div className="wrapper" style={{ maxWidth: '900px', margin: '0 auto' }}>
+                <h3 style={{ color: 'var(--pida-primary)', fontSize: '2rem', marginBottom: '20px' }}>¿Necesitas PIDA para tu Organización o Institución?</h3>
+                <p style={{ color: 'var(--pida-text-muted)', fontSize: '1.15rem', lineHeight: '1.7', marginBottom: '35px' }}>
                     PIDA está diseñado para escalar con las necesidades de grandes equipos de litigio que requieren de mucha investigación y redacción. Si representas a una firma legal, una organización de defensa de derechos humanos, una fiscalía o formas parte de cualquier órgano de gobierno o bien, perteneces a una institución académica, ofrecemos esquemas de licenciamiento por volumen. 
                     <br /><br />
-                    <strong style={{ color: '#FFFFFF' }}>Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario.</strong>
+                    Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario.
                 </p>
                 {/* BOTÓN CORPORATIVO - Actualizado a MUI */}
                 <Button 
@@ -764,24 +756,22 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
-        <section id="footer" className="bg-ai-mesh" style={{ padding: '0px 0', textAlign: 'center'}}>
-          <div className="wrapper">                  
-              <div className="copyright">
-                  <span>&copy; 2026 IIRESODH PAYMENTS, LLC.</span>
-                  <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--white)', textDecoration: 'none' }}>Términos de uso</a>
-                  <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--white)', textDecoration: 'none' }}>Política de privacidad</a>
-                  <a href="mailto:contacto@pida-ai.com" style={{ color: 'var(--white)', textDecoration: 'none' }}>contacto@pida-ai.com</a>
-              </div>
-              <br />&nbsp;
-          </div>
-        </section>
+        <div className="wrapper">                  
+            <div className="copyright">
+                <span>&copy; 2026 IIRESODH PAYMENTS, LLC.</span>
+                <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Términos de uso</a>
+                <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Política de privacidad</a>
+                <a href="mailto:contacto@pida-ai.com" style={{ color: 'var(--navy)', textDecoration: 'none' }}>contacto@pida-ai.com</a>
+            </div>
+            <br />&nbsp;
+        </div>
       </main>
 
       {isContactOpen && (
         <div className="modal-backdrop">
             <div className="modal-card">
                 <button className="modal-close-btn" onClick={() => setIsContactOpen(false)}>×</button>
-                <img src="/img/PIDA_logo-100-cobalt-red.webp" alt="PIDA Logo" style={{ width: '140px', marginBottom: '20px', margin: '0 auto' }} />
+                <img src="/img/PIDA_logo-100-blue-red.webp" alt="PIDA Logo" style={{ width: '140px', marginBottom: '20px', margin: '0 auto' }} />
                 <p className="modal-subtitle">Déjanos tus datos y un asesor se pondrá en contacto contigo para diseñar un plan a la medida de tu organización.</p>
 
                 <form onSubmit={handleContactSubmit} style={{ textAlign: 'left' }}>
