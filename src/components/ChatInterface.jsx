@@ -632,7 +632,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
             variant="contained" 
             color="primary" 
             disabled={isTyping}
-            sx={{ width: 220, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida)', '&:hover': { bgcolor: 'var(--pida-accent)' } }}
+            sx={{ width: 220, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-primary)', '&:hover': { bgcolor: 'var(--pida-accent)' } }}
           >
             Enviar
           </Button>
