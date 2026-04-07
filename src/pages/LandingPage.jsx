@@ -174,6 +174,24 @@ export default function LandingPage({ onOpenAuth }) {
     }
   };
 
+  const muiCorpBtnStyle = {
+    backgroundColor: 'var(--white)', // Azul más vivo y corporativo
+    color: 'var(--pida-primary)',
+    textTransform: 'none',
+    fontWeight: 600,
+    fontSize: '0.95rem',
+    borderRadius: '8px',
+    padding: '6px 22px', 
+    boxShadow: '0px 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14)', 
+    fontFamily: 'var(--font-body)',
+    transition: 'background-color 250ms ease, box-shadow 250ms ease, color 250ms ease',
+    '&:hover': {
+      backgroundColor: 'var(--white)', // Nuevo color al pasar el cursor
+      color: 'var(--pida-primary)',
+      boxShadow: '0px 4px 12px rgba(56, 189, 248, 0.35)', // Resplandor acorde al nuevo color
+    }
+  };
+
   const muiCardBaseStyle = {
     padding: '35px',
     borderRadius: '20px',
@@ -707,7 +725,7 @@ export default function LandingPage({ onOpenAuth }) {
                 {/* BOTÓN CORPORATIVO - Actualizado a MUI */}
                 <Button 
                   onClick={() => setIsContactOpen(true)}
-                  sx={muiPrimaryBtnStyle}
+                  sx={muiCorpBtnStyle}
                 >
                   Contactar con Soporte Corporativo
                 </Button>
