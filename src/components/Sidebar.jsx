@@ -72,7 +72,7 @@ export default function Sidebar({ currentView, setCurrentView, user }) {
           onChange={(event, newValue) => {
             if (newValue !== 'menu') setCurrentView(newValue);
           }}
-          sx={{ height: 70, bgcolor: '#003399' }}
+          sx={{ height: 70, bgcolor: 'var(--pida-primary)' }}
         >
           {navItems.map((item) => (
             <BottomNavigationAction
