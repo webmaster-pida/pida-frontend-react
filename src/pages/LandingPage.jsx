@@ -888,7 +888,7 @@ export default function LandingPage({ onOpenAuth }) {
                         color="primary"
                         fullWidth
                         disabled={contactStatus.isSubmitting}
-                        sx={{ py: 1.5, fontSize: '1rem', fontWeight: 'bold', borderRadius: 2, bgcolor: 'var(--pida-accent)', '&:hover': { bgcolor: '#004494' } }}
+                        sx={{ py: 1.5, fontSize: '1rem', fontWeight: 'bold', borderRadius: 2, bgcolor: 'var(--pida-primary)', '&:hover': { bgcolor: 'var(--pida-accent)' } }}
                     >
                         {contactStatus.isSubmitting ? 'Enviando información...' : 'Enviar Solicitud'}
                     </Button>
