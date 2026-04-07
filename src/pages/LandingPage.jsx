@@ -426,8 +426,8 @@ export default function LandingPage({ onOpenAuth }) {
       <main>
         <section id="pida"></section>
         
-        <section className="hero" style={{ paddingTop: '50px' }}>
-          <div className="wrapper hero-grid">
+        <section className="bg-circuitos" style={{ paddingTop: '0px' }}>
+          <div className="wrapper hero-grid" style={{ backgroundColor: 'var(--white)', padding: '60px 20px 30px 20px' }}>
             <div className="hero-content">
               <h1 style={{ fontSize: '3.0rem', lineHeight: '1.15', marginBottom: '15px', marginTop: '15px' }}>
                 Inteligencia Aumentada para la Defensa de los <br />
@@ -530,19 +530,19 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
-        <section id="bondades" style={{ background: '#FAFAFA', padding: '40px 0 10px 0' }}>
-            <div className="section-intro">
+        <section id="bondades" className="bg-circuitos">
+            <div className="section-intro" style={{background: 'var(--white)', padding: '40px 20px 40px 20px' }}>
                 <h2 style={{ marginBottom: '40px', textAlign: 'center' }}>Bondades únicas de PIDA</h2>
                 <div className="bento-grid">
-                    <div className="bento-card">
+                    <div className="bento-card" style={{ backgroundColor: '#ffffff' }}>
                         <h3 className="bento-title">Respuestas Ancladas, no Adivinanzas</h3>
                         <p style={{color: '#555555' }}>Cada respuesta está fundamentada y prioriza el conocimiento del IIRESODH. Esto le da un nivel de fiabilidad y precisión que las IAs genéricas no pueden ofrecer, minimizando el riesgo de información incorrecta.</p>
                     </div>
-                    <div className="bento-card">
+                    <div className="bento-card" style={{ backgroundColor: '#ffffff' }}>
                         <h3 className="bento-title">Lo Mejor de Dos Mundos</h3>
                         <p style={{color: '#555555' }}>Combina la sabiduría especializada del IIRESODH con la capacidad de razonamiento y redacción de un modelo de IA de vanguardia. Obtienes respuestas con calidad de experto, no solo texto genérico.</p>
                     </div>
-                    <div className="bento-card">
+                    <div className="bento-card" style={{ backgroundColor: '#ffffff' }}>
                         <h3 className="bento-title">Eficiencia Acelerada</h3>
                         <p style={{color: '#555555' }}>El “Analizador de Documentos” sigue siendo tu experto incansable, capaz de procesar tus archivos y extraer información clave en minutos, liberándote para la estrategia y la acción.</p>
                     </div>
@@ -603,8 +603,8 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
-        <section id="planes">
-          <div className="wrapper">
+        <section id="planes" className="bg-circuitos" style={{ padding: '40px 0' }}>
+          <div className="wrapper" style={{ background: 'var(--white)', padding: '40px 20px', width: '92%', borderRadius: '24px', margin: '0 auto' }}>
             <div className="section-intro">
               <h2>Planes Flexibles</h2>
               <p style={{ marginBottom: '10px' }}>Selecciona el plan que mejor se adapte a tu nivel de investigación.</p>
@@ -732,8 +732,8 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
-        <section id="testimonios">
-            <div className="wrapper">
+        <section id="testimonios" className="bg-circuitos">
+            <div className="wrapper" style={{background: 'var(--white)', padding: '40px 20px 40px 20px' }}>
                 <div className="section-intro" style={{ marginBottom: '10px' }}>
                     <h2>Lo que dicen nuestros usuarios</h2>
                 </div>
@@ -774,14 +774,25 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
-        <div className="wrapper">                  
-            <div className="copyright">
-                <span>&copy; 2026 IIRESODH PAYMENTS, LLC.</span>
-                <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Términos de uso</a>
-                <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Política de privacidad</a>
-                <a href="mailto:contacto@pida-ai.com" style={{ color: 'var(--navy)', textDecoration: 'none' }}>contacto@pida-ai.com</a>
+        <div style={{ background: 'var(--pida-primary)', padding: '12px 20px' }}>                  
+            <div 
+                className="wrapper-footer" 
+                style={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    justifyContent: 'center', 
+                    alignItems: 'center', 
+                    gap: '40px', 
+                    maxWidth: '1200px',
+                    margin: '0 auto',
+                    borderTop: 'none' /* <-- ¡Esto anula la línea blanca del CSS! */
+                }}
+            >
+                <span style={{ color: 'var(--white)' }}>&copy; 2026 IIRESODH PAYMENTS, LLC.</span>
+                <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--white)', textDecoration: 'none' }}>Términos de uso</a>
+                <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--white)', textDecoration: 'none' }}>Política de privacidad</a>
+                <a href="mailto:contacto@pida-ai.com" style={{ color: 'var(--white)', textDecoration: 'none' }}>contacto@pida-ai.com</a>
             </div>
-            <br />&nbsp;
         </div>
       </main>
 
