@@ -599,9 +599,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               <div className="pida-welcome-content">
                 <div className="pida-welcome-text">
                   <h3>Analizador de Documentos</h3>
-                  <p>Sube tus archivos (PDF, DOCX) y escribe una instrucción clara. PIDA leerá, resumirá y sistematizará el documento por ti. Podrás continuar haciendo preguntas de seguimiento.</p>
-                  <p style={{ marginTop: '15px', fontWeight: 'bold', color: '#1D3557' }}>Ejemplos de lo que puedes pedir:</p>
-                  <ul style={{ margin: '8px 0 0 0', padding: 0, listStyleType: 'none', color: '#374151' }}>
+                  <p style={{ color: 'var(--text)' }}>Sube tus archivos (PDF, DOCX) y escribe una instrucción clara. PIDA leerá, resumirá y sistematizará el documento por ti. Podrás continuar haciendo preguntas de seguimiento.</p>
+                  <p style={{ marginTop: '15px', fontWeight: 'bold', color: 'var(--navy)' }}>Ejemplos de lo que puedes pedir:</p>
+                  <ul style={{ margin: '8px 0 0 0', padding: 0, listStyleType: 'none', color: 'var(--text)' }}>
                     <li style={{ marginBottom: '6px' }}>"Haz un resumen ejecutivo de este documento."</li>
                     <li style={{ marginBottom: '6px' }}>"Identifica las cláusulas de rescisión y sus penalizaciones."</li>
                     <li style={{ marginBottom: '6px' }}>"Extrae una lista cronológica de los hechos."</li>
