@@ -11,12 +11,11 @@ const API_ANA = "https://analize-v20-strong-465781488910.us-central1.run.app";
 const markdownComponents = {
   a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
   
+  // EL VERDADERO BLINDAJE: TableContainer con width 100% y overflowX auto. Sin 'max-content'.
   table: ({ node, ...props }) => (
-    <div style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto', marginBottom: '16px' }}>
-      <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px', minWidth: '100%', width: 'max-content' }}>
-        <Table size="small" sx={{ minWidth: 600 }} {...props} />
-      </TableContainer>
-    </div>
+    <TableContainer component={Paper} sx={{ width: '100%', overflowX: 'auto', my: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+      <Table size="small" sx={{ minWidth: 650 }} {...props} />
+    </TableContainer>
   ),
   thead: ({ node, ...props }) => <TableHead sx={{ bgcolor: '#f1f5f9' }} {...props} />,
   tbody: ({ node, ...props }) => <TableBody {...props} />,
@@ -505,7 +504,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
       return (
         <>
-          <div className="markdown-content" style={{ wordBreak: 'break-word', maxWidth: '100%' }}>
+          {/* EL BLINDAJE APLICADO: width: 100% y overflowX: auto aquí asegura que la burbuja jamás crezca */}
+          <div className="markdown-content" style={{ width: '100%', overflowX: 'auto', wordBreak: 'break-word' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
               {formatMarkdown(mainContent)}
             </ReactMarkdown>
@@ -531,7 +531,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           )}
 
           {sources.length > 0 && (
-            <div className="markdown-content" style={{ marginTop: '20px', wordBreak: 'break-word', maxWidth: '100%' }}>
+            <div className="markdown-content" style={{ marginTop: '20px', width: '100%', overflowX: 'auto', wordBreak: 'break-word' }}>
               <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
                 {sources.join('\n')}
               </ReactMarkdown>
@@ -542,7 +542,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
 
     return (
-        <div className="markdown-content" style={{ wordBreak: 'break-word', maxWidth: '100%' }}>
+        <div className="markdown-content" style={{ width: '100%', overflowX: 'auto', wordBreak: 'break-word' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
               {formatMarkdown(text)}
             </ReactMarkdown>
@@ -557,7 +557,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         <div id="pida-chat-box"> 
           
           {messages.length === 0 && !isAnalyzing && (
-            <div className="pida-bubble pida-message-bubble" style={{ maxWidth: '100%', minWidth: 0, overflowX: 'hidden' }}>
+            <div className="pida-bubble pida-message-bubble">
               <div className="pida-welcome-content">
                 <div className="pida-welcome-text">
                   <h3>Analizador de Documentos</h3>
@@ -577,10 +577,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             <div 
               key={idx} 
               className={`pida-bubble ${msg.role === 'user' ? 'user-message-bubble' : 'pida-message-bubble'}`}
-              style={{ maxWidth: '100%', minWidth: 0, overflowX: 'hidden' }}
+              style={{ minWidth: 0, overflowX: 'hidden' }}
             >
                 {msg.role === 'user' 
-                    ? <div className="markdown-content" style={{ wordBreak: 'break-word', maxWidth: '100%' }}>
+                    ? <div className="markdown-content" style={{ width: '100%', overflowX: 'auto', wordBreak: 'break-word' }}>
                         <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
                           {msg.content}
                         </ReactMarkdown>
