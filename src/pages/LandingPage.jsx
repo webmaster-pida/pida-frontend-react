@@ -696,10 +696,10 @@ export default function LandingPage({ onOpenAuth }) {
           </div>
         </section>
 
-        <section id="info-corporativa" style={{ marginTop: '60px', padding: '60px 20px', background: '#F8FAFC', borderRadius: '16px', border: '1px solid var(--pida-border)', textAlign: 'center' }}>
+        <section id="info-corporativa" className="bg-ai-mesh" style={{ marginTop: '60px', padding: '60px 20px', textAlign: 'center' }}>
             <div className="wrapper" style={{ maxWidth: '900px', margin: '0 auto' }}>
-                <h3 style={{ color: 'var(--pida-primary)', fontSize: '2rem', marginBottom: '20px' }}>¿Necesitas PIDA para tu Organización o Institución?</h3>
-                <p style={{ color: 'var(--pida-text-muted)', fontSize: '1.15rem', lineHeight: '1.7', marginBottom: '35px' }}>
+                <h3 style={{ color: 'var(--white)', fontSize: '2rem', marginBottom: '20px' }}>¿Necesitas PIDA para tu Organización o Institución?</h3>
+                <p style={{ color: 'var(--white)', fontSize: '1.15rem', lineHeight: '1.7', marginBottom: '35px' }}>
                     PIDA está diseñado para escalar con las necesidades de grandes equipos de litigio que requieren de mucha investigación y redacción. Si representas a una firma legal, una organización de defensa de derechos humanos, una fiscalía o formas parte de cualquier órgano de gobierno o bien, perteneces a una institución académica, ofrecemos esquemas de licenciamiento por volumen. 
                     <br /><br />
                     Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario.
