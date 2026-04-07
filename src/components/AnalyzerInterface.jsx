@@ -11,11 +11,12 @@ const API_ANA = "https://analize-v20-strong-465781488910.us-central1.run.app";
 const markdownComponents = {
   a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
   
-  // EL VERDADERO BLINDAJE CSS ABSOLUTO: Encapsulamos la tabla en un block container estricto
+  // EL VERDADERO BLINDAJE: Ahora sí, eliminado por completo 'max-content'.
+  // Se usa width: '100%' para que no rompa el contenedor padre.
   table: ({ node, ...props }) => (
     <div style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
-      <TableContainer component={Paper} sx={{ minWidth: 600, width: 'max-content', mb: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-        <Table size="small" {...props} />
+      <TableContainer component={Paper} sx={{ width: '100%', mb: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+        <Table size="small" sx={{ minWidth: 600 }} {...props} />
       </TableContainer>
     </div>
   ),
