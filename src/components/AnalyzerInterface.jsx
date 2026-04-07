@@ -761,7 +761,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             variant="contained" 
             color="primary" 
             disabled={isAnalyzing}
-            sx={{ width: 220, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-accent)', '&:hover': { bgcolor: '#004494' } }}
+            sx={{ width: 220, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-primary)', '&:hover': { bgcolor: 'var(--pida-accent)' } }}
           >
             Analizar
           </Button>
