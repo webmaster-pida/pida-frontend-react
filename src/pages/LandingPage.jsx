@@ -502,7 +502,7 @@ export default function LandingPage({ onOpenAuth }) {
           </div>
         </section>
 
-        <section id="diferencia" className="bg-ai-mesh" style={{ padding: '40px 0 10px 0' }}>
+        <section id="diferencia" className="bg-ai-mesh" style={{ padding: '80px 0 40px 0' }}>
             <div className="wrapper">
                 <div className="section-intro">
                     <h2 style={{color: 'var(--white)'}}>¿Cuál es la gran diferencia de PIDA?</h2>
