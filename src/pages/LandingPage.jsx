@@ -504,7 +504,7 @@ export default function LandingPage({ onOpenAuth }) {
                   ref={videoRef}
                   controls={hasStarted} 
                   preload="metadata"
-                  poster="/img/PIDA-MASCOTA-500-trans.webp" 
+                  poster="/img/video-portada.webp" 
                   src="https://storage.googleapis.com/img-pida/PIDA.mp4"
                   sx={{
                     display: 'block',
