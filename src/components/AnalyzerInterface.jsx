@@ -11,36 +11,38 @@ const API_ANA = "https://analize-v20-strong-465781488910.us-central1.run.app";
 const markdownComponents = {
   a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
   
-  // EL VERDADERO BLINDAJE: TableContainer con width 100% y overflowX auto. Sin 'max-content'.
+  // EL VERDADERO BLINDAJE CSS ABSOLUTO: Encapsulamos la tabla en un block container estricto
   table: ({ node, ...props }) => (
-    <TableContainer component={Paper} sx={{ width: '100%', overflowX: 'auto', my: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-      <Table size="small" sx={{ minWidth: 650 }} {...props} />
-    </TableContainer>
+    <div style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
+      <TableContainer component={Paper} sx={{ minWidth: 600, width: 'max-content', mb: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+        <Table size="small" {...props} />
+      </TableContainer>
+    </div>
   ),
   thead: ({ node, ...props }) => <TableHead sx={{ bgcolor: '#f1f5f9' }} {...props} />,
   tbody: ({ node, ...props }) => <TableBody {...props} />,
   tr: ({ node, ...props }) => <TableRow hover {...props} />,
   th: ({ node, ...props }) => (
-    <TableCell 
-      sx={{ 
-        fontWeight: 'bold', 
-        color: 'var(--pida-primary)', 
+    <TableCell
+      sx={{
+        fontWeight: 'bold',
+        color: 'var(--pida-primary)',
         borderBottom: '2px solid #cbd5e1',
         whiteSpace: 'normal',
         lineHeight: 1.3
-      }} 
-      {...props} 
+      }}
+      {...props}
     />
   ),
   td: ({ node, ...props }) => (
-    <TableCell 
-      sx={{ 
+    <TableCell
+      sx={{
         borderColor: '#e2e8f0',
         verticalAlign: 'top',
         whiteSpace: 'normal',
         wordBreak: 'break-word'
-      }} 
-      {...props} 
+      }}
+      {...props}
     />
   )
 };
@@ -77,14 +79,14 @@ const translateFileError = (errMsg, currentFiles = []) => {
     }
     
     if (currentFiles && currentFiles.length > 0 && totalSizeMB < 10) {
-        return { 
-            title: "Archivo Corrupto o Dañado", 
-            message: "El motor de Inteligencia Artificial no pudo procesar el documento porque presenta **corrupción oculta en su estructura interna**.\n\n**Solución rápida:** Abre el documento en tu computadora, selecciona la opción **'Imprimir'**, elige **'Guardar como PDF'** y vuelve a subir esta nueva versión generada." 
+        return {
+            title: "Archivo Corrupto o Dañado",
+            message: "El motor de Inteligencia Artificial no pudo procesar el documento porque presenta **corrupción oculta en su estructura interna**.\n\n**Solución rápida:** Abre el documento en tu computadora, selecciona la opción **'Imprimir'**, elige **'Guardar como PDF'** y vuelve a subir esta nueva versión generada."
         };
     } else {
-        return { 
-            title: "Error de Lectura o Complejidad", 
-            message: "El motor de análisis rechazó el documento. Esto suele ocurrir por dos motivos:\n\n1. El archivo presenta **corrupción en su estructura interna**.\n2. El documento supera la **capacidad máxima de procesamiento** (ej. exceso de resolución visual o miles de páginas).\n\n**Solución:** Verifica que el archivo sea válido. Si el problema persiste, intenta comprimirlo, dividirlo en secciones o guardarlo nuevamente como PDF ('Imprimir > Guardar como PDF')." 
+        return {
+            title: "Error de Lectura o Complejidad",
+            message: "El motor de análisis rechazó el documento. Esto suele ocurrir por dos motivos:\n\n1. El archivo presenta **corrupción en su estructura interna**.\n2. El documento supera la **capacidad máxima de procesamiento** (ej. exceso de resolución visual o miles de páginas).\n\n**Solución:** Verifica que el archivo sea válido. Si el problema persiste, intenta comprimirlo, dividirlo en secciones o guardarlo nuevamente como PDF ('Imprimir > Guardar como PDF')."
         };
     }
   }
@@ -110,7 +112,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [currentAnaId, setCurrentAnaId] = useState(null);
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [statusText, setStatusText] = useState(''); 
+  const [statusText, setStatusText] = useState('');
   
   const [errorModal, setErrorModal] = useState({ show: false, title: '', message: '' });
   const [showMissingFileModal, setShowMissingFileModal] = useState(false);
@@ -152,7 +154,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         setErrorModal({ show: false, title: '', message: '' });
         setMessages([]);
         setCurrentAnaId(null);
-        setIsAtBottom(true); 
+        setIsAtBottom(true);
         
         try {
           const token = await user.getIdToken();
@@ -181,7 +183,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           }
           
           setCurrentAnaId(loadAnaId);
-          setFiles([]); 
+          setFiles([]);
           setTimeout(() => scrollToBottom('auto'), 100);
         } catch (err) {
           const mappedError = translateFileError(err.message, []);
@@ -202,10 +204,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       
       selectedFiles.forEach(file => {
         const fileSizeMB = file.size / (1024 * 1024);
-        if (fileSizeMB > 50) { 
-          setErrorModal({ 
-            show: true, 
-            title: "Archivo excede el límite máximo", 
+        if (fileSizeMB > 50) {
+          setErrorModal({
+            show: true,
+            title: "Archivo excede el límite máximo",
             message: `El archivo **${file.name}** pesa ${fileSizeMB.toFixed(2)} MB.\n\nEl límite máximo absoluto permitido en la plataforma es de **50 MB** por documento para garantizar el rendimiento del sistema. Por favor, divide tu archivo antes de subirlo.`
           });
         } else {
@@ -234,7 +236,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     setIsAtBottom(true);
   };
 
-  // --- NUEVA FUNCIÓN DE DESCARGA CONECTADA AL BACKEND ---
   const handleBackendDownload = async (format) => {
     if (messages.length === 0) {
       alert("Por favor, interactúa en el analizador antes de descargarlo.");
@@ -244,7 +245,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       const token = await user.getIdToken();
       const formData = new FormData();
       
-      // Enviamos todo el historial como JSON
       formData.append("history_json", JSON.stringify(messages));
       formData.append("file_format", format);
       if (currentAnaId) formData.append("analysis_id", currentAnaId);
@@ -542,8 +542,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
       return (
         <>
-          {/* EL BLINDAJE APLICADO: width: 100% y overflowX: auto aquí asegura que la burbuja jamás crezca */}
-          <div className="markdown-content" style={{ width: '100%', overflowX: 'auto', wordBreak: 'break-word' }}>
+          <div className="markdown-content" style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto', wordBreak: 'break-word', boxSizing: 'border-box' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
               {formatMarkdown(mainContent)}
             </ReactMarkdown>
@@ -569,7 +568,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           )}
 
           {sources.length > 0 && (
-            <div className="markdown-content" style={{ marginTop: '20px', width: '100%', overflowX: 'auto', wordBreak: 'break-word' }}>
+            <div className="markdown-content" style={{ marginTop: '20px', display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto', wordBreak: 'break-word', boxSizing: 'border-box' }}>
               <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
                 {sources.join('\n')}
               </ReactMarkdown>
@@ -580,7 +579,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
 
     return (
-        <div className="markdown-content" style={{ width: '100%', overflowX: 'auto', wordBreak: 'break-word' }}>
+        <div className="markdown-content" style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto', wordBreak: 'break-word', boxSizing: 'border-box' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
               {formatMarkdown(text)}
             </ReactMarkdown>
@@ -615,10 +614,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             <div 
               key={idx} 
               className={`pida-bubble ${msg.role === 'user' ? 'user-message-bubble' : 'pida-message-bubble'}`}
-              style={{ minWidth: 0, overflowX: 'hidden' }}
+              style={{ maxWidth: '100%', minWidth: 0, overflowX: 'hidden', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}
             >
                 {msg.role === 'user' 
-                    ? <div className="markdown-content" style={{ width: '100%', overflowX: 'auto', wordBreak: 'break-word' }}>
+                    ? <div className="markdown-content" style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto', wordBreak: 'break-word', boxSizing: 'border-box' }}>
                         <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
                           {msg.content}
                         </ReactMarkdown>
@@ -668,7 +667,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       )}
 
       <form className="pida-view-form" onSubmit={(e) => handleAnalyze(e)}>
-        {/* BOTONES DE DESCARGA ACTUALIZADOS PARA USAR EL BACKEND */}
         {messages.length > 0 && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
             <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
