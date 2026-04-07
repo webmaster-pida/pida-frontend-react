@@ -134,7 +134,7 @@ export default function Sidebar({ currentView, setCurrentView, user }) {
 
   // ... (El resto del código Desktop se mantiene igual)
   return (
-    <Box component="aside" sx={{ width: DRAWER_WIDTH, height: '100vh', bgcolor: '#003399', display: 'flex', flexDirection: 'column', flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.1)' }}>
+    <Box component="aside" sx={{ width: DRAWER_WIDTH, height: '100vh', bgcolor: 'var(--pida-primary)', display: 'flex', flexDirection: 'column', flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.1)' }}>
       <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
         <Box component="img" src="/img/PIDA-logo-blanco-scaled.png" alt="PIDA" sx={{ width: '100%', maxWidth: 160, cursor: 'pointer' }} onClick={() => setCurrentView('investigador')} />
       </Box>
