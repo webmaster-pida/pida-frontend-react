@@ -4,7 +4,6 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
-// Importaciones de Material-UI añadidas (incluyendo componentes de Tabla)
 import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 
 const API_ANA = "https://analize-v20-strong-465781488910.us-central1.run.app";
@@ -12,14 +11,12 @@ const API_ANA = "https://analize-v20-strong-465781488910.us-central1.run.app";
 const markdownComponents = {
   a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
   
-  // 1. Envolvemos la tabla en un Box con maxWidth: '100%' para BLINDAR la interfaz principal.
   table: ({ node, ...props }) => (
-    <Box sx={{ maxWidth: '100%', overflowX: 'auto', my: 2 }}>
-      <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-        {/* 2. Asignamos un minWidth razonable. Así la tabla respira y es legible. */}
-        <Table size="small" sx={{ minWidth: 700 }} {...props} />
+    <div style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto', marginBottom: '16px' }}>
+      <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px', minWidth: '100%', width: 'max-content' }}>
+        <Table size="small" sx={{ minWidth: 600 }} {...props} />
       </TableContainer>
-    </Box>
+    </div>
   ),
   thead: ({ node, ...props }) => <TableHead sx={{ bgcolor: '#f1f5f9' }} {...props} />,
   tbody: ({ node, ...props }) => <TableBody {...props} />,
@@ -30,7 +27,7 @@ const markdownComponents = {
         fontWeight: 'bold', 
         color: 'var(--pida-primary)', 
         borderBottom: '2px solid #cbd5e1',
-        whiteSpace: 'normal', // Garantiza que los títulos bajen de línea
+        whiteSpace: 'normal',
         lineHeight: 1.3
       }} 
       {...props} 
@@ -41,7 +38,7 @@ const markdownComponents = {
       sx={{ 
         borderColor: '#e2e8f0',
         verticalAlign: 'top',
-        whiteSpace: 'normal', // Garantiza que el contenido baje de línea
+        whiteSpace: 'normal',
         wordBreak: 'break-word'
       }} 
       {...props} 
@@ -49,15 +46,11 @@ const markdownComponents = {
   )
 };
 
-// =========================================================================
-// MAPEO DE ERRORES UI/UX (DESEMPATE INTELIGENTE Y SIN EMOJIS)
-// =========================================================================
 const translateFileError = (errMsg, currentFiles = []) => {
   if (!errMsg) return { title: "Error Desconocido", message: "Ocurrió un error desconocido al procesar el archivo." };
 
   const lowerMsg = errMsg.toLowerCase();
 
-  // NUEVO: Manejo amigable de errores de JSON y red
   if (lowerMsg.includes('unterminated') || lowerMsg.includes('json') || lowerMsg.includes('parse')) {
     return { title: "Interrupción de Red", message: "La respuesta del servidor se cortó o llegó incompleta debido a una interrupción temporal en la conexión.\n\nPor favor, presiona el botón **'Analizar'** nuevamente para reintentarlo." };
   }
@@ -110,7 +103,6 @@ const translateFileError = (errMsg, currentFiles = []) => {
   return { title: "Error de Análisis", message: `Ocurrió un problema técnico durante el proceso:\n\n\`${errMsg}\`` };
 };
 
-
 export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [files, setFiles] = useState([]);
   const [instructions, setInstructions] = useState('');
@@ -124,9 +116,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [errorModal, setErrorModal] = useState({ show: false, title: '', message: '' });
   const [showMissingFileModal, setShowMissingFileModal] = useState(false);
   
-  // =========================================================================
-  // REFS Y ESTADOS PARA EL SMART SCROLLING
-  // =========================================================================
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -206,7 +195,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       loadPastAna();
     }
   }, [loadAnaId, user]);
-
 
   const handleFileChange = (e) => {
     if (e.target.files) {
@@ -390,7 +378,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       const decoder = new TextDecoder("utf-8");
       let fullText = "";
       
-      // 🛡️ NUEVO: El Búfer que evita que el JSON se corte a la mitad
       let streamBuffer = ""; 
       
       setStatusText(''); 
@@ -399,19 +386,13 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         const { value, done } = await reader.read();
         if (done) break;
         
-        // Usar { stream: true } asegura que caracteres especiales no se rompan
         streamBuffer += decoder.decode(value, { stream: true });
-        
-        // Separamos por el delimitador de Server-Sent Events (\n\n)
         const chunks = streamBuffer.split('\n\n');
-        
-        // El último elemento puede estar incompleto, lo dejamos en el búfer para la siguiente vuelta
         streamBuffer = chunks.pop();
         
         for (const chunk of chunks) {
           if (chunk.startsWith('data:')) {
             try {
-              // Limpiamos el 'data: ' del inicio para tener solo el JSON
               const jsonStr = chunk.replace(/^data:\s*/, '');
               const d = JSON.parse(jsonStr);
               
@@ -524,7 +505,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
       return (
         <>
-          <div className="markdown-content">
+          <div className="markdown-content" style={{ wordBreak: 'break-word', maxWidth: '100%' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
               {formatMarkdown(mainContent)}
             </ReactMarkdown>
@@ -550,7 +531,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           )}
 
           {sources.length > 0 && (
-            <div className="markdown-content" style={{ marginTop: '20px' }}>
+            <div className="markdown-content" style={{ marginTop: '20px', wordBreak: 'break-word', maxWidth: '100%' }}>
               <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
                 {sources.join('\n')}
               </ReactMarkdown>
@@ -561,7 +542,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
 
     return (
-        <div className="markdown-content">
+        <div className="markdown-content" style={{ wordBreak: 'break-word', maxWidth: '100%' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
               {formatMarkdown(text)}
             </ReactMarkdown>
@@ -576,7 +557,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         <div id="pida-chat-box"> 
           
           {messages.length === 0 && !isAnalyzing && (
-            <div className="pida-bubble pida-message-bubble">
+            <div className="pida-bubble pida-message-bubble" style={{ maxWidth: '100%', minWidth: 0, overflowX: 'hidden' }}>
               <div className="pida-welcome-content">
                 <div className="pida-welcome-text">
                   <h3>Analizador de Documentos</h3>
@@ -593,9 +574,13 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           )}
 
           {messages.map((msg, idx) => (
-            <div key={idx} className={`pida-bubble ${msg.role === 'user' ? 'user-message-bubble' : 'pida-message-bubble'}`}>
+            <div 
+              key={idx} 
+              className={`pida-bubble ${msg.role === 'user' ? 'user-message-bubble' : 'pida-message-bubble'}`}
+              style={{ maxWidth: '100%', minWidth: 0, overflowX: 'hidden' }}
+            >
                 {msg.role === 'user' 
-                    ? <div className="markdown-content">
+                    ? <div className="markdown-content" style={{ wordBreak: 'break-word', maxWidth: '100%' }}>
                         <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
                           {msg.content}
                         </ReactMarkdown>
@@ -617,7 +602,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         </div>
       </div>
 
-      {/* FAB de MUI para Scroll To Bottom */}
       {!isAtBottom && messages.length > 0 && (
         <Fab
           color="primary"
@@ -646,8 +630,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       )}
 
       <form className="pida-view-form" onSubmit={(e) => handleAnalyze(e)}>
-        
-        {/* Controles de Descarga agrupados con ButtonGroup de MUI */}
         {messages.length > 0 && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
             <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
@@ -707,7 +689,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           </div>
         )}
 
-        {/* Input con TextField de MUI, auto-crecimiento hasta 5 líneas */}
         <TextField 
           id="user-instructions"
           multiline
@@ -728,7 +709,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           }}
         />
         
-        {/* Botones de Limpiar y Analizar de MUI - Se eliminó pida-form-actions para estandarizar separación */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button 
             variant="text" 
@@ -750,7 +730,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         </Box>
       </form>
 
-      {/* --- MODALES INTACTOS --- */}
       {showMissingFileModal && (
         <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setShowMissingFileModal(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: '40px 30px', maxWidth: '420px', borderRadius: '16px' }}>
