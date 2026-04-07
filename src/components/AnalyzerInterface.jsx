@@ -234,6 +234,44 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     setIsAtBottom(true);
   };
 
+  // --- NUEVA FUNCIÓN DE DESCARGA CONECTADA AL BACKEND ---
+  const handleBackendDownload = async (format) => {
+    if (messages.length === 0) {
+      alert("Por favor, interactúa en el analizador antes de descargarlo.");
+      return;
+    }
+    try {
+      const token = await user.getIdToken();
+      const formData = new FormData();
+      
+      // Enviamos todo el historial como JSON
+      formData.append("history_json", JSON.stringify(messages));
+      formData.append("file_format", format);
+      if (currentAnaId) formData.append("analysis_id", currentAnaId);
+
+      const res = await fetch(`${API_ANA}/download-analysis`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+
+      if (!res.ok) throw new Error("Error en el servidor al generar el documento.");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${getTimestampedName("Analisis_PIDA")}.${format}`; 
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      alert("Hubo un problema descargando el archivo.");
+    }
+  };
+
   const handleAnalyze = async (eOrInstruction = null) => {
     if (eOrInstruction && eOrInstruction.preventDefault) {
       eOrInstruction.preventDefault();
@@ -630,12 +668,13 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       )}
 
       <form className="pida-view-form" onSubmit={(e) => handleAnalyze(e)}>
+        {/* BOTONES DE DESCARGA ACTUALIZADOS PARA USAR EL BACKEND */}
         {messages.length > 0 && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
             <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
               <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>TXT</Button>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>DOCX</Button>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", messages)}>PDF</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('docx')}>DOCX</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('pdf')}>PDF</Button>
             </ButtonGroup>
           </Box>
         )}
