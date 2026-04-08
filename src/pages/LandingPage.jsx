@@ -343,9 +343,10 @@ export default function LandingPage({ onOpenAuth }) {
                     }
                   }}
                 >
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-001.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.85rem', py: 1.5 }}>📄 Enero 2026</MenuItem>
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-002.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.85rem', py: 1.5 }}>📄 Febrero 2026</MenuItem>
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-003.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.85rem', py: 1.5 }}>📄 Marzo 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-001.pdf" target="_blank" rel="noreferrer" sx={{ color: 'var(--pida-primary)', fontSize: '0.85rem', py: 1.5 }}>📄 Enero 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-002.pdf" target="_blank" rel="noreferrer" sx={{ color: 'var(--pida-primary)', fontSize: '0.85rem', py: 1.5 }}>📄 Febrero 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-003.pdf" target="_blank" rel="noreferrer" sx={{ color: 'var(--pida-primary)', fontSize: '0.85rem', py: 1.5 }}>📄 Marzo 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-004.pdf" target="_blank" rel="noreferrer" sx={{ color: 'var(--pida-primary)', fontSize: '0.85rem', py: 1.5 }}>📄 Abril 2026</MenuItem>
                 </Menu>
               </div>
 
