@@ -577,7 +577,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
             right: '25px',
             zIndex: 900,
             opacity: 0.9,
-            backgroundColor: 'var(--pida)',
+            backgroundColor: 'var(--pida-primary)',
             '&:hover': { backgroundColor: 'var(--pida-accent)', opacity: 1 }
           }}
           title="Ir al último mensaje"
