@@ -157,7 +157,7 @@ export default function LandingPage({ onOpenAuth }) {
   };
 
   const muiPrimaryBtnStyle = {
-    backgroundColor: 'var(--pida-accent)', // Azul más vivo y corporativo
+    backgroundColor: 'var(--navy)', // Azul más vivo y corporativo
     color: 'var(--white)',
     textTransform: 'none',
     fontWeight: 600,
@@ -168,8 +168,26 @@ export default function LandingPage({ onOpenAuth }) {
     fontFamily: 'var(--font-body)',
     transition: 'background-color 250ms ease, box-shadow 250ms ease, color 250ms ease',
     '&:hover': {
-      backgroundColor: '#38BDF8', // Nuevo color al pasar el cursor
+      backgroundColor: 'var(--pida-accent)', // Nuevo color al pasar el cursor
       color: '#ffffff',
+      boxShadow: '0px 4px 12px rgba(56, 189, 248, 0.35)', // Resplandor acorde al nuevo color
+    }
+  };
+
+  const muiCorpBtnStyle = {
+    backgroundColor: 'var(--white)', // Azul más vivo y corporativo
+    color: 'var(--pida-primary)',
+    textTransform: 'none',
+    fontWeight: 600,
+    fontSize: '0.95rem',
+    borderRadius: '8px',
+    padding: '6px 22px', 
+    boxShadow: '0px 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14)', 
+    fontFamily: 'var(--font-body)',
+    transition: 'background-color 250ms ease, box-shadow 250ms ease, color 250ms ease',
+    '&:hover': {
+      backgroundColor: 'var(--white)', // Nuevo color al pasar el cursor
+      color: 'var(--pida-primary)',
       boxShadow: '0px 4px 12px rgba(56, 189, 248, 0.35)', // Resplandor acorde al nuevo color
     }
   };
@@ -204,8 +222,8 @@ export default function LandingPage({ onOpenAuth }) {
 
   const muiGhostBtnStyle = {
     backgroundColor: 'white',
-    color: 'var(--pida-accent)', // Texto en azul vibrante
-    border: '2px solid var(--pida-accent)', // Borde en azul vibrante
+    color: 'var(--navy)', // Texto en azul vibrante
+    border: '2px solid var(--navy)', // Borde en azul vibrante
     textTransform: 'none',
     fontWeight: 800,
     fontSize: '0.95rem',
@@ -214,7 +232,7 @@ export default function LandingPage({ onOpenAuth }) {
     fontFamily: 'var(--font-body)',
     transition: 'all 250ms ease',
     '&:hover': {
-      backgroundColor: 'var(--pida-accent)', // Se rellena del color vibrante al pasar el mouse
+      backgroundColor: 'var(--navy)', // Se rellena del color vibrante al pasar el mouse
       color: 'white', // El texto pasa a blanco para contrastar
     }
   }
@@ -237,7 +255,7 @@ export default function LandingPage({ onOpenAuth }) {
         <div className="wrapper nav-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           
           <a href="/" style={{ display: 'flex', alignItems: 'center', flexShrink: 0, zIndex: 1001 }}>
-            <img className="header-logo" src="/img/PIDA_logo-100.webp" alt="Logo PIDA" style={{ height: '100px', width: 'auto', flexShrink: 0 }} />
+            <img className="header-logo" src="/img/PIDA_logo-100-blue-red.webp" alt="Logo PIDA" style={{ height: '100px', width: 'auto', flexShrink: 0 }} />
           </a>
 
           <button 
@@ -325,9 +343,9 @@ export default function LandingPage({ onOpenAuth }) {
                     }
                   }}
                 >
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-001.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Enero 2026</MenuItem>
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-002.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Febrero 2026</MenuItem>
-                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-003.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.95rem', py: 1.5 }}>📄 Marzo 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-001.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.85rem', py: 1.5 }}>📄 Enero 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-002.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.85rem', py: 1.5 }}>📄 Febrero 2026</MenuItem>
+                  <MenuItem onClick={handleNewsletterClose} component="a" href="/newsletter-003.pdf" target="_blank" rel="noreferrer" sx={{ color: '#1D3557', fontSize: '0.85rem', py: 1.5 }}>📄 Marzo 2026</MenuItem>
                 </Menu>
               </div>
 
@@ -408,8 +426,8 @@ export default function LandingPage({ onOpenAuth }) {
       <main>
         <section id="pida"></section>
         
-        <section className="hero" style={{ paddingTop: '30px' }}>
-          <div className="wrapper hero-grid">
+        <section className="bg-circuitos" style={{ paddingTop: '0px' }}>
+          <div className="wrapper hero-grid" style={{ backgroundColor: 'var(--white)', padding: '60px 20px 30px 20px' }}>
             <div className="hero-content">
               <h1 style={{ fontSize: '3.0rem', lineHeight: '1.15', marginBottom: '15px', marginTop: '15px' }}>
                 Inteligencia Aumentada para la Defensa de los <br />
@@ -486,7 +504,7 @@ export default function LandingPage({ onOpenAuth }) {
                   ref={videoRef}
                   controls={hasStarted} 
                   preload="metadata"
-                  poster="/img/PIDA-MASCOTA-500-trans.webp" 
+                  poster="/img/video-portada.webp" 
                   src="https://storage.googleapis.com/img-pida/PIDA.mp4"
                   sx={{
                     display: 'block',
@@ -502,31 +520,31 @@ export default function LandingPage({ onOpenAuth }) {
           </div>
         </section>
 
-        <section id="diferencia" style={{ backgroundColor: '#FFFFFF', padding: '40px 0 10px 0' }}>
+        <section id="diferencia" className="bg-ai-mesh" style={{ padding: '80px 0 40px 0' }}>
             <div className="wrapper">
                 <div className="section-intro">
-                    <h2>¿Cuál es la gran diferencia de PIDA?</h2>
-                    <p>PIDA no improvisa buscando en el caos de internet. Su punto de partida es la biblioteca del <strong>IIRESODH</strong>, una institución referente con más de 30 años de experiencia en Litigio Estratégico Internacional.</p>
-                    <p>Primero, PIDA consulta este acervo validado por personas expertas en Derechos Humanos para obtener el fundamento correcto. Luego, usa la IA para construir tu respuesta. Así obtienes la velocidad de la tecnología, pero con la <strong>autoridad y el rigor técnico</strong> que solo el IIRESODH puede garantizar.</p>
+                    <h2 style={{color: 'var(--white)'}}>¿Cuál es la gran diferencia de PIDA?</h2>
+                    <p style={{ fontSize: '1.2rem', color: 'var(--white)', maxWidth: '900px', margin: '0 auto' }}>PIDA no improvisa buscando en el caos de internet. Su punto de partida es la biblioteca del <strong>IIRESODH</strong>, una institución referente con más de 30 años de experiencia en Litigio Estratégico Internacional.</p>
+                    <p style={{ fontSize: '1.2rem', color: 'var(--white)', maxWidth: '900px', margin: '0 auto' }}>Primero, PIDA consulta este acervo validado por personas expertas en Derechos Humanos para obtener el fundamento correcto. Luego, usa la IA para construir tu respuesta. Así obtienes la velocidad de la tecnología, pero con la <strong>autoridad y el rigor técnico</strong> que solo el <strong>IIRESODH</strong> puede garantizar.</p>
                 </div>
             </div>
         </section>
 
-        <section id="bondades" style={{ background: '#FAFAFA', padding: '40px 0 10px 0' }}>
-            <div className="wrapper">
+        <section id="bondades" className="bg-circuitos">
+            <div className="section-intro" style={{background: 'var(--white)', padding: '40px 20px 40px 20px' }}>
                 <h2 style={{ marginBottom: '40px', textAlign: 'center' }}>Bondades únicas de PIDA</h2>
                 <div className="bento-grid">
-                    <div className="bento-card">
+                    <div className="bento-card" style={{ backgroundColor: '#ffffff' }}>
                         <h3 className="bento-title">Respuestas Ancladas, no Adivinanzas</h3>
-                        <p>Cada respuesta está fundamentada y prioriza el conocimiento del IIRESODH. Esto le da un nivel de fiabilidad y precisión que las IAs genéricas no pueden ofrecer, minimizando el riesgo de información incorrecta.</p>
+                        <p style={{color: '#555555' }}>Cada respuesta está fundamentada y prioriza el conocimiento del IIRESODH. Esto le da un nivel de fiabilidad y precisión que las IAs genéricas no pueden ofrecer, minimizando el riesgo de información incorrecta.</p>
                     </div>
-                    <div className="bento-card">
+                    <div className="bento-card" style={{ backgroundColor: '#ffffff' }}>
                         <h3 className="bento-title">Lo Mejor de Dos Mundos</h3>
-                        <p>Combina la sabiduría especializada del IIRESODH con la capacidad de razonamiento y redacción de un modelo de IA de vanguardia. Obtienes respuestas con calidad de experto, no solo texto genérico.</p>
+                        <p style={{color: '#555555' }}>Combina la sabiduría especializada del IIRESODH con la capacidad de razonamiento y redacción de un modelo de IA de vanguardia. Obtienes respuestas con calidad de experto, no solo texto genérico.</p>
                     </div>
-                    <div className="bento-card">
+                    <div className="bento-card" style={{ backgroundColor: '#ffffff' }}>
                         <h3 className="bento-title">Eficiencia Acelerada</h3>
-                        <p>El “Analizador de Documentos” sigue siendo tu experto incansable, capaz de procesar tus archivos y extraer información clave en minutos, liberándote para la estrategia y la acción.</p>
+                        <p style={{color: '#555555' }}>El “Analizador de Documentos” sigue siendo tu experto incansable, capaz de procesar tus archivos y extraer información clave en minutos, liberándote para la estrategia y la acción.</p>
                     </div>
                 </div>
             </div>
@@ -536,7 +554,7 @@ export default function LandingPage({ onOpenAuth }) {
             <div className="wrapper" style={{ position: 'relative', zIndex: 1 }}>
                 <div className="section-intro" style={{ marginBottom: '60px' }}>
                     <h2 style={{ color: '#FFFFFF', fontSize: '2.8rem', marginBottom: '15px' }}>El Ecosistema PIDA</h2>
-                    <p style={{ fontSize: '1.2rem', color: '#CBD5E1', maxWidth: '800px', margin: '0 auto' }}>
+                    <p style={{ fontSize: '1.2rem', color: 'var(--white)', maxWidth: '900px', margin: '0 auto' }}>
                         PIDA integra tres motores especializados que trabajan en conjunto para cubrir el ciclo completo de la defensa legal: investigación, análisis documental y diagnóstico de casos.
                     </p>
                 </div>
@@ -546,7 +564,7 @@ export default function LandingPage({ onOpenAuth }) {
                     <div className="glass-card">
                         <h3 style={{ color: '#FFFFFF', fontSize: '1.5rem', marginBottom: '10px' }}>
                             1. Experto en Derechos Humanos
-                            <span style={{ display: 'block', fontSize: '0.85rem', color: '#38BDF8', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU CONSULTOR FUNDAMENTADO</span>
+                            <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--red)', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU CONSULTOR FUNDAMENTADO</span>
                         </h3>
                         <p style={{ fontSize: '1.05rem', color: '#E2E8F0', lineHeight: '1.7', marginBottom: '15px' }}>
                             Este motor redefine la investigación jurídica. A diferencia de los chats genéricos que improvisan respuestas, PIDA actúa como un consultor senior conectado directamente a la <strong style={{ color: '#FFFFFF' }}>biblioteca privada y curada del IIRESODH</strong>.
@@ -559,7 +577,7 @@ export default function LandingPage({ onOpenAuth }) {
                     <div className="glass-card">
                         <h3 style={{ color: '#FFFFFF', fontSize: '1.5rem', marginBottom: '10px' }}>
                             2. Analizador de Documentos
-                            <span style={{ display: 'block', fontSize: '0.85rem', color: '#38BDF8', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU ESTRATEGA PROCESAL</span>
+                            <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--red)', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU ESTRATEGA PROCESAL</span>
                         </h3>
                         <p style={{ fontSize: '1.05rem', color: '#E2E8F0', lineHeight: '1.7', marginBottom: '15px' }}>
                             Capacidad de procesamiento masivo para el abogado moderno. Esta herramienta lee, comprende y procesa archivos voluminosos (PDF, Word) en segundos, actuando como un asistente analítico incansable.
@@ -572,7 +590,7 @@ export default function LandingPage({ onOpenAuth }) {
                     <div className="glass-card">
                         <h3 style={{ color: '#FFFFFF', fontSize: '1.5rem', marginBottom: '10px' }}>
                             3. Precalificador de Conductas
-                            <span style={{ display: 'block', fontSize: '0.85rem', color: '#38BDF8', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU DIAGNÓSTICO INMEDIATO</span>
+                            <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--red)', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU DIAGNÓSTICO INMEDIATO</span>
                         </h3>
                         <p style={{ fontSize: '1.05rem', color: '#E2E8F0', lineHeight: '1.7', marginBottom: '15px' }}>
                             Una herramienta de encuadre jurídico diseñada para la etapa inicial de cualquier caso. Funciona como un puente inteligente entre los hechos fácticos y la tipificación legal.
@@ -585,12 +603,12 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
-        <section id="planes">
-          <div className="wrapper">
+        <section id="planes" className="bg-circuitos" style={{ padding: '40px 0' }}>
+          <div className="wrapper" style={{ background: 'var(--white)', padding: '40px 20px', width: '92%', borderRadius: '24px', margin: '0 auto' }}>
             <div className="section-intro">
               <h2>Planes Flexibles</h2>
               <p style={{ marginBottom: '10px' }}>Selecciona el plan que mejor se adapte a tu nivel de investigación.</p>
-              <p style={{ color: '#0284C7', fontWeight: 700, fontSize: '1.1rem', marginBottom: '20px' }}>
+              <p style={{ color: 'var(--red)', fontWeight: 700, fontSize: '1.1rem', marginBottom: '20px' }}>
                 Todos los planes incluyen 5 días de prueba ¡Gratis!
               </p>
             </div>
@@ -626,7 +644,7 @@ export default function LandingPage({ onOpenAuth }) {
                       <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
                     </div>
                     <ul className="plan-features">
-                      <li>✅ ¡5 días de prueba Gratis!</li>
+                      <li>✅ <strong>¡5 días de prueba Gratis!</strong></li>
                       <li>✅ Newsletter mensual</li>
                       <li>✅ 5 consultas diarias</li>
                       <li>✅ 3 análisis de documentos</li>
@@ -650,7 +668,7 @@ export default function LandingPage({ onOpenAuth }) {
                       <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
                     </div>
                     <ul className="plan-features">
-                      <li>✅ ¡5 días de prueba Gratis!</li>
+                      <li>✅ <strong>¡5 días de prueba Gratis!</strong></li>
                       <li>✅ Newsletter mensual</li>
                       <li>✅ 20 consultas diarias</li>
                       <li>✅ 15 análisis de documentos</li>
@@ -674,7 +692,7 @@ export default function LandingPage({ onOpenAuth }) {
                       <span className="price-period">{interval === 'monthly' ? '/ mes' : '/ año'}</span>
                     </div>
                     <ul className="plan-features">
-                      <li>✅ ¡5 días de prueba Gratis!</li>
+                      <li>✅ <strong>¡5 días de prueba Gratis!</strong></li>
                       <li>✅ Newsletter mensual</li>
                       <li>✅ 100 consultas diarias</li>
                       <li>✅ 25 análisis de documentos</li>
@@ -696,10 +714,10 @@ export default function LandingPage({ onOpenAuth }) {
           </div>
         </section>
 
-        <section id="info-corporativa" style={{ marginTop: '60px', padding: '60px 20px', background: '#F8FAFC', borderRadius: '16px', border: '1px solid var(--pida-border)', textAlign: 'center' }}>
+        <section id="info-corporativa" className="bg-ai-mesh" style={{ marginTop: '60px', padding: '60px 20px', textAlign: 'center' }}>
             <div className="wrapper" style={{ maxWidth: '900px', margin: '0 auto' }}>
-                <h3 style={{ color: 'var(--pida-primary)', fontSize: '2rem', marginBottom: '20px' }}>¿Necesitas PIDA para tu Organización o Institución?</h3>
-                <p style={{ color: 'var(--pida-text-muted)', fontSize: '1.15rem', lineHeight: '1.7', marginBottom: '35px' }}>
+                <h3 style={{ color: 'var(--white)', fontSize: '2rem', marginBottom: '20px' }}>¿Necesitas PIDA para tu Organización o Institución?</h3>
+                <p style={{ color: 'var(--white)', fontSize: '1.15rem', lineHeight: '1.7', marginBottom: '35px' }}>
                     PIDA está diseñado para escalar con las necesidades de grandes equipos de litigio que requieren de mucha investigación y redacción. Si representas a una firma legal, una organización de defensa de derechos humanos, una fiscalía o formas parte de cualquier órgano de gobierno o bien, perteneces a una institución académica, ofrecemos esquemas de licenciamiento por volumen. 
                     <br /><br />
                     Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario.
@@ -707,15 +725,15 @@ export default function LandingPage({ onOpenAuth }) {
                 {/* BOTÓN CORPORATIVO - Actualizado a MUI */}
                 <Button 
                   onClick={() => setIsContactOpen(true)}
-                  sx={muiPrimaryBtnStyle}
+                  sx={muiCorpBtnStyle}
                 >
                   Contactar con Soporte Corporativo
                 </Button>
             </div>
         </section>
 
-        <section id="testimonios">
-            <div className="wrapper">
+        <section id="testimonios" className="bg-circuitos">
+            <div className="wrapper" style={{background: 'var(--white)', padding: '40px 20px 40px 20px' }}>
                 <div className="section-intro" style={{ marginBottom: '10px' }}>
                     <h2>Lo que dicen nuestros usuarios</h2>
                 </div>
@@ -756,14 +774,25 @@ export default function LandingPage({ onOpenAuth }) {
             </div>
         </section>
 
-        <div className="wrapper">                  
-            <div className="copyright">
-                <span>&copy; 2026 IIRESODH PAYMENTS, LLC.</span>
-                <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Términos de uso</a>
-                <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--navy)', textDecoration: 'none' }}>Política de privacidad</a>
-                <a href="mailto:contacto@pida-ai.com" style={{ color: 'var(--navy)', textDecoration: 'none' }}>contacto@pida-ai.com</a>
+        <div style={{ background: 'var(--pida-primary)', padding: '12px 20px' }}>                  
+            <div 
+                className="wrapper-footer" 
+                style={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    justifyContent: 'center', 
+                    alignItems: 'center', 
+                    gap: '40px', 
+                    maxWidth: '1200px',
+                    margin: '0 auto',
+                    borderTop: 'none' /* <-- ¡Esto anula la línea blanca del CSS! */
+                }}
+            >
+                <span style={{ color: 'var(--white)' }}>&copy; 2026 IIRESODH PAYMENTS, LLC.</span>
+                <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--white)', textDecoration: 'none' }}>Términos de uso</a>
+                <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--white)', textDecoration: 'none' }}>Política de privacidad</a>
+                <a href="mailto:contacto@pida-ai.com" style={{ color: 'var(--white)', textDecoration: 'none' }}>contacto@pida-ai.com</a>
             </div>
-            <br />&nbsp;
         </div>
       </main>
 
@@ -771,8 +800,7 @@ export default function LandingPage({ onOpenAuth }) {
         <div className="modal-backdrop">
             <div className="modal-card">
                 <button className="modal-close-btn" onClick={() => setIsContactOpen(false)}>×</button>
-                <img src="/img/PIDA_logo-576.png" alt="PIDA Logo" style={{ width: '140px', marginBottom: '20px', margin: '0 auto' }} />
-                <h2 className="modal-title">Contacto Corporativo</h2>
+                <img src="/img/PIDA_logo-100-blue-red.webp" alt="PIDA Logo" style={{ width: '140px', marginBottom: '20px', margin: '0 auto' }} />
                 <p className="modal-subtitle">Déjanos tus datos y un asesor se pondrá en contacto contigo para diseñar un plan a la medida de tu organización.</p>
 
                 <form onSubmit={handleContactSubmit} style={{ textAlign: 'left' }}>
@@ -871,7 +899,7 @@ export default function LandingPage({ onOpenAuth }) {
                         color="primary"
                         fullWidth
                         disabled={contactStatus.isSubmitting}
-                        sx={{ py: 1.5, fontSize: '1rem', fontWeight: 'bold', borderRadius: 2, bgcolor: 'var(--pida-accent)', '&:hover': { bgcolor: '#004494' } }}
+                        sx={{ py: 1.5, fontSize: '1rem', fontWeight: 'bold', borderRadius: 2, bgcolor: 'var(--pida-primary)', '&:hover': { bgcolor: 'var(--pida-accent)' } }}
                     >
                         {contactStatus.isSubmitting ? 'Enviando información...' : 'Enviar Solicitud'}
                     </Button>

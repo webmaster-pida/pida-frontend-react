@@ -599,9 +599,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               <div className="pida-welcome-content">
                 <div className="pida-welcome-text">
                   <h3>Analizador de Documentos</h3>
-                  <p>Sube tus archivos (PDF, DOCX) y escribe una instrucción clara. PIDA leerá, resumirá y sistematizará el documento por ti. Podrás continuar haciendo preguntas de seguimiento.</p>
-                  <p style={{ marginTop: '15px', fontWeight: 'bold', color: '#1D3557' }}>Ejemplos de lo que puedes pedir:</p>
-                  <ul style={{ margin: '8px 0 0 0', padding: 0, listStyleType: 'none', color: '#374151' }}>
+                  <p style={{ color: 'var(--text)' }}>Sube tus archivos (PDF, DOCX) y escribe una instrucción clara. PIDA leerá, resumirá y sistematizará el documento por ti. Podrás continuar haciendo preguntas de seguimiento.</p>
+                  <p style={{ marginTop: '15px', fontWeight: 'bold', color: 'var(--navy)' }}>Ejemplos de lo que puedes pedir:</p>
+                  <ul style={{ margin: '8px 0 0 0', padding: 0, listStyleType: 'none', color: 'var(--text)' }}>
                     <li style={{ marginBottom: '6px' }}>"Haz un resumen ejecutivo de este documento."</li>
                     <li style={{ marginBottom: '6px' }}>"Identifica las cláusulas de rescisión y sus penalizaciones."</li>
                     <li style={{ marginBottom: '6px' }}>"Extrae una lista cronológica de los hechos."</li>
@@ -655,8 +655,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             right: '25px',
             zIndex: 900,
             opacity: 0.9,
-            backgroundColor: '#0056B3',
-            '&:hover': { backgroundColor: '#004494', opacity: 1 }
+            backgroundColor: 'var(--pida-primary)',
+            '&:hover': { backgroundColor: 'var(--pida-accent)', opacity: 1 }
           }}
           title="Ir al último mensaje"
         >
@@ -761,7 +761,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
             variant="contained" 
             color="primary" 
             disabled={isAnalyzing}
-            sx={{ width: 220, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-accent)', '&:hover': { bgcolor: '#004494' } }}
+            sx={{ width: 220, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-primary)', '&:hover': { bgcolor: 'var(--pida-accent)' } }}
           >
             Analizar
           </Button>

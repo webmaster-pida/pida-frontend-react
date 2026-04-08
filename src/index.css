@@ -30,12 +30,13 @@
    1. ESTILOS DE LA LANDING PAGE
    ========================================= */
 :root {
-    --navy: #1d3557; --pidared: #b92f32; --navy-dark: #ffffff; --cyan: #1d3557; --cyan-glow: rgba(0, 195, 255, 0.4); --celeste: #0284C7;
-    --red: #FF3366; --white: #FFFFFF; --gray-subtle: #F9FAFB; --border-light: #E5E7EB;
+    --navy: #101852; --pidared: #e63946; --navy-dark: #ffffff; --cyan: #101852; --cyan-glow: rgba(0, 195, 255, 0.4); --celeste: #0056b3; --text: #555555;
+    --red: #e63946; --white: #FFFFFF; --gray-subtle: #F9FAFB; --border-light: #E5E7EB;
     --font-display: 'Open Sans', sans-serif; --font-body: 'Manrope', sans-serif;
-    --pida-primary: #1D3557; --pida-accent: #0056B3; --pida-bg-app: #F4F6F9;
-    --pida-bg-white: #FFFFFF; --pida-text-main: #1F2937; --pida-text-muted: #6B7280;
+    --pida-primary: #101852; --pida-accent: #003399; --pida-bg-app: #F4F6F9;
+    --pida-bg-white: #FFFFFF; --pida-text-main: #555555; --pida-text-muted: #6B7280;
     --pida-border: #E5E7EB; --pida-font: 'Inter', sans-serif;
+    --green: #4caf50;
 }
 
 img { max-width: 100%; height: auto; display: block; }
@@ -47,12 +48,13 @@ html { scroll-behavior: smooth; font-size: 16px; }
 body { background-color: var(--white); color: var(--navy); font-family: var(--font-body); line-height: 1.6; overflow-x: hidden; -webkit-font-smoothing: antialiased; transition: margin-top 0.3s ease; }
 h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; line-height: 1.1; letter-spacing: -0.03em; }
 .wrapper { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; }
-.text-gradient { background: linear-gradient(135deg, var(--navy) 0%, #b92f32 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+.wrapper-footer { border-top: 1px solid var(--border-light); padding: 12px 0 12px 0; font-size: 0.8rem; color: var(--white); text-align: center; }
+.text-gradient { background: linear-gradient(135deg, var(--navy) 0%, #e63946 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
 .label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--cyan); margin-bottom: 12px; display: inline-block; }
 
 .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 24px; font-weight: 600; font-size: 0.95rem; border-radius: 8px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; gap: 8px; text-decoration: none;}
 .btn-primary { background-color: var(--navy); color: var(--white); border: 1px solid var(--navy); box-shadow: 0 2px 10px rgba(29, 53, 87, 0.2); }
-.btn-primary:hover { background-color: var(--cyan); border-color: var(--cyan); color: var(--navy-dark); transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0, 195, 255, 0.3); }
+.btn-primary:hover { background-color: var(--pida-accent); border-color: var(--pida-accent); color: var(--navy); transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0, 195, 255, 0.3); }
 .btn-ghost { background: transparent; color: var(--navy); border: 1px solid var(--border-light); }
 .btn-ghost:hover { border-color: var(--navy); background: var(--white); }
 .btn-sm { padding: 8px 20px; font-size: 0.85rem; }
@@ -64,8 +66,8 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; line-height
 /* --- SECCIÓN CORREGIDA DEL HEADER Y NAVBAR --- */
 .nav-inner { display: flex; justify-content: space-between; align-items: center; }
 .nav-menu { display: flex; gap: 32px; align-items: center; }
-.nav-link { font-size: 0.9rem; font-weight: 500; color: #64748B; position: relative; transition: color 0.3s; text-decoration: none; }
-.nav-menu .nav-link:visited { font-size: 0.9rem; font-weight: 500; color: #64748B !important; text-decoration: none !important; position: relative; transition: color 0.3s; }
+.nav-link { font-size: 0.9rem; font-weight: 600; color: #64748B; position: relative; transition: color 0.3s; text-decoration: none; }
+.nav-menu .nav-link:visited { font-size: 0.9rem; font-weight: 600; color: #64748B !important; text-decoration: none !important; position: relative; transition: color 0.3s; }
 .nav-link:hover { color: var(--navy); }
 
 .header-logo { height: 100px; width: auto; flex-shrink: 0; transition: all 0.3s ease; }
@@ -106,7 +108,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; line-height
 
 /* CORRECCIÓN: Margen inferior del h1 reducido */
 .hero h1 { font-size: 3.5rem; margin-bottom: 16px; line-height: 1.1; }
-.hero-desc { font-size: 1.15rem; color: #4B5563; margin-bottom: 32px; max-width: 90%; }
+.hero-desc { font-size: 1.15rem; color: #555555; margin-bottom: 32px; max-width: 90%; }
 .badge-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; background: #EFF6FF; color: var(--navy); border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-bottom: 20px; }
 .dot { width: 8px; height: 8px; background: var(--pidared); border-radius: 50%; box-shadow: 0 0 8px var(--cyan); }
 .hero-visual { height: 400px; position: relative; display: flex; justify-content: center; align-items: center; perspective: 1000px; }
@@ -126,9 +128,9 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 .bento-card:hover .icon-box { background: var(--cyan); color: var(--white); }
 .bento-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 8px; color: var(--navy); }
 
-.footer { padding: 80px 0 40px; background: var(--white); border-top: 1px solid var(--border-light); }
+.footer { padding: 80px 0 40px; }
 .footer-cols { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px; margin-bottom: 60px; }
-.copyright { border-top: 1px solid var(--border-light); padding-top: 24px; font-size: 0.8rem; color: #94A3B8; display: flex; justify-content: space-between; }
+.copyright { font-size: 0.8rem; color: var(--navy); display: flex; justify-content: space-between; }
 
 /* === ESTILOS DEL CARRUSEL DE TESTIMONIOS === */
 .carousel-container { position: relative; max-width: 800px; margin: 0 auto; overflow: hidden; padding-bottom: 60px; }
@@ -137,12 +139,12 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 .testimonial-card { background: #F8FAFC; padding: 40px; border-radius: 16px; text-align: center; border: 1px solid transparent; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); transition: all 0.3s ease; }
 .testimonial-card:hover { background: var(--white); border-color: var(--border-light); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
 .quote-icon { font-family: 'Space Grotesk', sans-serif; font-size: 4rem; color: var(--navy); margin-bottom: 10px; line-height: 1; opacity: 0.1; display: block; height: 40px; }
-.testimonial-text { font-size: 1.15rem; font-style: italic; color: var(--navy); margin-bottom: 24px; line-height: 1.6; font-weight: 500; }
-.testimonial-author { display: block; font-weight: 700; color: var(--celeste); font-size: 1rem; letter-spacing: 0.5px; text-transform: uppercase; }
+.testimonial-text { font-size: 1.15rem; font-style: italic; color: var(--text); margin-bottom: 24px; line-height: 1.6; font-weight: 500; }
+.testimonial-author { display: block; font-weight: 700; color: var(--navy); font-size: 1rem; letter-spacing: 0.5px; text-transform: uppercase; }
 
 .carousel-dots { display: flex; justify-content: center; gap: 10px; margin-top: 20px; position: absolute; bottom: 15px; left: 0; right: 0; }
 .dot-btn { width: 10px; height: 10px; border-radius: 50%; background: #CBD5E1; border: none; cursor: pointer; transition: all 0.3s; padding: 0; }
-.dot-btn.active { background: var(--navy); transform: scale(1.3); }  
+.dot-btn.active { background: var(--red); transform: scale(1.3); }  
 
 /* LEGAL MODAL STYLES */
 .legal-content h3 { color: var(--pida-primary); margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 1.3rem; }
@@ -195,8 +197,8 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 .context-group.hidden { display: none; }
 .pida-header-btn { background: white; border: 1px solid var(--pida-border); padding: 8px 15px; border-radius: 6px; font-size: 0.9rem; color: var(--pida-text-main); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; font-weight: 500; }
 .pida-header-btn:hover { border-color: var(--pida-accent); color: var(--pida-accent); background: #f8fbff; }
-.pida-header-btn.primary { background: var(--pida-accent); color: white; border-color: var(--pida-accent); }
-.pida-header-btn.primary:hover { background: #004494; }
+.pida-header-btn.primary { background: var(--pida-primary); color: white; border-color: var(--pida-primary); }
+.pida-header-btn.primary:hover { background: 'var(--pida-accent)'; }
 .pida-header-mascot { height: 55px; width: auto; margin-left: auto; object-fit: contain; }
 .pida-view { display: flex; flex-direction: column; flex: 1; overflow: hidden; height: 100%; }
 .pida-view.hidden { display: none; }
@@ -261,8 +263,8 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 .pida-textarea { width: 100%; padding: 15px; border: 1px solid var(--pida-border); border-radius: 8px; font-size: 1rem; resize: none; background-color: #FAFAFA; outline: none; transition: all 0.3s; }
 .pida-textarea:focus { background: white; border-color: var(--pida-accent); box-shadow: 0 0 0 3px rgba(0,86,179,0.1); }
 .pida-form-actions { display: flex; justify-content: space-between; margin-top: 12px; }
-.pida-button-primary { background-color: var(--pida-accent); color: white; border: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-.pida-button-primary:hover { background-color: #004494; }
+.pida-button-primary { background-color: var(--navy); color: white; border: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.pida-button-primary:hover { background-color: var(--pida-accent); }
 .pida-button-secondary { background: none; border: none; color: var(--pida-text-muted); cursor: pointer; font-size: 0.9rem; }
 .pida-button-secondary:hover { color: var(--pida-text-main); text-decoration: underline; }
 .pida-download-controls { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 8px; }
@@ -524,7 +526,26 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 #stripe-card-element { min-height: 20px; width: 100%; }
 .stripe-error { color: #EF4444; font-size: 0.85rem; margin-top: 8px; font-weight: 500; display: none; }
 
-.pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
+/* =========================================
+   ESTILOS DE PAGOS Y PRECIOS (CORREGIDO)
+   ========================================= */
+.pricing-grid { 
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr); /* Fuerza 3 columnas exactamente del mismo tamaño en PC */
+    gap: 30px; 
+    margin-top: 40px; 
+    width: 100%; 
+}
+
+/* Cuando la pantalla sea tamaño Tablet o menor (1024px) */
+@media (max-width: 1024px) {
+    .pricing-grid {
+        grid-template-columns: 1fr; /* Pasa todas las tarjetas a 1 sola columna vertical */
+        max-width: 450px; /* Evita que las tarjetas se estiren a lo ancho de toda la tablet y se vean deformes */
+        margin: 40px auto 0 auto; /* Centra las tarjetas en la pantalla */
+        gap: 40px; /* Da un buen respiro entre tarjeta y tarjeta */
+    }
+}
 /* .pricing-card { background: white; padding: 35px; border-radius: 20px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; transition: transform 0.3s; text-align: left; }
 .pricing-card.featured { border: 2.5px solid var(--pida-primary); box-shadow: 0 15px 30px rgba(29, 53, 87, 0.1); position: relative; transform: scale(1.03); } */
 .card-badge { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: var(--pida-primary); color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
@@ -635,7 +656,7 @@ padding: 10px 25px; border-radius: 30px; font-weight: bold; cursor: pointer; tra
 .discount-tooltip {
 position: absolute; top: 0; left: 50%; transform: translateX(-50%);
 white-space: nowrap; display: inline-block; padding: 4px 14px;
-background: #DCFCE7; color: #166534; border-radius: 15px;
+background: #ffffff; color: #4caf50; border-radius: 15px;
 font-size: 0.85rem; font-weight: 700; box-shadow: 0 2px 5px rgba(0,0,0,0.05); animation: fadeIn 0.3s ease;
 }
 
@@ -670,8 +691,8 @@ font-size: 24px; cursor: pointer; color: #999; z-index: 10;
 .form-input.no-margin { margin-bottom: 0; }
 .form-input:focus { border-color: var(--pida-accent); }
 textarea.form-input { resize: vertical; }
-.form-submit-btn { width: 100%; padding: 16px; background: var(--pida-accent); color: white; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 5px; }
-.form-submit-btn:hover:not(:disabled) { background: #004494; }
+.form-submit-btn { width: 100%; padding: 16px; background: var(--navy); color: white; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 5px; }
+.form-submit-btn:hover:not(:disabled) { background: 'var(--pida-accent)'; }
 .form-submit-btn:disabled { cursor: not-allowed; opacity: 0.7; }
 
 /* Mensajes de Estado */
@@ -793,6 +814,10 @@ textarea.form-input { resize: vertical; }
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
+    
+    /* 👇 ESTA ES LA LÍNEA NUEVA QUE FIJA EL FONDO (PARALLAX) 👇 */
+    background-attachment: fixed;
+    
     position: relative;
     
     /* Nos aseguramos de que el contenido interno se posicione bien */
@@ -820,4 +845,28 @@ textarea.form-input { resize: vertical; }
     border-color: rgba(255, 255, 255, 0.3);
     border-left-color: var(--pidared);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(185, 47, 50, 0.2);
+}
+
+/* =========================================
+   EFECTOS WALLPAPER CIRCCUITOS (IA / DIGITAL)
+   ========================================= */
+.bg-circuitos {
+    /* Color blanco de respaldo por si la imagen tarda en cargar */
+    background-color: #FFFFFF; 
+    
+    /* AQUÍ PONES LA RUTA A LA IMAGEN QUE DESCARGASTE */
+    background-image: url('/img/circuitos-wall.webp');
+    
+    /* Ajustes para que la imagen se vea perfecta como fondo */
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    
+    /* 👇 ESTA ES LA LÍNEA NUEVA QUE FIJA EL FONDO (PARALLAX) 👇 
+    background-attachment: fixed; */
+    
+    position: relative;
+    
+    /* Nos aseguramos de que el contenido interno se posicione bien */
+    z-index: 1;
 }

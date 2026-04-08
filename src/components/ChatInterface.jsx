@@ -525,8 +525,8 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
               <div className="pida-welcome-content">
                 <div className="pida-welcome-text">
                   <h3>¡Hola! Soy PIDA, tu asistente experto en Derechos Humanos y temas afines.</h3>
-                  <p>Estoy para apoyarte y responder cualquier pregunta que me hagas, incluyendo investigaciones, análisis de casos, búsqueda de jurisprudencia y redacción legal de todo tipo de documentos, cartas, informes, elaboración de proyectos y seguimiento y monitoreo.</p>
-                  <strong>¿Qué te gustaría pedirme ahora?</strong>
+                  <p style={{ color: 'var(--text)'}}>Estoy para apoyarte y responder cualquier pregunta que me hagas, incluyendo investigaciones, análisis de casos, búsqueda de jurisprudencia y redacción legal de todo tipo de documentos, cartas, informes, elaboración de proyectos y seguimiento y monitoreo.</p>
+                  <strong style={{ color: 'var(--pida-primary)'}}>¿Qué te gustaría pedirme ahora?</strong>
                 </div>
               </div>
             </div>
@@ -577,8 +577,8 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
             right: '25px',
             zIndex: 900,
             opacity: 0.9,
-            backgroundColor: '#0056B3',
-            '&:hover': { backgroundColor: '#004494', opacity: 1 }
+            backgroundColor: 'var(--pida)',
+            '&:hover': { backgroundColor: 'var(--pida-accent)', opacity: 1 }
           }}
           title="Ir al último mensaje"
         >
@@ -632,7 +632,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
             variant="contained" 
             color="primary" 
             disabled={isTyping}
-            sx={{ width: 220, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-accent)', '&:hover': { bgcolor: '#004494' } }}
+            sx={{ width: 220, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-primary)', '&:hover': { bgcolor: 'var(--pida-accent)' } }}
           >
             Enviar
           </Button>
