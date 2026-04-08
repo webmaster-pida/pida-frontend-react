@@ -142,7 +142,7 @@ export default function Sidebar({ currentView, setCurrentView, user }) {
         {navItems.map((item) => (
           <ListItem key={item.id} disablePadding sx={{ mb: 1 }}>
             <ListItemButton selected={currentView === item.id} onClick={() => setCurrentView(item.id)} sx={{ borderRadius: '10px', color: 'rgba(255,255,255,0.7)', '&.Mui-selected': { bgcolor: 'rgba(255,255,255,0.15)', color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }, '& .MuiListItemIcon-root': { color: 'white' } }, '&:hover': { bgcolor: 'rgba(255,255,255,0.08)', color: 'white' } }}>
-              <ListItemIcon sx={{ color: 'var(--pida-primary)', minWidth: 40 }}>{item.icon}</ListItemIcon>
+              <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>{item.icon}</ListItemIcon>
               <ListItemText primary={item.fullLabel} primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: 500 }} />
             </ListItemButton>
           </ListItem>
