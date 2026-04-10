@@ -12,7 +12,7 @@ import {
   Alert 
 } from '@mui/material';
 
-const API_CHAT = "https://chat-v20-stripe-elements-465781488910.us-central1.run.app";
+const API_CHAT = "https://chat-v20-perplexity-465781488910.us-central1.run.app";
 
 export default function AccountInterface({ user, isVip }) {
   const [firstName, setFirstName] = useState('');
