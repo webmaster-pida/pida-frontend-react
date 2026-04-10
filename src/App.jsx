@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import LandingPage from './pages/LandingPage';
 import AuthModal from './components/AuthModal';
 import Dashboard from './pages/Dashboard';
-import SystemBanner from './components/SystemBanner'; 
+import SystemBanner from './components/SystemBanner';
 import NotFound from './pages/NotFound';
-import UpdateNotifier from './components/UpdateNotifier'; // <--- 1. IMPORTAMOS EL NOTIFICADOR
+import UpdateNotifier from './components/UpdateNotifier';
 import { auth } from './config/firebase';
 
 function App() {
@@ -20,10 +20,14 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  if (loading) return <div id="pida-global-loader"><div className="loader"></div></div>;
+  if (loading) {
+    return (
+      <div id="pida-global-loader">
+        <div className="loader"></div>
+      </div>
+    );
+  }
 
-  // --- LÓGICA DE ENRUTAMIENTO NATIVO (404) ---
-  // Si la ruta no es la raíz, mostramos la página de error
   const currentPath = window.location.pathname;
   const isNotFound = currentPath !== '/' && currentPath !== '/index.html';
 
@@ -31,30 +35,30 @@ function App() {
     return (
       <>
         <SystemBanner />
-        <UpdateNotifier /> {/* <--- 2. LO COLOCAMOS EN LA VISTA 404 POR SI ACASO */}
+        <UpdateNotifier />
         <NotFound />
       </>
     );
   }
-  // ------------------------------------------
 
   return (
     <>
-      <SystemBanner /> 
-      <UpdateNotifier /> {/* <--- 3. LO COLOCAMOS A NIVEL GLOBAL DE LA APP */}
+      <SystemBanner />
+      <UpdateNotifier />
 
-      {!user ? (
-        <>
-          <LandingPage 
-            onOpenAuth={(mode = 'login') => setAuthModalConfig({ isOpen: true, mode })} 
-          />
-          <AuthModal 
-            isOpen={authModalConfig.isOpen} 
-            initialMode={authModalConfig.mode}
-            onClose={() => setAuthModalConfig({ isOpen: false, mode: 'login' })} 
-          />
-        </>
-      ) : (
+      {(!user || authModalConfig.isOpen) && (
+        <LandingPage 
+          onOpenAuth={(mode = 'login') => setAuthModalConfig({ isOpen: true, mode })} 
+        />
+      )}
+
+      <AuthModal 
+        isOpen={authModalConfig.isOpen} 
+        initialMode={authModalConfig.mode}
+        onClose={() => setAuthModalConfig({ isOpen: false, mode: 'login' })} 
+      />
+
+      {user && !authModalConfig.isOpen && (
         <Dashboard user={user} />
       )}
     </>
