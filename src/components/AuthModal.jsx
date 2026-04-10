@@ -3,7 +3,6 @@ import { auth, googleProvider } from '../config/firebase';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { STRIPE_PRICES, PIDA_CONFIG } from '../config/constants';
-// IMPORTACIÓN CORREGIDA (Una sola línea con todos los componentes)
 import { Box, TextField, Button, CircularProgress } from '@mui/material';
 
 // Asegúrate de usar la llave pública correcta para tu entorno
@@ -44,6 +43,7 @@ function AuthFormContent({ onClose, initialMode }) {
   
   const planDetails = STRIPE_PRICES[plan]?.[interval]?.[currency] || STRIPE_PRICES['basico']['monthly']['USD'];
 
+  // --- LÓGICA DE GOOGLE LOGIN (INTACTA) ---
   const handleGoogleLogin = async () => {
     setError('');
     setIsLoading(true);
@@ -91,6 +91,7 @@ function AuthFormContent({ onClose, initialMode }) {
         return;
       } 
       
+      // --- LÓGICA DE LOGIN NORMAL (INTACTA) ---
       if (mode === 'login') {
         setLoadingText('Ingresando...');
         await auth.signInWithEmailAndPassword(email, password);
@@ -98,6 +99,7 @@ function AuthFormContent({ onClose, initialMode }) {
         return;
       }
 
+      // --- LÓGICA DE REGISTRO (CON VALIDACIÓN PREVIA DE STRIPE) ---
       if (mode === 'register') {
         if (!termsAccepted) throw new Error("Debes aceptar los términos y condiciones.");
         if (!stripe || !elements) throw new Error("Stripe no ha cargado aún.");
@@ -107,7 +109,7 @@ function AuthFormContent({ onClose, initialMode }) {
 
         setLoadingText('Validando tarjeta...');
         
-        // PASO 1: CREAR EL MÉTODO DE PAGO ANTES QUE EL USUARIO
+        // PASO 1: CREAR EL MÉTODO DE PAGO
         const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
           type: 'card',
           card: cardElement,
@@ -118,7 +120,7 @@ function AuthFormContent({ onClose, initialMode }) {
           throw new Error(stripeError.message || "Por favor, ingresa los datos de tu tarjeta correctamente.");
         }
 
-        // PASO 2: AHORA SÍ CREAMOS EL USUARIO EN FIREBASE
+        // PASO 2: CREAR USUARIO EN FIREBASE (Si la tarjeta pasó)
         let user = auth.currentUser;
         if (!user) {
           setLoadingText('Creando cuenta...');
@@ -129,7 +131,6 @@ function AuthFormContent({ onClose, initialMode }) {
 
         setLoadingText('Iniciando prueba gratis...');
 
-        // --- GOOGLE ANALYTICS: BEGIN CHECKOUT ---
         const numericValue = discountData ? (discountData.final_amount / 100) : parseFloat(planDetails.text.replace(/[^0-9.-]+/g,""));
         const itemName = `Plan ${plan.toUpperCase()} - ${interval.toUpperCase()}`;
 
@@ -141,7 +142,7 @@ function AuthFormContent({ onClose, initialMode }) {
           });
         }
 
-        // PASO 3: ENVIAR DATOS Y MÉTODO DE PAGO AL BACKEND
+        // PASO 3: COBRAR VÍA BACKEND
         const token = await user.getIdToken();
         const intentRes = await fetch(`${PIDA_CONFIG.API_CHAT}/create-payment-intent`, {
           method: 'POST',
@@ -153,7 +154,7 @@ function AuthFormContent({ onClose, initialMode }) {
             trial_period_days: 5,
             name: fullName,
             promotion_code: discountData ? promoCode : "",
-            paymentMethodId: paymentMethod.id // <-- VITAL: Adjuntar el ID de la tarjeta validada
+            paymentMethodId: paymentMethod.id 
           })
         });
 
@@ -162,7 +163,7 @@ function AuthFormContent({ onClose, initialMode }) {
 
         let transactionId = data.subscriptionId || "sub_unknown";
 
-        // PASO 4: CONFIRMAR CON SEGURIDAD (PROTEGIDO CONTRA PANTALLAS BLANCAS)
+        // PASO 4: CONFIRMAR CON SEGURIDAD (ANTI PANTALLA BLANCA)
         if (data.requiresAction && data.clientSecret) {
           setLoadingText('Confirmando seguridad bancaria...');
           let result;
@@ -181,7 +182,6 @@ function AuthFormContent({ onClose, initialMode }) {
           }
         }
 
-        // --- GOOGLE ANALYTICS: COMPRA EXITOSA ---
         if (typeof window !== 'undefined' && window.gtag) {
           window.gtag('event', 'purchase', {
             transaction_id: transactionId,
@@ -354,25 +354,17 @@ function AuthFormContent({ onClose, initialMode }) {
         </button>
       </form>
 
-      {/* BOTONES DE REDIRECCIÓN (CORREGIDO PARA MOSTRARSE UNA SOLA VEZ) */}
       <div className="bottom-link" style={{ textAlign: 'center', marginTop: '20px' }}>
         {mode === 'reset' && <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); }}>← Volver al login</span>}
         {mode === 'register' && <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); }}>← Ya tengo cuenta, iniciar sesión</span>}
       </div>
 
-      {/* --- INICIO DEL PRELOADER / OVERLAY DE CARGA --- */}
       {isLoading && (
         <Box sx={{
-          position: 'absolute',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(255, 255, 255, 0.85)',
-          backdropFilter: 'blur(4px)', // Efecto de vidrio esmerilado
-          zIndex: 999,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: '16px' // Respeta los bordes curvos de tu modal
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(4px)', 
+          zIndex: 999, display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', borderRadius: '16px' 
         }}>
           <CircularProgress size={60} thickness={4} sx={{ color: 'var(--pida-primary)', mb: 3 }} />
           <h3 style={{ color: 'var(--navy)', fontWeight: 700, fontSize: '1.25rem', margin: '0 0 10px 0', textAlign: 'center' }}>
