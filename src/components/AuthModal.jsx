@@ -3,7 +3,7 @@ import { auth, googleProvider } from '../config/firebase';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { STRIPE_PRICES, PIDA_CONFIG } from '../config/constants';
-import { Box, TextField, Button, CircularProgress } from '@mui/material';
+import { Box, TextField, Button, CircularProgress, Backdrop, Typography } from '@mui/material';
 
 // Asegúrate de usar la llave pública correcta para tu entorno
 const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3kjrZGFGln3bhwEQKnpoNXf2MnLXGHylM1OQ6SvWJmNVCNqhCxg6x000l605E1B');
@@ -359,22 +359,28 @@ function AuthFormContent({ onClose, initialMode }) {
         {mode === 'register' && <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); }}>← Ya tengo cuenta, iniciar sesión</span>}
       </div>
 
-      {isLoading && (
-        <Box sx={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(4px)', 
-          zIndex: 999, display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', borderRadius: '16px' 
-        }}>
-          <CircularProgress size={60} thickness={4} sx={{ color: 'var(--pida-primary)', mb: 3 }} />
-          <h3 style={{ color: 'var(--navy)', fontWeight: 700, fontSize: '1.25rem', margin: '0 0 10px 0', textAlign: 'center' }}>
-            {loadingText}
-          </h3>
-          <p style={{ color: '#64748B', fontSize: '0.95rem', textAlign: 'center', maxWidth: '80%', margin: 0 }}>
-            Procesando de forma segura.<br/>Por favor, no cierres esta ventana.
-          </p>
-        </Box>
-      )}
+      {/* BACKDROP GLOBAL PARA EVITAR PANTALLA EN BLANCO */}
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: 2000, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(29, 53, 87, 0.9)', 
+          backdropFilter: 'blur(4px)'
+        }}
+        open={isLoading}
+      >
+        <CircularProgress size={70} thickness={4} sx={{ color: 'white', mb: 3 }} />
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, textAlign: 'center' }}>
+          {loadingText || 'Procesando...'}
+        </Typography>
+        <Typography variant="body1" sx={{ opacity: 0.9, textAlign: 'center', maxWidth: '80%' }}>
+          Configurando tu acceso legal de forma segura.<br/>Por favor, no cierres esta ventana.
+        </Typography>
+      </Backdrop>
     </>
   );
 }

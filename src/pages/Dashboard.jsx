@@ -27,7 +27,8 @@ import {
   Chip,
   Alert,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Backdrop
 } from '@mui/material';
 import { 
   Add as AddIcon, 
@@ -132,7 +133,7 @@ const InAppCheckout = ({ user }) => {
   };
 
   return (
-    <Paper elevation={4} sx={{ maxWidth: 600, background: 'white', padding: '40px', borderRadius: '16px', textAlign: 'center', margin: '0 auto', width: '95%' }}>
+    <Paper elevation={4} sx={{ maxWidth: 600, background: 'white', padding: '40px', borderRadius: '16px', textAlign: 'center', margin: '0 auto', width: '95%', position: 'relative' }}>
       <Stepper activeStep={1} alternativeLabel sx={{ mb: 4 }}>
         {['Cuenta', 'Activación', 'Acceso'].map((label) => (
           <Step key={label}><StepLabel>{label}</StepLabel></Step>
@@ -211,6 +212,23 @@ const InAppCheckout = ({ user }) => {
         >
           {loading ? <CircularProgress size={24} color="inherit" /> : 'Confirmar y empezar prueba gratuita'}
         </Button>
+
+        {/* BACKDROP GLOBAL PARA ACTIVACIÓN IN-APP */}
+        <Backdrop
+          sx={{ 
+            color: '#fff', 
+            zIndex: 3000, 
+            display: 'flex', 
+            flexDirection: 'column',
+            backgroundColor: 'rgba(29, 53, 87, 0.95)',
+            backdropFilter: 'blur(5px)'
+          }}
+          open={loading}
+        >
+          <CircularProgress size={70} thickness={4} sx={{ color: 'white', mb: 3 }} />
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>Activando tu cuenta</Typography>
+          <Typography variant="body1">Preparando tu entorno de investigación...</Typography>
+        </Backdrop>
       </Box>
     </Paper>
   );
@@ -291,7 +309,7 @@ export default function Dashboard({ user }) {
   };
 
   const handleMenuOpen = (event) => {
-    fetchHistories(); // Actualiza los datos justo antes de mostrar el menú
+    fetchHistories(); 
     setAnchorEl(event.currentTarget);
   };
   
@@ -323,7 +341,7 @@ export default function Dashboard({ user }) {
   );
 
   const headerBtnSx = {
-    width: isMobile ? 'auto' : 240, // Ancho unificado y legible
+    width: isMobile ? 'auto' : 240, 
     borderRadius: 2,
     textTransform: 'none',
     fontWeight: 700,
@@ -363,7 +381,7 @@ export default function Dashboard({ user }) {
               </Button>
               <Menu
                 anchorEl={anchorEl} open={openMenu} onClose={handleMenuClose}
-                sx={{ zIndex: 200000 }} // ELEVACIÓN CRÍTICA: Más alto que el z-index 99999 del layout
+                sx={{ zIndex: 200000 }} 
                 PaperProps={{ sx: { width: 320, maxHeight: 450, borderRadius: 3, mt: 1, boxShadow: '0 10px 25px rgba(0,0,0,0.1)' } }}
               >
                 <Typography variant="overline" sx={{ px: 2, py: 1, display: 'block', fontWeight: 800, color: 'text.disabled' }}>Registros Recientes</Typography>
