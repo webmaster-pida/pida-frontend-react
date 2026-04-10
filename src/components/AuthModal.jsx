@@ -3,7 +3,8 @@ import { auth, googleProvider } from '../config/firebase';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { STRIPE_PRICES, PIDA_CONFIG } from '../config/constants';
-import { Box, TextField, Button } from '@mui/material'; 
+// IMPORTACIÓN CORREGIDA (Una sola línea con todos los componentes)
+import { Box, TextField, Button, CircularProgress } from '@mui/material';
 
 // Asegúrate de usar la llave pública correcta para tu entorno
 const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3kjrZGFGln3bhwEQKnpoNXf2MnLXGHylM1OQ6SvWJmNVCNqhCxg6x000l605E1B');
@@ -353,10 +354,35 @@ function AuthFormContent({ onClose, initialMode }) {
         </button>
       </form>
 
+      {/* BOTONES DE REDIRECCIÓN (CORREGIDO PARA MOSTRARSE UNA SOLA VEZ) */}
       <div className="bottom-link" style={{ textAlign: 'center', marginTop: '20px' }}>
         {mode === 'reset' && <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); }}>← Volver al login</span>}
         {mode === 'register' && <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); }}>← Ya tengo cuenta, iniciar sesión</span>}
       </div>
+
+      {/* --- INICIO DEL PRELOADER / OVERLAY DE CARGA --- */}
+      {isLoading && (
+        <Box sx={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(4px)', // Efecto de vidrio esmerilado
+          zIndex: 999,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '16px' // Respeta los bordes curvos de tu modal
+        }}>
+          <CircularProgress size={60} thickness={4} sx={{ color: 'var(--pida-primary)', mb: 3 }} />
+          <h3 style={{ color: 'var(--navy)', fontWeight: 700, fontSize: '1.25rem', margin: '0 0 10px 0', textAlign: 'center' }}>
+            {loadingText}
+          </h3>
+          <p style={{ color: '#64748B', fontSize: '0.95rem', textAlign: 'center', maxWidth: '80%', margin: 0 }}>
+            Procesando de forma segura.<br/>Por favor, no cierres esta ventana.
+          </p>
+        </Box>
+      )}
     </>
   );
 }
