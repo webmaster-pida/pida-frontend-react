@@ -419,6 +419,10 @@ export default function LandingPage({ onOpenAuth }) {
                 padding-bottom: 15px;
                 border-bottom: 2px solid #e2e8f0;
               }
+              @media (max-width: 1024px) {
+              #pida {
+                padding: 10px 0 !important; /* Ajusta el 10px al tamaño que prefieras */
+              }
             }
           `}
         </style>
