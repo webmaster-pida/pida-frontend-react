@@ -193,7 +193,12 @@ function AuthFormContent({ onClose, initialMode }) {
 
         setLoadingText('¡Suscripción activada!');
         sessionStorage.setItem('pida_is_onboarding', 'true');
-        setTimeout(() => { window.location.href = window.location.pathname + "?payment_status=success"; }, 1500);
+        
+        // --- CAMBIO CLAVE: CERRAR MODAL EN VEZ DE RECARGAR PÁGINA ---
+        setTimeout(() => { 
+          setIsLoading(false);
+          onClose(); 
+        }, 1500);
       }
 
     } catch (err) {
@@ -359,17 +364,17 @@ function AuthFormContent({ onClose, initialMode }) {
         {mode === 'register' && <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); }}>← Ya tengo cuenta, iniciar sesión</span>}
       </div>
 
-      {/* BACKDROP GLOBAL PARA EVITAR PANTALLA EN BLANCO */}
+      {/* --- BACKDROP GLOBAL BLOQUEANTE --- */}
       <Backdrop
         sx={{ 
           color: '#fff', 
-          zIndex: 2000, 
+          zIndex: 2500, 
           display: 'flex', 
           flexDirection: 'column', 
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(29, 53, 87, 0.9)', 
-          backdropFilter: 'blur(4px)'
+          backgroundColor: 'rgba(29, 53, 87, 0.95)', 
+          backdropFilter: 'blur(5px)'
         }}
         open={isLoading}
       >

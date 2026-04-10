@@ -124,7 +124,9 @@ const InAppCheckout = ({ user }) => {
       }
 
       sessionStorage.setItem('pida_is_onboarding', 'true');
-      window.location.reload(); 
+      
+      // --- CAMBIO CLAVE: NO RECARGAR ---
+      // El onSnapshot de Dashboard detectará el cambio y quitará el Checkout solo.
       
     } catch(err) {
       setError(`❌ ${err.message}`);
@@ -213,7 +215,7 @@ const InAppCheckout = ({ user }) => {
           {loading ? <CircularProgress size={24} color="inherit" /> : 'Confirmar y empezar prueba gratuita'}
         </Button>
 
-        {/* BACKDROP GLOBAL PARA ACTIVACIÓN IN-APP */}
+        {/* --- BACKDROP GLOBAL DASHBOARD --- */}
         <Backdrop
           sx={{ 
             color: '#fff', 
