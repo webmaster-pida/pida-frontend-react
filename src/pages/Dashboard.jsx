@@ -124,6 +124,8 @@ const InAppCheckout = ({ user }) => {
       }
 
       sessionStorage.setItem('pida_is_onboarding', 'true');
+      
+      // 🛡️ REINSTAURADO: Necesario para resetear el estado global de suscripción
       window.location.reload(); 
       
     } catch(err) {
@@ -213,14 +215,13 @@ const InAppCheckout = ({ user }) => {
           {loading ? <CircularProgress size={24} color="inherit" /> : 'Confirmar y empezar prueba gratuita'}
         </Button>
 
-        {/* BACKDROP BLOQUEANTE PARA DASHBOARD */}
         <Backdrop
           sx={{ 
             color: '#fff', 
-            zIndex: 3000, 
+            zIndex: 300000, 
             display: 'flex', 
             flexDirection: 'column',
-            backgroundColor: 'rgba(16, 24, 82, 0.98)',
+            backgroundColor: 'rgba(16, 24, 82, 0.95)',
             backdropFilter: 'blur(5px)'
           }}
           open={loading}
@@ -330,7 +331,7 @@ export default function Dashboard({ user }) {
   if (isCheckingAccess) return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', bgcolor: '#101852' }}>
       <CircularProgress size={60} sx={{ color: 'white' }} />
-      <Typography sx={{ mt: 3, color: 'white', fontWeight: 600 }}>Cargando su entorno legal...</Typography>
+      <Typography sx={{ mt: 2, color: 'white' }}>Verificando suscripción...</Typography>
     </Box>
   );
 

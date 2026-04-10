@@ -16,7 +16,7 @@ const cardStyle = {
   hidePostalCode: true
 };
 
-function AuthFormContent({ onClose, initialMode, setIsParentLoading, setParentLoadingText }) {
+function AuthFormContent({ onClose, initialMode }) {
   const stripe = useStripe();
   const elements = useElements();
 
@@ -46,14 +46,14 @@ function AuthFormContent({ onClose, initialMode, setIsParentLoading, setParentLo
   // --- LÓGICA DE GOOGLE LOGIN (INTACTA) ---
   const handleGoogleLogin = async () => {
     setError('');
-    setIsParentLoading(true);
-    setParentLoadingText('Conectando...');
+    setIsLoading(true);
+    setLoadingText('Conectando...');
     try {
       await auth.signInWithPopup(googleProvider);
       onClose();
     } catch (err) {
       setError('No se pudo iniciar sesión con Google.');
-      setIsParentLoading(false);
+      setIsLoading(false);
     } 
   };
 
@@ -80,22 +80,20 @@ function AuthFormContent({ onClose, initialMode, setIsParentLoading, setParentLo
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
-    // Activamos la carga global para que cubra toda la pantalla
-    setIsParentLoading(true);
-    setParentLoadingText(mode === 'login' ? 'Ingresando...' : 'Procesando registro...');
+    setIsLoading(true);
 
     try {
       if (mode === 'reset') {
-        setParentLoadingText('Enviando...');
+        setLoadingText('Enviando...');
         await auth.sendPasswordResetEmail(email);
         setError('✅ Enlace enviado. Revisa tu correo.');
-        setIsParentLoading(false);
+        setIsLoading(false);
         return;
       } 
       
       // --- LÓGICA DE LOGIN NORMAL (INTACTA) ---
       if (mode === 'login') {
+        setLoadingText('Ingresando...');
         await auth.signInWithEmailAndPassword(email, password);
         onClose();
         return;
@@ -109,7 +107,7 @@ function AuthFormContent({ onClose, initialMode, setIsParentLoading, setParentLo
         const fullName = `${firstName} ${lastName}`.trim();
         const cardElement = elements.getElement(CardElement);
 
-        setParentLoadingText('Validando tarjeta...');
+        setLoadingText('Validando tarjeta...');
         
         // PASO 1: CREAR EL MÉTODO DE PAGO
         const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
@@ -125,13 +123,13 @@ function AuthFormContent({ onClose, initialMode, setIsParentLoading, setParentLo
         // PASO 2: CREAR USUARIO EN FIREBASE (Si la tarjeta pasó)
         let user = auth.currentUser;
         if (!user) {
-          setParentLoadingText('Creando cuenta...');
+          setLoadingText('Creando cuenta...');
           const cred = await auth.createUserWithEmailAndPassword(email, password);
           user = cred.user;
           await user.updateProfile({ displayName: fullName });
         }
 
-        setParentLoadingText('Iniciando prueba gratis...');
+        setLoadingText('Iniciando prueba gratis...');
 
         const numericValue = discountData ? (discountData.final_amount / 100) : parseFloat(planDetails.text.replace(/[^0-9.-]+/g,""));
         const itemName = `Plan ${plan.toUpperCase()} - ${interval.toUpperCase()}`;
@@ -167,7 +165,7 @@ function AuthFormContent({ onClose, initialMode, setIsParentLoading, setParentLo
 
         // PASO 4: CONFIRMAR CON SEGURIDAD (ANTI PANTALLA BLANCA)
         if (data.requiresAction && data.clientSecret) {
-          setParentLoadingText('Confirmando seguridad bancaria...');
+          setLoadingText('Confirmando seguridad bancaria...');
           let result;
           if (data.clientSecret.startsWith('seti_')) {
             result = await stripe.confirmCardSetup(data.clientSecret, {
@@ -193,16 +191,17 @@ function AuthFormContent({ onClose, initialMode, setIsParentLoading, setParentLo
           });
         }
 
-        setParentLoadingText('¡Suscripción activada!');
+        setLoadingText('¡Suscripción activada!');
         sessionStorage.setItem('pida_is_onboarding', 'true');
         
-        // Redireccionamos para que App.jsx reinicie el estado limpio
+        // 🛡️ REINSTAURADO: Redirección forzada para evitar el bloqueo, pero sin el delay innecesario
         window.location.href = window.location.pathname + "?payment_status=success";
       }
 
     } catch (err) {
       console.error("AuthModal Error:", err);
-      let msg = err.message || "Ocurrió un error inesperado.";
+      
+      let msg = err.message || "Ocurrió un error inesperado al procesar la solicitud.";
       
       if (err.code === 'auth/user-not-found') {
           msg = "No encontramos una cuenta con este correo. Recuerda que PIDA es premium, debes adquirir un plan primero.";
@@ -213,7 +212,7 @@ function AuthFormContent({ onClose, initialMode, setIsParentLoading, setParentLo
       }
       
       setError(msg);
-      setIsParentLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -242,9 +241,9 @@ function AuthFormContent({ onClose, initialMode, setIsParentLoading, setParentLo
 
       {mode === 'login' && (
         <>
-          <button className="login-btn google-btn" onClick={handleGoogleLogin}>
+          <button className="login-btn google-btn" onClick={handleGoogleLogin} disabled={isLoading}>
             <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style={{width: '18px'}}/> 
-            <span>Entrar con Google</span>
+            <span>{isLoading ? loadingText : 'Entrar con Google'}</span>
           </button>
           <div className="login-divider"><span>O usa tu correo</span></div>
         </>
@@ -329,11 +328,11 @@ function AuthFormContent({ onClose, initialMode, setIsParentLoading, setParentLo
             <div className="promo-group" style={{ display: 'flex', flexDirection: 'row', gap: '8px', marginBottom: '10px', alignItems: 'stretch' }}>
               <TextField 
                 label="Código de descuento" variant="outlined" size="small"
-                value={promoCode} onChange={e => setPromoCode(e.target.value)} disabled={!!discountData}
+                value={promoCode} onChange={e => setPromoCode(e.target.value)} disabled={!!discountData || isLoading}
                 sx={{ flex: 1, bgcolor: '#FAFAFA', '& input': { textTransform: 'uppercase' } }}
               />
               <Button 
-                type="button" variant="outlined" onClick={handleApplyPromo} disabled={!!discountData || !promoCode}
+                type="button" variant="outlined" onClick={handleApplyPromo} disabled={!!discountData || !promoCode || isLoading}
                 sx={{ textTransform: 'none', fontWeight: 600, px: 2, borderColor: '#CBD5E1', color: 'var(--pida-text-muted)', '&:hover': { borderColor: 'var(--pida-primary)', backgroundColor: 'transparent' } }}
               >
                 {discountData ? '✓ Aplicado' : 'Aplicar'}
@@ -352,8 +351,8 @@ function AuthFormContent({ onClose, initialMode, setIsParentLoading, setParentLo
 
         {error && <div className="status-msg error" style={{ color: '#EF4444', fontSize: '0.85rem', background: '#FEF2F2', padding: '10px', borderRadius: '6px', marginBottom: '15px', border: '1px solid #FECACA' }}>{error}</div>}
 
-        <button type="submit" className="form-submit-btn pida-button-primary" style={{ width: '100%', padding: '14px', fontSize: '1rem' }}>
-          {mode === 'login' ? 'Ingresar' : mode === 'register' ? 'Activar cuenta y probar 5 días' : 'Enviar enlace'}
+        <button type="submit" className="form-submit-btn pida-button-primary" style={{ width: '100%', padding: '14px', fontSize: '1rem' }} disabled={isLoading || (!stripe && mode === 'register')}>
+          {isLoading ? loadingText : (mode === 'login' ? 'Ingresar' : mode === 'register' ? 'Activar cuenta y probar 5 días' : 'Enviar enlace')}
         </button>
       </form>
 
@@ -361,14 +360,33 @@ function AuthFormContent({ onClose, initialMode, setIsParentLoading, setParentLo
         {mode === 'reset' && <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); }}>← Volver al login</span>}
         {mode === 'register' && <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); }}>← Ya tengo cuenta, iniciar sesión</span>}
       </div>
+
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: 250000, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(16, 24, 82, 0.95)', 
+          backdropFilter: 'blur(5px)'
+        }}
+        open={isLoading}
+      >
+        <CircularProgress size={70} thickness={4} sx={{ color: 'white', mb: 3 }} />
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, textAlign: 'center' }}>
+          {loadingText || 'Procesando...'}
+        </Typography>
+        <Typography variant="body1" sx={{ opacity: 0.9, textAlign: 'center', maxWidth: '80%' }}>
+          Configurando tu acceso legal de forma segura.<br/>Por favor, no cierres esta ventana.
+        </Typography>
+      </Backdrop>
     </>
   );
 }
 
 export default function AuthModal({ isOpen, initialMode = 'login', onClose }) {
-  const [isParentLoading, setIsParentLoading] = useState(false);
-  const [parentLoadingText, setParentLoadingText] = useState('');
-
   if (!isOpen) return null;
   return (
     <div className="modal-backdrop" onClick={onClose} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -376,37 +394,9 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose }) {
         <button onClick={onClose} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748B' }}>×</button>
         <img src="/img/PIDA_logo-100-blue-red.webp" alt="PIDA Logo" style={{ width: '140px', marginBottom: '25px', display: 'block', margin: '0 auto' }} />
         <Elements stripe={stripePromise}>
-          <AuthFormContent 
-            onClose={onClose} 
-            initialMode={initialMode} 
-            setIsParentLoading={setIsParentLoading}
-            setParentLoadingText={setParentLoadingText}
-          />
+          <AuthFormContent onClose={onClose} initialMode={initialMode} />
         </Elements>
       </div>
-
-      {/* BACKDROP EXTERNO PARA BLOQUEO TOTAL DE PANTALLA */}
-      <Backdrop
-        sx={{ 
-          color: '#fff', 
-          zIndex: 300000, 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'rgba(16, 24, 82, 0.98)', 
-          backdropFilter: 'blur(8px)'
-        }}
-        open={isParentLoading}
-      >
-        <CircularProgress size={70} thickness={4} sx={{ color: 'white', mb: 3 }} />
-        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, textAlign: 'center' }}>
-          {parentLoadingText || 'Procesando...'}
-        </Typography>
-        <Typography variant="body1" sx={{ opacity: 0.9, textAlign: 'center', maxWidth: '80%' }}>
-          Configurando tu acceso legal de forma segura.<br/>Por favor, no cierres esta ventana.
-        </Typography>
-      </Backdrop>
     </div>
   );
 }

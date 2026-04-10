@@ -3,15 +3,12 @@
    ========================================= */
 #pida-global-loader {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background-color: #101852; /* Azul PIDA en lugar de Blanco */
+    background-color: #101852;
     z-index: 9999999999;
     display: flex; flex-direction: column; justify-content: center; align-items: center;
     transition: opacity 0.6s ease, visibility 0.6s;
 }
-#pida-global-loader .loader {
-    border: 4px solid rgba(255, 255, 255, 0.1);
-    border-left-color: #FFFFFF;
-}
+#pida-global-loader.fade-out { opacity: 0; visibility: hidden; pointer-events: none; }
 
 .loader-mascot-img {
     width: 150px; height: auto;
@@ -210,7 +207,6 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 .pida-view-content::-webkit-scrollbar-thumb, .pida-dropdown-content::-webkit-scrollbar-thumb { background-color: #CBD5E1; border-radius: 4px; }
 #pida-chat-box { display: flex; flex-direction: column; gap: 20px; padding-bottom: 20px; }
 
-/* ESTILOS DEL CHAT Y FORMATO DE RESPUESTAS */
 .pida-bubble { 
     max-width: 85%; padding: 20px 28px; border-radius: 12px; font-size: 1rem; line-height: 1.6; 
     box-shadow: 0 1px 3px rgba(0,0,0,0.08); user-select: text!important; -webkit-user-select: text!important; 
@@ -232,7 +228,6 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 .user-message-bubble p, .user-message-bubble strong, .user-message-bubble h1, .user-message-bubble h2, .user-message-bubble li { color: white; border-color: rgba(255,255,255,0.3); }
 .user-message-bubble a { color: #dbeafe; }
 
-/* Analizador */
 #analyzer-analysis-result { background: white; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); font-family: 'Inter', sans-serif; color: #334155; line-height: 1.7; user-select: text!important; -webkit-user-select: text!important; }
 #analyzer-analysis-result h1, #analyzer-analysis-result h2, #analyzer-analysis-result h3 { color: var(--pida-primary); margin-top: 1.5em; margin-bottom: 0.8em; font-weight: 700; line-height: 1.2; }
 #analyzer-analysis-result h1 { font-size: 1.8em; border-bottom: 2px solid var(--pida-accent); padding-bottom: 10px; }
@@ -274,9 +269,6 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 .pida-download-controls button { background: white; border: 1px solid var(--pida-border); color: var(--pida-text-muted); padding: 5px 12px; font-size: 0.75rem; cursor: pointer; border-radius: 4px; font-weight: 600; }
 .pida-download-controls button:hover { border-color: var(--pida-accent); color: var(--pida-accent); }
 
-/* =========================================
-   CORRECCIÓN DEL MENÚ DESPLEGABLE (SCROLL FANTASMA)
-   ========================================= */
 .pida-dropdown { position: relative; }
 .pida-dropdown-content { position: absolute; top: 110%; left: 0; width: 320px; background: white; border: 1px solid var(--pida-border); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 100; display: none; flex-direction: column; max-height: 400px; overflow-y: auto; padding: 5px; }
 .pida-dropdown-content.show { display: flex; }
@@ -304,7 +296,6 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 .active-file-chip { background: #eef2ff; color: var(--pida-accent); padding: 5px 12px; border-radius: 20px; border: 1px solid #c7d2fe; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
 .active-file-chip button { background: none; border: none; color: inherit; cursor: pointer; font-weight: bold; }
 
-/* LOGIN MODAL & TABS */
 #pida-login-screen { display: none; justify-content: center; align-items: center; height: 100vh; width: 100vw; background: rgba(29,53,87,0.95); position: fixed; top: 0; left: 0; z-index: 200000; backdrop-filter: blur(5px); }
 .login-card { background: white; padding: 40px; border-radius: 12px; width: 100%; max-width: 520px !important; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; position: relative; overflow: visible !important; }
 .login-logo { width: 120px; margin-bottom: 20px; }
@@ -324,9 +315,6 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 .login-error { color: #EF4444; font-size: 0.9rem; margin-top: 10px; display: none; padding: 10px; background: rgba(239,68,68,0.1); border-radius: 6px; text-align: left;}
 .close-login-btn { position: absolute; top: 15px; right: 15px; border: none; background: none; font-size: 24px; cursor: pointer; color: #999; }
 
-/* ========================================================================= */
-/* RESPONSIVIDAD MÓVIL */
-/* ========================================================================= */
 @media (max-width: 768px) {
     #pida-sidebar { width: 100%; height: 65px; flex-direction: row; justify-content: space-around; align-items: center; padding: 0; position: fixed; bottom: 0; left: 0; top: auto; z-index: 10000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
     .pida-logo-container, .pida-sidebar-user { display: none !important; }
@@ -348,7 +336,6 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
     .account-container { padding: 20px; border: none; box-shadow: none; }
     .pida-view-content { padding: 15px; }
 
-    /* --- SOLUCIÓN: Cajas de menú dinámicas que evitan el scroll horizontal en móviles --- */
     .pida-dropdown-content {
         position: fixed !important;
         top: 70px !important;
@@ -358,7 +345,6 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
         box-shadow: 0 15px 40px rgba(0,0,0,0.2) !important;
     }
 
-    /* --- UNIFICACIÓN DE CAJAS DE BIENVENIDA EN MÓVILES --- */
     #pre-welcome > div, 
     .pre-welcome-card {
         max-width: 95% !important;
@@ -378,7 +364,6 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
     }
 }
 
-/* --- Estilos para el Menú Flotante y Visibilidad --- */
 .mobile-menu-wrapper { display: none !important; }
 @media (max-width: 768px) {
     .mobile-menu-wrapper { display: flex !important; flex: 1; justify-content: center; align-items: center; height: 100%; }
@@ -392,23 +377,17 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 #nav-mobile-menu-btn { display: none; }
 
-/* =========================================
-   ESTILOS PRECALIFICADOR Y CAJAS UNIFICADAS (TAMAÑOS EXACTOS)
-   ========================================= */
-
-/* Contenedor principal del precalificador */
 #pre-welcome { 
     display: flex; 
-    justify-content: center; /* FORZAR CENTRADO */
+    justify-content: center; 
     width: 100%;
     margin-top: 20px; 
 }
 
-/* Igualar la caja del precalificador a la burbuja del chat */
 #pre-welcome > div, 
 .pre-welcome-card {
     width: 100% !important;
-    max-width: 85% !important; /* Mismo ancho que pida-bubble en PC */
+    max-width: 85% !important; 
     margin: 0 auto !important;
     background-color: var(--pida-bg-white) !important;
     border: 1px solid var(--pida-border) !important;
@@ -418,15 +397,13 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
     box-sizing: border-box !important;
 }
 
-/* Hacer que las burbujas de bienvenida en Chat y Analizador se centren y midan lo mismo */
 .pida-bubble:has(.pida-welcome-content) {
-    align-self: center !important; /* Centra la burbuja en la pantalla */
+    align-self: center !important; 
     width: 100% !important;
     max-width: 85% !important;
     box-sizing: border-box !important;
 }
 
-/* Contenido interno unificado (sin robot) */
 .pida-welcome-content { 
     display: flex; 
     flex-direction: column; 
@@ -438,7 +415,7 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 }
 
 .pida-welcome-robot { 
-    display: none !important; /* ELIMINADO TOTALMENTE EN TODAS LAS PANTALLAS */
+    display: none !important; 
 }
 
 .pida-welcome-text { 
@@ -455,7 +432,7 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
     padding-bottom: 0; 
     font-weight: 700; 
     margin-bottom: 10px;
-    text-align: center !important; /* Siempre centrado */
+    text-align: center !important; 
 }
 
 .pida-welcome-text p { 
@@ -482,15 +459,11 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 #pre-analysis-result h3 { font-size: 1.1em; color: var(--pida-accent); text-transform: uppercase; letter-spacing: 0.5px; }
 #pre-analysis-result p { margin-bottom: 1em; }
 #pre-analysis-result strong { color: var(--pida-primary); font-weight: 700; }
-#analyzer-analysis-result a { color: var(--pida-accent); text-decoration: underline; text-underline-offset: 2px; }
 #pre-analysis-result ul, #pre-analysis-result ol { margin-bottom: 1.5em; padding-left: 20px; }
 #pre-analysis-result li { margin-bottom: 0.5em; padding-left: 5px; }
 #pre-analysis-result li::marker { color: var(--pida-accent); font-weight: bold; }
 #pre-analysis-result blockquote { border-left: 4px solid var(--pida-accent); background: #f8fafc; margin: 1.5em 0; padding: 15px 20px; font-style: italic; color: #475569; border-radius: 0 8px 8px 0; }
 
-/* =========================================
-   ESTILOS PARA TABLAS EN EL CHAT (Markdown)
-   ========================================= */
 .pida-bubble { overflow-x: auto; }
 .pida-bubble table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 20px 0; font-size: 0.9rem; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
 .pida-bubble th, .pida-bubble td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; line-height: 1.5; vertical-align: top; }
@@ -499,18 +472,12 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 .pida-bubble tr:last-child td { border-bottom: none; }
 .pida-bubble td a { word-break: break-all; }
 
-/* =========================================
-   ESTILOS DEL TOAST DE ACTUALIZACIÓN (CRISTAL)
-   ========================================= */
 #update-toast { position: fixed; top: 20px; right: 20px; z-index: 1000000; background-color: rgba(29, 53, 87, 0.85); backdrop-filter: blur(8px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px 20px; display: flex; align-items: center; gap: 15px; color: white; font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: all 0.3s ease; animation: slideInDown 0.5s ease-out; }
 #update-toast button { background: #00c3ff; border: none; color: #1d3557; padding: 6px 14px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 0.85rem; transition: background 0.2s; }
 #update-toast button:hover { background: white; }
 #update-toast.hidden { display: none !important; }
 @keyframes slideInDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-/* =========================================
-   SELECTOR DE PAÍSES (BANDERAS A COLOR)
-   ========================================= */
 .custom-select-wrapper { user-select: none; -webkit-user-select: none; }
 .custom-select-trigger { display: flex; justify-content: space-between; align-items: center; cursor: pointer; background-color: #fff; min-height: 45px; }
 .custom-options { position: absolute; top: 105%; left: 0; min-width: 100%; width: max-content; background: #ffffff; border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 200010; max-height: 250px; overflow-y: auto; overflow-x: hidden; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.2s ease; }
@@ -522,35 +489,26 @@ section#root { padding: 0 !important; margin: 0 !important; height: 0 !important
 .flag-img { width: 24px; height: auto; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: block; }
 .flag-img-sm { width: 20px; height: auto; border-radius: 2px; display: block; }
 
-/* =========================================
-   ESTILOS DE PAGOS Y PRECIOS
-   ========================================= */
 #card-element-container { margin: 20px 0; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff; width: 100%; box-sizing: border-box; }
 #stripe-card-element { min-height: 20px; width: 100%; }
 .stripe-error { color: #EF4444; font-size: 0.85rem; margin-top: 8px; font-weight: 500; display: none; }
 
-/* =========================================
-   ESTILOS DE PAGOS Y PRECIOS (CORREGIDO)
-   ========================================= */
 .pricing-grid { 
     display: grid; 
-    grid-template-columns: repeat(3, 1fr); /* Fuerza 3 columnas exactamente del mismo tamaño en PC */
+    grid-template-columns: repeat(3, 1fr); 
     gap: 30px; 
     margin-top: 40px; 
     width: 100%; 
 }
 
-/* Cuando la pantalla sea tamaño Tablet o menor (1024px) */
 @media (max-width: 1024px) {
     .pricing-grid {
-        grid-template-columns: 1fr; /* Pasa todas las tarjetas a 1 sola columna vertical */
-        max-width: 450px; /* Evita que las tarjetas se estiren a lo ancho de toda la tablet y se vean deformes */
-        margin: 40px auto 0 auto; /* Centra las tarjetas en la pantalla */
-        gap: 40px; /* Da un buen respiro entre tarjeta y tarjeta */
+        grid-template-columns: 1fr; 
+        max-width: 450px; 
+        margin: 40px auto 0 auto; 
+        gap: 40px; 
     }
 }
-/* .pricing-card { background: white; padding: 35px; border-radius: 20px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; transition: transform 0.3s; text-align: left; }
-.pricing-card.featured { border: 2.5px solid var(--pida-primary); box-shadow: 0 15px 30px rgba(29, 53, 87, 0.1); position: relative; transform: scale(1.03); } */
 .card-badge { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: var(--pida-primary); color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
 .price-val { font-size: 2rem; font-weight: 800; color: var(--pida-primary); }
 .price-period { color: #64748b; font-weight: 500; }
@@ -568,7 +526,6 @@ input:checked + .slider:before { transform: translateX(24px); }
 
 .discount-badge { display: none; background: #10B981; color: white; font-size: 0.85rem; font-style: italic; padding: 2px 10px; border-radius: 12px; position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 12px; white-space: nowrap; }
 
-/* Badges de Plan en el Dashboard */
 .plan-badge { margin-right: 15px; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: inline-block; vertical-align: middle; }
 .plan-badge.plan-basico { background-color: #EEF2FF !important; border: 1px solid #C7D2FE !important; color: #1D3557 !important; }
 .plan-badge.plan-avanzado { background-color: #E0F2FE !important; border: 1px solid #7DD3FC !important; color: #0369A1 !important; }
@@ -576,9 +533,6 @@ input:checked + .slider:before { transform: translateX(24px); }
 .plan-badge.vip-active { background-color: #FFFBEB !important; border: 1px solid #FCD34D !important; color: #92400E !important; box-shadow: 0 2px 5px rgba(245, 158, 11, 0.2) !important; }
 .plan-badge strong.vip-text { color: #D97706; }
 
-/* =========================================================
-   SISTEMA DE MODAL DE LÍMITE
-   ========================================================= */
 .pida-modal-overlay { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background-color: rgba(15, 23, 42, 0.85) !important; backdrop-filter: blur(8px) !important; z-index: 999999999 !important; display: none; justify-content: center !important; align-items: center !important; opacity: 0 !important; transition: opacity 0.3s ease-in-out !important; }
 .pida-modal-overlay.active { opacity: 1 !important; }
 .pida-modal-card { background: #ffffff !important; width: 90% !important; max-width: 480px !important; border-radius: 24px !important; padding: 40px !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important; position: relative !important; text-align: center !important; display: block !important; border: 1px solid rgba(255,255,255,0.1) !important; }
@@ -590,9 +544,6 @@ input:checked + .slider:before { transform: translateX(24px); }
 .pida-modal-btn { background-color: #1d3557 !important; color: #ffffff !important; width: 100% !important; padding: 16px !important; border-radius: 12px !important; font-weight: 700 !important; font-size: 1rem !important; border: none !important; cursor: pointer !important; transition: transform 0.2s, background 0.2s !important; }
 .pida-modal-btn:hover { background-color: #0056B3 !important; transform: translateY(-2px) !important; }
 
-/* =========================================
-   UNIFORMIDAD DE BOTONES SUPERIORES Y BADGE
-   ========================================= */
 .pida-context-controls .pida-header-btn, .pida-context-controls .plan-badge { height: 42px !important; display: inline-flex !important; align-items: center !important; box-sizing: border-box !important; }
 .pida-context-controls .context-group > .pida-header-btn.primary { width: 220px !important; min-width: 220px !important; justify-content: center !important; }
 .pida-context-controls .pida-dropdown .pida-header-btn { width: 280px !important; min-width: 280px !important; justify-content: space-between !important; padding: 0 15px !important; }
@@ -604,17 +555,10 @@ input:checked + .slider:before { transform: translateX(24px); }
     .pida-context-controls .plan-badge { width: auto !important; min-width: auto !important; padding: 0 12px !important; }
 }
 
-/* =========================================
-   ESTABILIZACIÓN MÓVIL CORREGIDA (PRO)
-   ========================================= */
 html, body { min-height: 100dvh; width: 100vw; margin: 0; padding: 0; overflow-x: hidden; overflow-y: auto !important; }
 #pida-app-layout { height: 100dvh; height: 100svh; display: flex; flex-direction: row; overflow: hidden !important; }
 .pida-view-content { flex: 1 1 auto; overflow-y: auto !important; -webkit-overflow-scrolling: touch; padding-bottom: 20px; }
 .pida-view-form { flex: 0 0 auto; background: white; z-index: 10; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
-
-/* =========================================
-CLASES PROFESIONALES REFACTORIZADAS (UI)
-========================================= */
 
 .nav-login-btn {
 background: transparent;
@@ -641,7 +585,6 @@ padding: 10px 20px; color: #1D3557; text-decoration: none; font-size: 0.95rem; t
 }
 .newsletter-dropdown-content a:hover { background-color: #F3F4F6; }
 
-/* Botones Hero */
 .btn-video-play {
 display: inline-flex; align-items: center; gap: 10px; background: transparent;
 border: 2px solid var(--pida-primary); color: var(--pida-primary);
@@ -649,7 +592,6 @@ padding: 10px 25px; border-radius: 30px; font-weight: bold; cursor: pointer; tra
 }
 .btn-video-play:hover { background: var(--pida-primary); color: white; }
 
-/* Selector de Precios y Etiqueta */
 .billing-toggle-wrapper { display: flex; flex-direction: column; align-items: center; margin-bottom: 40px; }
 .billing-toggle-controls { display: flex; justify-content: center; align-items: center; gap: 15px; }
 .billing-label { font-weight: 700; transition: 0.3s; font-size: 1.1rem; }
@@ -663,7 +605,6 @@ background: #ffffff; color: #4caf50; border-radius: 15px;
 font-size: 0.85rem; font-weight: 700; box-shadow: 0 2px 5px rgba(0,0,0,0.05); animation: fadeIn 0.3s ease;
 }
 
-/* Modales Unificados (Login, Contacto, Video) */
 .modal-backdrop {
 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
 background-color: rgba(29, 53, 87, 0.95); z-index: 200000;
@@ -682,30 +623,25 @@ font-size: 24px; cursor: pointer; color: #999; z-index: 10;
 .modal-title { color: var(--pida-primary); margin-top: 0; font-size: 1.4rem; font-weight: 800; }
 .modal-subtitle { color: #64748B; margin-bottom: 25px; font-size: 0.95rem; line-height: 1.4; }
 
-/* Componentes Internos de Modal */
 .modal-info-banner { padding: 15px; background: #F0F9FF; border-radius: 8px; margin-bottom: 25px; border: 1px solid #BAE6FD; text-align: center; }
 .modal-info-title { font-size: 0.9rem; color: #0369A1; font-weight: 600; display: block; }
 .modal-info-text { font-size: 0.85rem; color: #0284C7; margin: 5px 0 0 0; line-height: 1.4; }
 .modal-link-btn { background: none; border: none; color: var(--pida-primary); font-weight: bold; text-decoration: underline; cursor: pointer; margin-top: 8px; padding: 0; }
 
-/* Formularios */
 .form-group-row { display: flex; gap: 10px; margin-bottom: 15px; }
 .form-input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; outline: none; width: 100%; box-sizing: border-box; margin-bottom: 15px; }
 .form-input.no-margin { margin-bottom: 0; }
 .form-input:focus { border-color: var(--pida-accent); }
 textarea.form-input { resize: vertical; }
 .form-submit-btn { width: 100%; padding: 16px; background: var(--navy); color: white; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 5px; }
-.form-submit-btn:hover:not(:disabled) { background: 'var(--pida-accent)'; }
 .form-submit-btn:disabled { cursor: not-allowed; opacity: 0.7; }
 
-/* Mensajes de Estado */
 .status-msg { padding: 12px 15px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 20px; line-height: 1.4; }
 .status-msg.error { background: #FEE2E2; color: #B91C1C; border: 1px solid #FCA5A5; }
 .status-msg.success { background: #D1FAE5; color: #047857; border: 1px solid #6EE7B7; }
 .bottom-link { margin-top: 25px; font-size: 0.9rem; color: #64748B; text-align: center; }
 .bottom-link span { color: var(--pida-accent); text-decoration: underline; cursor: pointer; font-weight: 600; }
 
-/* Stripe & Promos */
 .auth-summary-box { padding: 15px; background: #F8FAFC; border-radius: 8px; margin-bottom: 20px; border: 1px solid #E2E8F0; }
 .auth-summary-header { border-bottom: 1px solid #E2E8F0; padding-bottom: 10px; margin-bottom: 10px; font-weight: 700; color: var(--pida-primary); font-size: 0.95rem; }
 .auth-summary-row { display: flex; justify-content: space-between; align-items: center; }
@@ -731,14 +667,10 @@ textarea.form-input { resize: vertical; }
 .terms-label { font-size: 0.85rem; color: #4B5563; line-height: 1.5; cursor: pointer; }
 .terms-label a { color: var(--pida-accent); font-weight: 500; }
 
-/* Video Modal Especial */
 .video-modal-card { position: relative; width: 90%; max-width: 850px; background-color: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.5); }
 .video-close-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 1.5rem; cursor: pointer; border-radius: 50%; width: 40px; height: 40px; z-index: 10; display: flex; align-items: center; justify-content: center; transition: background 0.3s; }
 .video-close-btn:hover { background: rgba(239, 68, 68, 0.9); }
 
-/* =========================================
-   PÁGINA 404 (PROFESIONAL Y FUNCIONAL)
-   ========================================= */
 .not-found-wrapper {
   display: flex;
   align-items: center;
@@ -803,43 +735,27 @@ textarea.form-input { resize: vertical; }
   justify-content: center;
 }
 
-/* =========================================
-   EFECTOS ECOSISTEMA (IA / DIGITAL) - IMAGEN 3D
-   ========================================= */
 .bg-ai-mesh {
-    /* Color oscuro de respaldo por si la imagen tarda en cargar */
     background-color: #0a0a1a; 
-    
-    /* AQUÍ PONES LA RUTA A LA IMAGEN QUE DESCARGASTE */
     background-image: url('/img/iStock-1425809737.webp');
-    
-    /* Ajustes para que la imagen se vea perfecta como fondo */
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    
-    /* 👇 ESTA ES LA LÍNEA NUEVA QUE FIJA EL FONDO (PARALLAX) 👇 */
     background-attachment: fixed;
-    
     position: relative;
-    
-    /* Nos aseguramos de que el contenido interno se posicione bien */
     z-index: 1;
 }
 
-/* Tarjetas de Cristal con borde Rojo PIDA y esquina plana */
 .glass-card {
-    background: rgba(255, 255, 255, 0.05); /* Ligeramente más transparente para que luzca la imagen */
+    background: rgba(255, 255, 255, 0.05); 
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-left: 4px solid var(--pidared);
     border-radius: 0px 16px 16px 0px;
-    
     padding: 35px;
     position: relative;
-    z-index: 2; /* Para que quede por encima de la imagen y los resplandores */
+    z-index: 2; 
     transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -850,26 +766,12 @@ textarea.form-input { resize: vertical; }
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(185, 47, 50, 0.2);
 }
 
-/* =========================================
-   EFECTOS WALLPAPER CIRCCUITOS (IA / DIGITAL)
-   ========================================= */
 .bg-circuitos {
-    /* Color blanco de respaldo por si la imagen tarda en cargar */
     background-color: #FFFFFF; 
-    
-    /* AQUÍ PONES LA RUTA A LA IMAGEN QUE DESCARGASTE */
     background-image: url('/img/circuitos-wall.webp');
-    
-    /* Ajustes para que la imagen se vea perfecta como fondo */
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    
-    /* 👇 ESTA ES LA LÍNEA NUEVA QUE FIJA EL FONDO (PARALLAX) 👇 
-    background-attachment: fixed; */
-    
     position: relative;
-    
-    /* Nos aseguramos de que el contenido interno se posicione bien */
     z-index: 1;
 }
