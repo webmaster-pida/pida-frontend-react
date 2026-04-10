@@ -3,8 +3,9 @@ import { auth, googleProvider } from '../config/firebase';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { STRIPE_PRICES, PIDA_CONFIG } from '../config/constants';
-import { Box, TextField, Button } from '@mui/material'; // Nuevas importaciones de MUI
+import { Box, TextField, Button } from '@mui/material'; 
 
+// Asegúrate de usar la llave pública correcta para tu entorno
 const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3kjrZGFGln3bhwEQKnpoNXf2MnLXGHylM1OQ6SvWJmNVCNqhCxg6x000l605E1B');
 
 const cardStyle = {
@@ -34,7 +35,6 @@ function AuthFormContent({ onClose, initialMode }) {
   const [promoMessage, setPromoMessage] = useState({ text: '', type: '' });
   const [discountData, setDiscountData] = useState(null);
 
-  // Convertimos en estados para permitir cambios de última hora
   const [plan, setPlan] = useState(sessionStorage.getItem('pida_pending_plan') || 'basico');
   const [interval, setInterval] = useState(sessionStorage.getItem('pida_pending_interval') || 'monthly');
   
@@ -102,8 +102,23 @@ function AuthFormContent({ onClose, initialMode }) {
         if (!stripe || !elements) throw new Error("Stripe no ha cargado aún.");
 
         const fullName = `${firstName} ${lastName}`.trim();
-        let user = auth.currentUser;
+        const cardElement = elements.getElement(CardElement);
 
+        setLoadingText('Validando tarjeta...');
+        
+        // PASO 1: CREAR EL MÉTODO DE PAGO ANTES QUE EL USUARIO
+        const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
+          type: 'card',
+          card: cardElement,
+          billing_details: { name: fullName, email: email }
+        });
+
+        if (stripeError) {
+          throw new Error(stripeError.message || "Por favor, ingresa los datos de tu tarjeta correctamente.");
+        }
+
+        // PASO 2: AHORA SÍ CREAMOS EL USUARIO EN FIREBASE
+        let user = auth.currentUser;
         if (!user) {
           setLoadingText('Creando cuenta...');
           const cred = await auth.createUserWithEmailAndPassword(email, password);
@@ -113,7 +128,7 @@ function AuthFormContent({ onClose, initialMode }) {
 
         setLoadingText('Iniciando prueba gratis...');
 
-        // --- INICIO: EVENTOS GOOGLE ANALYTICS ---
+        // --- GOOGLE ANALYTICS: BEGIN CHECKOUT ---
         const numericValue = discountData ? (discountData.final_amount / 100) : parseFloat(planDetails.text.replace(/[^0-9.-]+/g,""));
         const itemName = `Plan ${plan.toUpperCase()} - ${interval.toUpperCase()}`;
 
@@ -121,16 +136,11 @@ function AuthFormContent({ onClose, initialMode }) {
           window.gtag('event', 'begin_checkout', {
             currency: currency,
             value: numericValue,
-            items: [{
-              item_id: planDetails.id,
-              item_name: itemName,
-              price: numericValue,
-              quantity: 1
-            }]
+            items: [{ item_id: planDetails.id, item_name: itemName, price: numericValue, quantity: 1 }]
           });
         }
-        // --- FIN: EVENTOS GOOGLE ANALYTICS ---
 
+        // PASO 3: ENVIAR DATOS Y MÉTODO DE PAGO AL BACKEND
         const token = await user.getIdToken();
         const intentRes = await fetch(`${PIDA_CONFIG.API_CHAT}/create-payment-intent`, {
           method: 'POST',
@@ -141,62 +151,61 @@ function AuthFormContent({ onClose, initialMode }) {
             plan_key: plan,
             trial_period_days: 5,
             name: fullName,
-            promotion_code: discountData ? promoCode : ""
+            promotion_code: discountData ? promoCode : "",
+            paymentMethodId: paymentMethod.id // <-- VITAL: Adjuntar el ID de la tarjeta validada
           })
         });
 
         const data = await intentRes.json();
         if (!intentRes.ok) throw new Error(data.detail || "Error al procesar el pago");
 
-        const cardElement = elements.getElement(CardElement);
-        let result;
-        
-        if (data.clientSecret.startsWith('seti_')) {
-          result = await stripe.confirmCardSetup(data.clientSecret, {
-            payment_method: { card: cardElement, billing_details: { name: fullName } }
-          });
-        } else {
-          result = await stripe.confirmCardPayment(data.clientSecret, {
-            payment_method: { card: cardElement, billing_details: { name: fullName } }
-          });
+        let transactionId = data.subscriptionId || "sub_unknown";
+
+        // PASO 4: CONFIRMAR CON SEGURIDAD (PROTEGIDO CONTRA PANTALLAS BLANCAS)
+        if (data.requiresAction && data.clientSecret) {
+          setLoadingText('Confirmando seguridad bancaria...');
+          let result;
+          if (data.clientSecret.startsWith('seti_')) {
+            result = await stripe.confirmCardSetup(data.clientSecret, {
+              payment_method: paymentMethod.id
+            });
+            if (result.error) throw new Error(result.error.message);
+            transactionId = result.setupIntent.id;
+          } else {
+            result = await stripe.confirmCardPayment(data.clientSecret, {
+              payment_method: paymentMethod.id
+            });
+            if (result.error) throw new Error(result.error.message);
+            transactionId = result.paymentIntent.id;
+          }
         }
 
-        if (result.error) throw new Error(result.error.message);
-
-        // --- INICIO: EVENTO DE COMPRA GOOGLE ANALYTICS ---
+        // --- GOOGLE ANALYTICS: COMPRA EXITOSA ---
         if (typeof window !== 'undefined' && window.gtag) {
-          const transactionId = data.clientSecret.startsWith('seti_') ? result.setupIntent.id : result.paymentIntent.id;
           window.gtag('event', 'purchase', {
             transaction_id: transactionId,
             currency: currency,
             value: numericValue,
-            items: [{
-              item_id: planDetails.id,
-              item_name: itemName,
-              price: numericValue,
-              quantity: 1
-            }]
+            items: [{ item_id: planDetails.id, item_name: itemName, price: numericValue, quantity: 1 }]
           });
         }
-        // --- FIN: EVENTO DE COMPRA GOOGLE ANALYTICS ---
 
         setLoadingText('¡Suscripción activada!');
         sessionStorage.setItem('pida_is_onboarding', 'true');
-        
         setTimeout(() => { window.location.href = window.location.pathname + "?payment_status=success"; }, 1500);
       }
 
     } catch (err) {
-      console.error(err);
-      if (mode === 'register' && auth.currentUser) await auth.signOut();
-
-      let msg = err.message || "Ocurrió un error.";
+      console.error("AuthModal Error:", err);
+      
+      let msg = err.message || "Ocurrió un error inesperado al procesar la solicitud.";
+      
       if (err.code === 'auth/user-not-found') {
           msg = "No encontramos una cuenta con este correo. Recuerda que PIDA es premium, debes adquirir un plan primero.";
       } else if (err.code === 'auth/email-already-in-use') {
-          msg = "Esta cuenta ya existe. Haz clic en 'Volver al login' abajo, ingresa con tu contraseña y podrás pagar desde tu panel de usuario.";
+          msg = "Este correo ya está registrado. Haz clic en 'Volver al login' (abajo), ingresa tu correo y contraseña, y completa tu pago.";
       } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-          msg = "Datos incorrectos. Si eres nuevo, cierra esta ventana y elige un plan para suscribirte.";
+          msg = "Datos incorrectos. Revisa tu correo y contraseña.";
       }
       
       setError(msg);
@@ -239,7 +248,6 @@ function AuthFormContent({ onClose, initialMode }) {
 
       <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
         
-        {/* Campos de Nombre convertidos a MUI */}
         {mode === 'register' && (
           <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
             <TextField label="Nombre" variant="outlined" size="small" fullWidth required value={firstName} onChange={e => setFirstName(e.target.value)} sx={{ bgcolor: '#FAFAFA' }} />
@@ -247,10 +255,8 @@ function AuthFormContent({ onClose, initialMode }) {
           </Box>
         )}
 
-        {/* Campo de Correo convertido a MUI */}
         <TextField type="email" label="Correo electrónico" variant="outlined" size="small" fullWidth required value={email} onChange={e => setEmail(e.target.value)} sx={{ bgcolor: '#FAFAFA', mb: 2 }} />
         
-        {/* Campo de Contraseña convertido a MUI */}
         {mode !== 'reset' && (
           <Box sx={{ position: 'relative', mb: 2 }}>
             <TextField type="password" label="Contraseña" variant="outlined" size="small" fullWidth required value={password} onChange={e => setPassword(e.target.value)} sx={{ bgcolor: '#FAFAFA' }} />
@@ -272,8 +278,7 @@ function AuthFormContent({ onClose, initialMode }) {
                   <button key={p} type="button" onClick={() => { setPlan(p); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} style={{
                     padding: '10px 2px', borderRadius: '8px', border: `2px solid ${plan === p ? 'var(--pida-primary)' : '#E2E8F0'}`,
                     background: plan === p ? '#F0F7FF' : 'white', cursor: 'pointer', transition: '0.2s', 
-                    fontWeight: '600', // <- GROSOR FIJO PARA EVITAR EL SALTO DE DISEÑO
-                    color: plan === p ? 'var(--pida-primary)' : '#64748B', fontSize: '0.8rem', textTransform: 'capitalize', textAlign: 'center'
+                    fontWeight: '600', color: plan === p ? 'var(--pida-primary)' : '#64748B', fontSize: '0.8rem', textTransform: 'capitalize', textAlign: 'center'
                   }}>
                     {p === 'basico' ? 'Básico' : p}
                   </button>
@@ -284,22 +289,15 @@ function AuthFormContent({ onClose, initialMode }) {
               <div style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
                 <button type="button" onClick={() => { setInterval('monthly'); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} style={{
                   flex: 1, padding: '10px', borderRadius: '8px', border: `2px solid ${interval === 'monthly' ? 'var(--pida-primary)' : '#E2E8F0'}`,
-                  background: interval === 'monthly' ? '#F0F7FF' : 'white', cursor: 'pointer', 
-                  fontWeight: '600', // <- GROSOR FIJO
-                  color: interval === 'monthly' ? 'var(--pida-primary)' : '#64748B', fontSize: '0.85rem'
+                  background: interval === 'monthly' ? '#F0F7FF' : 'white', cursor: 'pointer', fontWeight: '600', color: interval === 'monthly' ? 'var(--pida-primary)' : '#64748B', fontSize: '0.85rem'
                 }}>Mensual</button>
                 
                 <button type="button" onClick={() => { setInterval('annual'); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} style={{
                   flex: 1, padding: '10px', borderRadius: '8px', border: `2px solid ${interval === 'annual' ? 'var(--pida-primary)' : '#E2E8F0'}`,
-                  background: interval === 'annual' ? '#F0F7FF' : 'white', cursor: 'pointer', position: 'relative', 
-                  fontWeight: '600', // <- GROSOR FIJO
-                  color: interval === 'annual' ? 'var(--pida-primary)' : '#64748B', fontSize: '0.85rem'
+                  background: interval === 'annual' ? '#F0F7FF' : 'white', cursor: 'pointer', position: 'relative', fontWeight: '600', color: interval === 'annual' ? 'var(--pida-primary)' : '#64748B', fontSize: '0.85rem'
                 }}>
                   Anual
-                  <span style={{ 
-                    position: 'absolute', top: '-10px', right: '-5px', background: '#10B981', color: 'white', 
-                    fontSize: '0.55rem', padding: '2px 6px', borderRadius: '8px', fontWeight: '800', border: '1px solid white', whiteSpace: 'nowrap'
-                  }}>AHORRA ~20%</span>
+                  <span style={{ position: 'absolute', top: '-10px', right: '-5px', background: '#10B981', color: 'white', fontSize: '0.55rem', padding: '2px 6px', borderRadius: '8px', fontWeight: '800', border: '1px solid white', whiteSpace: 'nowrap' }}>AHORRA ~20%</span>
                 </button>
               </div>
             </div>
@@ -324,27 +322,15 @@ function AuthFormContent({ onClose, initialMode }) {
               <CardElement options={cardStyle} />
             </div>
 
-            {/* Campo del Código de Descuento convertido a MUI */}
             <div className="promo-group" style={{ display: 'flex', flexDirection: 'row', gap: '8px', marginBottom: '10px', alignItems: 'stretch' }}>
               <TextField 
-                label="Código de descuento"
-                variant="outlined"
-                size="small"
-                value={promoCode} 
-                onChange={e => setPromoCode(e.target.value)} 
-                disabled={!!discountData || isLoading}
+                label="Código de descuento" variant="outlined" size="small"
+                value={promoCode} onChange={e => setPromoCode(e.target.value)} disabled={!!discountData || isLoading}
                 sx={{ flex: 1, bgcolor: '#FAFAFA', '& input': { textTransform: 'uppercase' } }}
               />
               <Button 
-                type="button" 
-                variant="outlined"
-                onClick={handleApplyPromo} 
-                disabled={!!discountData || !promoCode || isLoading}
-                sx={{ 
-                  textTransform: 'none', fontWeight: 600, px: 2, 
-                  borderColor: '#CBD5E1', color: 'var(--pida-text-muted)',
-                  '&:hover': { borderColor: 'var(--pida-primary)', backgroundColor: 'transparent' }
-                }}
+                type="button" variant="outlined" onClick={handleApplyPromo} disabled={!!discountData || !promoCode || isLoading}
+                sx={{ textTransform: 'none', fontWeight: 600, px: 2, borderColor: '#CBD5E1', color: 'var(--pida-text-muted)', '&:hover': { borderColor: 'var(--pida-primary)', backgroundColor: 'transparent' } }}
               >
                 {discountData ? '✓ Aplicado' : 'Aplicar'}
               </Button>
@@ -360,7 +346,7 @@ function AuthFormContent({ onClose, initialMode }) {
           </div>
         )}
 
-        {error && <div className="status-msg error" style={{ color: '#EF4444', fontSize: '0.85rem', background: '#FEF2F2', padding: '10px', borderRadius: '6px', marginBottom: '15px' }}>{error}</div>}
+        {error && <div className="status-msg error" style={{ color: '#EF4444', fontSize: '0.85rem', background: '#FEF2F2', padding: '10px', borderRadius: '6px', marginBottom: '15px', border: '1px solid #FECACA' }}>{error}</div>}
 
         <button type="submit" className="form-submit-btn pida-button-primary" style={{ width: '100%', padding: '14px', fontSize: '1rem' }} disabled={isLoading || (!stripe && mode === 'register')}>
           {isLoading ? loadingText : (mode === 'login' ? 'Ingresar' : mode === 'register' ? 'Activar cuenta y probar 5 días' : 'Enviar enlace')}
