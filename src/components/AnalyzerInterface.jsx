@@ -641,12 +641,14 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const renderAnalysisContent = (text, idx) => {
     if (!text) return null;
     
-    // HEURÍSTICAS DE AUTO-REPARACIÓN SELECTIVA
-    const timelineHeuristic = /\[\s*\{\s*"date":[\s\S]*?\}\s*\]/g;
-    const flowHeuristic = /\[\s*\{\s*"step":[\s\S]*?\}\s*\]/g;
+    // HEURÍSTICAS DE AUTO-REPARACIÓN SELECTIVA (Sin la bandera /g para evitar que el estado interno rompa el .replace)
+    const timelineHeuristic = /\[\s*\{\s*"date":[\s\S]*?\}\s*\]/;
+    const flowHeuristic = /\[\s*\{\s*"step":[\s\S]*?\}\s*\]/;
 
     const isCurrentlyTypingThis = isAnalyzing && idx === messages.length - 1; 
-    const separatorRegex = /(?:---PREGUNTAS---|(?:\n|^)(?:#{2,4}\s*|\*\*\s*)?Preguntas de Seguimiento(?:\s*\*\*|:)?\s*\n)/i;
+    
+    // Ampliamos el regex para atrapar tanto tu título oficial como las invenciones del LLM
+    const separatorRegex = /(?:---PREGUNTAS---|(?:\n|^)(?:#{2,4}\s*|\*\*\s*)?(?:Preguntas de Seguimiento|¿Quieres profundizar en este documento\?)(?:\s*\*\*|:)?\s*\n?)/i;
     
     const parts = text.split(separatorRegex);
 
