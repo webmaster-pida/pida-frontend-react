@@ -641,20 +641,26 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const renderAnalysisContent = (text, idx) => {
     if (!text) return null;
     
-    // HEURÍSTICAS DE AUTO-REPARACIÓN SELECTIVA (Sin la bandera /g para evitar que el estado interno rompa el .replace)
-    const timelineHeuristic = /\[\s*\{\s*"date":[\s\S]*?\}\s*\]/;
-    const flowHeuristic = /\[\s*\{\s*"step":[\s\S]*?\}\s*\]/;
-
     const isCurrentlyTypingThis = isAnalyzing && idx === messages.length - 1; 
-    
-    // Ampliamos el regex para atrapar tanto tu título oficial como las invenciones del LLM
     const separatorRegex = /(?:---PREGUNTAS---|(?:\n|^)(?:#{2,4}\s*|\*\*\s*)?(?:Preguntas de Seguimiento|¿Quieres profundizar en este documento\?)(?:\s*\*\*|:)?\s*\n?)/i;
     
     const parts = text.split(separatorRegex);
+    let mainContent = parts[0];
+
+    // LA SOLUCIÓN ELEGANTE: Interceptamos tus delimitadores personalizados y 
+    // los convertimos en el bloque de código que activa los componentes visuales.
+    if (!isCurrentlyTypingThis) {
+        mainContent = mainContent.replace(/\[TIMELINE_START\]([\s\S]*?)\[TIMELINE_END\]/gi, (match, jsonContent) => {
+            return `\n\`\`\`json-timeline\n${jsonContent.trim()}\n\`\`\`\n`;
+        });
+        
+        mainContent = mainContent.replace(/\[FLOW_START\]([\s\S]*?)\[FLOW_END\]/gi, (match, jsonContent) => {
+            return `\n\`\`\`json-flow\n${jsonContent.trim()}\n\`\`\`\n`;
+        });
+    }
 
     if (parts.length > 1 && !isCurrentlyTypingThis) {
-      let mainContent = parts[0];
-      const questionsPart = parts.slice(1).join('\n'); 
+      const questionsPart = parts.slice(1).join('\n');
 
       const lines = questionsPart.split('\n');
       const questions = [];
