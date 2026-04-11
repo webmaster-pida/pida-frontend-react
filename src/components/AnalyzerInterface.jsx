@@ -3,13 +3,55 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { Exporter, getTimestampedName } from '../utils/exporter';
+import mermaid from 'mermaid';
 
 import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 
 const API_ANA = "https://analize-v20-genai-465781488910.us-central1.run.app";
 
+// Inicializar el motor de diagramas de Mermaid
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  securityLevel: 'loose',
+});
+
+// Componente React que dibuja el gráfico vectorial
+const MermaidChart = ({ chart }) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current && chart) {
+      try {
+        const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+        mermaid.render(id, chart)
+          .then(({ svg }) => {
+            if (ref.current) ref.current.innerHTML = svg;
+          })
+          .catch(e => console.error("Error interno de Mermaid:", e));
+      } catch (error) {
+        console.error("Error dibujando diagrama:", error);
+      }
+    }
+  }, [chart]);
+  return <div ref={ref} className="mermaid-container" style={{ display: 'flex', justifyContent: 'center', margin: '25px 0', width: '100%', overflowX: 'auto', background: '#ffffff', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }} />;
+};
+
 const markdownComponents = {
   a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
+
+  // --- NUEVA REGLA PARA INTERCEPTAR MERMAID ---
+  code: ({ node, inline, className, children, ...props }) => {
+    const match = /language-(\w+)/.exec(className || '');
+    if (!inline && match && match[1] === 'mermaid') {
+      return <MermaidChart chart={String(children).replace(/\n$/, '')} />;
+    }
+    return (
+      <code className={className} style={{ backgroundColor: '#f1f5f9', padding: '2px 4px', borderRadius: '4px', fontSize: '0.9em' }} {...props}>
+        {children}
+      </code>
+    );
+  },
+  // --------------------------------------------
   
   table: ({ node, ...props }) => (
     <div style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
