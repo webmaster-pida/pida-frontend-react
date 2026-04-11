@@ -25,7 +25,15 @@ const MermaidChart = ({ chart }) => {
         const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
         mermaid.render(id, chart)
           .then(({ svg }) => {
-            if (ref.current) ref.current.innerHTML = svg;
+            if (ref.current) {
+              ref.current.innerHTML = svg;
+              // BLINDAJE VISUAL: Evitar que el gráfico se haga microscópico
+              const svgEl = ref.current.querySelector('svg');
+              if (svgEl) {
+                svgEl.style.maxWidth = 'none'; // Prohíbe que se encoja
+                svgEl.style.height = 'auto';
+              }
+            }
           })
           .catch(e => console.error("Error interno de Mermaid:", e));
       } catch (error) {
@@ -33,7 +41,11 @@ const MermaidChart = ({ chart }) => {
       }
     }
   }, [chart]);
-  return <div ref={ref} className="mermaid-container" style={{ display: 'flex', justifyContent: 'center', margin: '25px 0', width: '100%', overflowX: 'auto', background: '#ffffff', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }} />;
+  
+  // El contenedor permite scroll horizontal si el gráfico es muy ancho
+  return <div className="mermaid-container" style={{ display: 'block', margin: '25px 0', width: '100%', overflowX: 'auto', background: '#ffffff', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+    <div ref={ref} style={{ display: 'inline-block', minWidth: '100%' }} />
+  </div>;
 };
 
 const markdownComponents = {
