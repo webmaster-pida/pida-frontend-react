@@ -6,7 +6,7 @@ import { Exporter, getTimestampedName } from '../utils/exporter';
 
 import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 
-const API_ANA = "https://analize-v20-strong-465781488910.us-central1.run.app";
+const API_ANA = "https://analize-v20-genai-465781488910.us-central1.run.app";
 
 const markdownComponents = {
   a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
