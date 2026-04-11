@@ -707,7 +707,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           )}
 
           {sources.length > 0 && (
-            <div className="markdown-content" style={{ marginTop: '20px', display: 'block', width: '100%', maxWidth: '100%', overflowX: 'hidden', wordBreak: 'break-word', boxSizing: 'border-box' }}>
+            <div className="markdown-content" style={{ marginTop: '20px', display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto', wordBreak: 'break-word', boxSizing: 'border-box' }}>
               <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
                 {sources.join('\n')}
               </ReactMarkdown>
@@ -833,18 +833,18 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           </Box>
         )}
 
-        {/* RESTAURADO: SUGERENCIAS RÁPIDAS */}
+        {/* --- BLOQUE DE SUGERENCIAS RÁPIDAS --- */}
         {files.length > 0 && messages.length === 0 && !isAnalyzing && (
           <div style={{ marginBottom: '15px', padding: '15px', background: '#F8FAFC', borderRadius: '8px', border: '1px dashed #CBD5E1' }}>
             <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--pida-primary)', marginBottom: '10px', textTransform: 'uppercase' }}>Sugerencias rápidas:</span>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button type="button" className="pida-button-secondary" style={{ background: 'white', border: '1px solid var(--pida-border)', padding: '6px 12px', fontSize: '0.85rem', borderRadius: '20px' }} onClick={() => handleAnalyze("Elabora un resumen ejecutivo destacando los puntos más importantes de este documento.")}>
+              <button type="button" className="pida-button-secondary" style={{ background: 'white', border: '1px solid var(--pida-border)', padding: '6px 12px', fontSize: '0.85rem', borderRadius: '20px', cursor: 'pointer' }} onClick={() => handleAnalyze("Elabora un resumen ejecutivo destacando los puntos más importantes de este documento.")}>
                 ⚡ Resumen Ejecutivo
               </button>
-              <button type="button" className="pida-button-secondary" style={{ background: 'white', border: '1px solid var(--pida-border)', padding: '6px 12px', fontSize: '0.85rem', borderRadius: '20px' }} onClick={() => handleAnalyze("Identifica posibles riesgos, vacíos legales o posibles contradicciones en los argumentos planteados.")}>
+              <button type="button" className="pida-button-secondary" style={{ background: 'white', border: '1px solid var(--pida-border)', padding: '6px 12px', fontSize: '0.85rem', borderRadius: '20px', cursor: 'pointer' }} onClick={() => handleAnalyze("Identifica posibles riesgos, vacíos legales o posibles contradicciones en los argumentos planteados.")}>
                 ⚖️ Riesgos y Contradicciones
               </button>
-              <button type="button" className="pida-button-secondary" style={{ background: 'white', border: '1px solid var(--pida-border)', padding: '6px 12px', fontSize: '0.85rem', borderRadius: '20px' }} onClick={() => handleAnalyze("Extrae una línea de tiempo con los hechos, fechas y plazos clave mencionados.")}>
+              <button type="button" className="pida-button-secondary" style={{ background: 'white', border: '1px solid var(--pida-border)', padding: '6px 12px', fontSize: '0.85rem', borderRadius: '20px', cursor: 'pointer' }} onClick={() => handleAnalyze("Extrae una línea de tiempo con los hechos, fechas y plazos clave mencionados.")}>
                 📅 Línea de Tiempo
               </button>
             </div>
@@ -894,13 +894,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           onChange={(e) => setInstructions(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) handleAnalyze(e); }}
           disabled={isAnalyzing}
-          sx={{ 
-            mb: 2, 
-            '& .MuiOutlinedInput-root': {
-              backgroundColor: '#FAFAFA',
-              borderRadius: 2,
-            }
-          }}
+          sx={{ mb: 2, '& .MuiOutlinedInput-root': { backgroundColor: '#FAFAFA', borderRadius: 2 } }}
         />
         
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -928,7 +922,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setShowMissingFileModal(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: '40px 30px', maxWidth: '420px', borderRadius: '16px' }}>
             <button className="modal-close-btn" onClick={() => setShowMissingFileModal(false)}>×</button>
-            
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0056B3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -938,23 +931,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
                 <polyline points="10 9 9 9 8 9"></polyline>
               </svg>
             </div>
-            
             <h2 className="modal-title" style={{ fontSize: '1.4rem', marginBottom: '15px' }}>Documento Requerido</h2>
-            <p className="modal-subtitle" style={{ fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '30px', color: '#4B5563' }}>
-              Estás continuando un análisis antiguo. Por políticas de privacidad y seguridad, <strong>no guardamos tus archivos</strong> en nuestros servidores.
-              <br /><br />
-              Para hacer preguntas de seguimiento, por favor vuelve a adjuntar el documento original.
-            </p>
-            
-            <button 
-              className="form-submit-btn" 
-              onClick={() => {
-                setShowMissingFileModal(false);
-                fileInputRef.current?.click();
-              }}
-            >
-              Subir documento
-            </button>
+            <p className="modal-subtitle" style={{ fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '30px', color: '#4B5563' }}>Estás continuando un análisis antiguo. Por políticas de privacidad y seguridad, <strong>no guardamos tus archivos</strong> en nuestros servidores.<br /><br />Para hacer preguntas de seguimiento, por favor vuelve a adjuntar el documento original.</p>
+            <button className="form-submit-btn" onClick={() => { setShowMissingFileModal(false); fileInputRef.current?.click(); }}>Subir documento</button>
           </div>
         </div>
       )}
@@ -963,7 +942,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setErrorModal({ show: false, title: '', message: '' })}>
           <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: '40px 30px', maxWidth: '440px', borderRadius: '16px', border: '1px solid #FECACA' }}>
             <button className="modal-close-btn" onClick={() => setErrorModal({ show: false, title: '', message: '' })}>×</button>
-
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -971,26 +949,16 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
               </svg>
             </div>
-
             <h2 className="modal-title" style={{ fontSize: '1.3rem', marginBottom: '15px', color: '#B91C1C' }}>{errorModal.title}</h2>
-            
             <div className="modal-subtitle markdown-content" style={{ fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '30px', color: '#4B5563', textAlign: 'left' }}>
               <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
                 {errorModal.message}
               </ReactMarkdown>
             </div>
-
-            <button 
-              className="form-submit-btn" 
-              style={{ backgroundColor: '#EF4444', border: 'none' }}
-              onClick={() => setErrorModal({ show: false, title: '', message: '' })}
-            >
-              Entendido
-            </button>
+            <button className="form-submit-btn" style={{ backgroundColor: '#EF4444', border: 'none' }} onClick={() => setErrorModal({ show: false, title: '', message: '' })}>Entendido</button>
           </div>
         </div>
       )}
-
     </div>
   );
 }
