@@ -3,59 +3,85 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { Exporter, getTimestampedName } from '../utils/exporter';
-import mermaid from 'mermaid';
 
 import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 
 const API_ANA = "https://analize-v20-genai-465781488910.us-central1.run.app";
 
-// Inicializar el motor de diagramas de Mermaid
-mermaid.initialize({
-  startOnLoad: false,
-  theme: 'base',
-  securityLevel: 'loose',
-});
+// Componente React que dibuja la línea de tiempo nativa basada en JSON
+const TimelineChart = ({ dataString }) => {
+  const [events, setEvents] = useState([]);
+  const [filter, setFilter] = useState('Todas');
+  const [phases, setPhases] = useState([]);
 
-// Componente React que dibuja el gráfico vectorial
-const MermaidChart = ({ chart }) => {
-  const ref = useRef(null);
   useEffect(() => {
-    if (ref.current && chart) {
-      try {
-        const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-        mermaid.render(id, chart)
-          .then(({ svg }) => {
-            if (ref.current) {
-              ref.current.innerHTML = svg;
-              // BLINDAJE VISUAL: Evitar que el gráfico se haga microscópico
-              const svgEl = ref.current.querySelector('svg');
-              if (svgEl) {
-                svgEl.style.maxWidth = 'none'; // Prohíbe que se encoja
-                svgEl.style.height = 'auto';
-              }
-            }
-          })
-          .catch(e => console.error("Error interno de Mermaid:", e));
-      } catch (error) {
-        console.error("Error dibujando diagrama:", error);
-      }
+    try {
+      const parsedData = JSON.parse(dataString);
+      setEvents(parsedData);
+      
+      const uniquePhases = [...new Set(parsedData.map(item => item.phase))];
+      setPhases(['Todas', ...uniquePhases]);
+    } catch (e) {
+      console.error("Error parseando datos de línea de tiempo:", e);
     }
-  }, [chart]);
-  
-  // El contenedor permite scroll horizontal si el gráfico es muy ancho
-  return <div className="mermaid-container" style={{ display: 'block', margin: '25px 0', width: '100%', overflowX: 'auto', background: '#ffffff', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-    <div ref={ref} style={{ display: 'inline-block', minWidth: '100%' }} />
-  </div>;
+  }, [dataString]);
+
+  if (events.length === 0) return <div style={{ color: 'red', padding: '15px' }}>Error: Datos de línea de tiempo inválidos o vacíos.</div>;
+
+  const filteredEvents = filter === 'Todas' ? events : events.filter(e => e.phase === filter);
+
+  return (
+    <div style={{ margin: '25px 0', width: '100%', background: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '25px', flexWrap: 'wrap', borderBottom: '1px solid #e2e8f0', paddingBottom: '15px' }}>
+        {phases.map(p => (
+          <button
+            key={p}
+            onClick={() => setFilter(p)}
+            style={{
+              padding: '6px 16px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer',
+              background: filter === p ? 'var(--pida-primary)' : '#f1f5f9',
+              color: filter === p ? 'white' : '#475569',
+              border: 'none', transition: 'all 0.2s'
+            }}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
+        <div style={{ position: 'absolute', left: '16px', top: '10px', bottom: '10px', width: '2px', background: '#cbd5e1', zIndex: 0 }}></div>
+
+        {filteredEvents.map((ev, i) => (
+          <div key={i} style={{ display: 'flex', gap: '20px', position: 'relative', zIndex: 1 }}>
+            <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'white', border: '3px solid var(--pida-primary)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '4px' }}>
+               <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--pida-accent)' }}></div>
+            </div>
+            
+            <div style={{ flex: 1, background: '#f8fafc', padding: '15px 20px', borderRadius: '8px', borderLeft: '4px solid var(--pida-primary)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px', marginBottom: '8px' }}>
+                <span style={{ fontWeight: '700', color: '#1e293b', fontSize: '1rem' }}>{ev.date}</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--pida-primary)', background: '#e0e7ff', padding: '3px 8px', borderRadius: '4px' }}>
+                  {ev.phase}
+                </span>
+              </div>
+              <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem', lineHeight: '1.5' }}>{ev.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 const markdownComponents = {
   a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
 
-  // --- NUEVA REGLA PARA INTERCEPTAR MERMAID ---
+  // --- NUEVA REGLA PARA INTERCEPTAR JSON TIMELINE ---
   code: ({ node, inline, className, children, ...props }) => {
     const match = /language-(\w+)/.exec(className || '');
-    if (!inline && match && match[1] === 'mermaid') {
-      return <MermaidChart chart={String(children).replace(/\n$/, '')} />;
+    if (!inline && match && match[1] === 'json-timeline') {
+      return <TimelineChart dataString={String(children)} />;
     }
     return (
       <code className={className} style={{ backgroundColor: '#f1f5f9', padding: '2px 4px', borderRadius: '4px', fontSize: '0.9em' }} {...props}>
@@ -332,7 +358,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
     const currentInstruction = typeof eOrInstruction === 'string' ? eOrInstruction : instructions;
 
-    // Solo exigimos subir un archivo si es un análisis completamente nuevo
     if (files.length === 0 && !currentAnaId) {
       alert("Por favor, selecciona al menos un documento para comenzar el análisis.");
       return;
@@ -348,7 +373,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     setMessages(newMessages);
     setInstructions('');
 
-    // MODIFICACIÓN ÚNICA: Se envía la instrucción tal cual porque el backend ahora gestiona el historial.
     let promptToSend = currentInstruction;
 
     try {
@@ -663,12 +687,12 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               style={{ maxWidth: '100%', minWidth: 0, overflowX: 'hidden', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}
             >
                 {msg.role === 'user' 
-                    ? <div className="markdown-content" style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto', wordBreak: 'break-word', boxSizing: 'border-box' }}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
-                          {msg.content}
-                        </ReactMarkdown>
-                      </div>
-                    : renderAnalysisContent(msg.content, idx)}
+                  ? <div className="markdown-content" style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto', wordBreak: 'break-word', boxSizing: 'border-box' }}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
+                  : renderAnalysisContent(msg.content, idx)}
             </div>
           ))}
 
