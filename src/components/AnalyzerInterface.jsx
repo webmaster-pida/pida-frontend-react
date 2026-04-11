@@ -642,8 +642,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     if (!text) return null;
     
     // HEURÍSTICAS DE AUTO-REPARACIÓN SELECTIVA
-    const timelineHeuristic = /\[\s*{\s*"date":\s*".*?",\s*"phase":\s*".*?",\s*"description":\s*".*?"\s*}/s;
-    const flowHeuristic = /\[\s*{\s*"step":\s*".*?",\s*"requirement":\s*".*?",\s*"action":\s*".*?"\s*}/s;
+    const timelineHeuristic = /\[\s*\{\s*"date":[\s\S]*?\}\s*\]/g;
+    const flowHeuristic = /\[\s*\{\s*"step":[\s\S]*?\}\s*\]/g;
 
     const isCurrentlyTypingThis = isAnalyzing && idx === messages.length - 1; 
     const separatorRegex = /(?:---PREGUNTAS---|(?:\n|^)(?:#{2,4}\s*|\*\*\s*)?Preguntas de Seguimiento(?:\s*\*\*|:)?\s*\n)/i;
