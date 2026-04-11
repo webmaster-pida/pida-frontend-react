@@ -278,13 +278,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
     const currentInstruction = typeof eOrInstruction === 'string' ? eOrInstruction : instructions;
 
-    if (files.length === 0 && messages.length === 0) {
-      alert("Por favor, selecciona al menos un documento para analizar.");
-      return;
-    }
-    
-    if (files.length === 0 && messages.length > 0) {
-      setShowMissingFileModal(true);
+    // Solo exigimos subir un archivo si es un análisis completamente nuevo
+    if (files.length === 0 && !currentAnaId) {
+      alert("Por favor, selecciona al menos un documento para comenzar el análisis.");
       return;
     }
 
