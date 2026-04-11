@@ -6,7 +6,7 @@ import { Exporter, getTimestampedName } from '../utils/exporter';
 
 import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tooltip, CircularProgress, Typography } from '@mui/material';
 
-const API_CHAT = "https://chat-v20-perplexity-465781488910.us-central1.run.app";
+const API_CHAT = "https://chat-v20-genai-465781488910.us-central1.run.app";
 
 const PreviewLink = ({ href, children, node, title, ...props }) => {
   const [previewData, setPreviewData] = useState(null);
