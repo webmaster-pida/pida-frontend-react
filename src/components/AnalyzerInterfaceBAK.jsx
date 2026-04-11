@@ -11,6 +11,8 @@ const API_ANA = "https://analize-v20-genai-465781488910.us-central1.run.app";
 const markdownComponents = {
   a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
   
+  // EL VERDADERO BLINDAJE: Ahora sí, eliminado por completo 'max-content'.
+  // Se usa width: '100%' para que no rompa el contenedor padre.
   table: ({ node, ...props }) => (
     <div style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
       <TableContainer component={Paper} sx={{ width: '100%', mb: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
@@ -114,6 +116,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   const [statusText, setStatusText] = useState('');
   
   const [errorModal, setErrorModal] = useState({ show: false, title: '', message: '' });
+  const [showMissingFileModal, setShowMissingFileModal] = useState(false);
   
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -277,9 +280,13 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
     const currentInstruction = typeof eOrInstruction === 'string' ? eOrInstruction : instructions;
 
-    // Validación limpia: Si es nuevo, exige archivos. Si es follow-up, permite continuar libre.
-    if (files.length === 0 && !currentAnaId) {
-      alert("Por favor, selecciona al menos un documento para comenzar.");
+    if (files.length === 0 && messages.length === 0) {
+      alert("Por favor, selecciona al menos un documento para analizar.");
+      return;
+    }
+    
+    if (files.length === 0 && messages.length > 0) {
+      setShowMissingFileModal(true);
       return;
     }
 
@@ -293,103 +300,103 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     setMessages(newMessages);
     setInstructions('');
 
+    let promptToSend = currentInstruction;
+    if (messages.length > 0) {
+       const historyText = messages.map(m => `${m.role === 'user' ? 'Instrucción previa' : 'Análisis previo'}:\n${m.content}`).join('\n\n');
+       promptToSend = `[INSTRUCCIÓN DE SEGUIMIENTO]:\nEl usuario está haciendo una pregunta sobre el documento ya analizado.\n\nREGLAS PARA ESTA RESPUESTA:\n1. NO repitas el análisis inicial. IGNORA por completo el formato de "Resumen Ejecutivo", "Análisis Detallado", etc.\n2. Ve directo al grano y responde ÚNICA Y EXHAUSTIVAMENTE a la NUEVA PREGUNTA del usuario.\n3. Recuerda que al final SIEMPRE debes incluir el delimitador ---PREGUNTAS--- con 3 nuevas sugerencias de seguimiento.\n\n[CONTEXTO PREVIO]\n${historyText}\n\n[NUEVA PREGUNTA DEL USUARIO]\n${currentInstruction}`;
+    }
+
     try {
       const token = await user.getIdToken();
       let uploadedFilesData = [];
 
-      // Solo procesamos y subimos archivos si es un Análisis Nuevo
-      if (!currentAnaId && files.length > 0) {
-        const smallFiles = [];
-        const largeFiles = [];
+      const smallFiles = [];
+      const largeFiles = [];
 
-        files.forEach(f => {
-            const sizeMB = f.size / (1024 * 1024);
-            if (sizeMB > 10 && sizeMB <= 50 && f.type === 'application/pdf') {
-                largeFiles.push(f);
-            } else {
-                smallFiles.push(f);
-            }
+      files.forEach(f => {
+          const sizeMB = f.size / (1024 * 1024);
+          if (sizeMB > 10 && sizeMB <= 50 && f.type === 'application/pdf') {
+              largeFiles.push(f);
+          } else {
+              smallFiles.push(f);
+          }
+      });
+
+      if (smallFiles.length > 0) {
+        setStatusText('Autenticando y preparando documentos...');
+        
+        const fileMetadata = smallFiles.map(f => ({ name: f.name, type: f.type || 'application/pdf' }));
+        const urlRes = await fetch(`${API_ANA}/generate-upload-urls`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ files: fileMetadata })
         });
 
-        if (smallFiles.length > 0) {
-          setStatusText('Autenticando y preparando documentos...');
-          
-          const fileMetadata = smallFiles.map(f => ({ name: f.name, type: f.type || 'application/pdf' }));
-          const urlRes = await fetch(`${API_ANA}/generate-upload-urls`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ files: fileMetadata })
+        if (!urlRes.ok) {
+           const errData = await urlRes.json().catch(() => ({}));
+           throw new Error(errData.detail || "Error al obtener permisos de almacenamiento.");
+        }
+
+        const urlData = await urlRes.json();
+        const { urls } = urlData;
+
+        setStatusText('Cargando documentos en el servidor seguro...');
+        const uploadPromises = smallFiles.map((file, i) => {
+          return fetch(urls[i].upload_url, {
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type || 'application/pdf' }
           });
+        });
 
-          if (!urlRes.ok) {
-             const errData = await urlRes.json().catch(() => ({}));
-             throw new Error(errData.detail || "Error al obtener permisos de almacenamiento.");
-          }
+        await Promise.all(uploadPromises);
 
-          const urlData = await urlRes.json();
-          const { urls } = urlData;
+        urls.forEach(u => {
+          uploadedFilesData.push({ gs_uri: u.gs_uri, filename: u.filename, mime_type: u.mime_type });
+        });
+      }
 
-          setStatusText('Cargando documentos en el servidor seguro...');
-          const uploadPromises = smallFiles.map((file, i) => {
-            return fetch(urls[i].upload_url, {
-              method: 'PUT',
-              body: file,
-              headers: { 'Content-Type': file.type || 'application/pdf' }
+      if (largeFiles.length > 0) {
+        setStatusText('Optimizando archivos pesados (reduciendo resolución para la IA)...');
+        
+        const optimizePromises = largeFiles.map(async (file) => {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const optRes = await fetch(`${API_ANA}/compress-and-upload`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
             });
-          });
 
-          await Promise.all(uploadPromises);
+            if (!optRes.ok) {
+                const errData = await optRes.json().catch(() => ({}));
+                throw new Error(errData.detail || `Fallo al optimizar el archivo: ${file.name}`);
+            }
 
-          urls.forEach(u => {
-            uploadedFilesData.push({ gs_uri: u.gs_uri, filename: u.filename, mime_type: u.mime_type });
-          });
-        }
+            return await optRes.json();
+        });
 
-        if (largeFiles.length > 0) {
-          setStatusText('Optimizando archivos pesados (reduciendo resolución para la IA)...');
-          
-          const optimizePromises = largeFiles.map(async (file) => {
-              const formData = new FormData();
-              formData.append('file', file);
-
-              const optRes = await fetch(`${API_ANA}/compress-and-upload`, {
-                  method: 'POST',
-                  headers: { 'Authorization': `Bearer ${token}` },
-                  body: formData
-              });
-
-              if (!optRes.ok) {
-                  const errData = await optRes.json().catch(() => ({}));
-                  throw new Error(errData.detail || `Fallo al optimizar el archivo: ${file.name}`);
-              }
-
-              return await optRes.json();
-          });
-
-          const optimizedResults = await Promise.all(optimizePromises);
-          optimizedResults.forEach(res => {
-              uploadedFilesData.push({
-                  gs_uri: res.gs_uri,
-                  filename: res.filename,
-                  mime_type: res.mime_type
-              });
-          });
-        }
+        const optimizedResults = await Promise.all(optimizePromises);
+        optimizedResults.forEach(res => {
+            uploadedFilesData.push({
+                gs_uri: res.gs_uri,
+                filename: res.filename,
+                mime_type: res.mime_type
+            });
+        });
       }
 
       setStatusText('Procesando información con el motor de IA...');
       const fd = new FormData();
       
-      // Enviamos datos de los nuevos archivos si es un nuevo análisis. Si es follow-up, el backend los recupera de la DB.
-      if (!currentAnaId) {
-        fd.append('files_data', JSON.stringify(uploadedFilesData)); 
-      }
-      
-      fd.append('instructions', currentInstruction);
+      fd.append('files_data', JSON.stringify(uploadedFilesData)); 
+      fd.append('instructions', promptToSend);
       if (currentAnaId) fd.append('analysis_id', currentAnaId);
+      fd.append('history_json', JSON.stringify(newMessages)); 
 
       const res = await fetch(`${API_ANA}/analyze`, {
         method: 'POST',
@@ -760,6 +767,41 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           </Button>
         </Box>
       </form>
+
+      {showMissingFileModal && (
+        <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setShowMissingFileModal(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: '40px 30px', maxWidth: '420px', borderRadius: '16px' }}>
+            <button className="modal-close-btn" onClick={() => setShowMissingFileModal(false)}>×</button>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0056B3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </div>
+            
+            <h2 className="modal-title" style={{ fontSize: '1.4rem', marginBottom: '15px' }}>Documento Requerido</h2>
+            <p className="modal-subtitle" style={{ fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '30px', color: '#4B5563' }}>
+              Estás continuando un análisis antiguo. Por políticas de privacidad y seguridad, <strong>no guardamos tus archivos</strong> en nuestros servidores.
+              <br /><br />
+              Para hacer preguntas de seguimiento, por favor vuelve a adjuntar el documento original.
+            </p>
+            
+            <button 
+              className="form-submit-btn" 
+              onClick={() => {
+                setShowMissingFileModal(false);
+                fileInputRef.current?.click();
+              }}
+            >
+              Subir documento
+            </button>
+          </div>
+        </div>
+      )}
 
       {errorModal.show && (
         <div className="modal-backdrop" style={{ zIndex: 999999 }} onClick={() => setErrorModal({ show: false, title: '', message: '' })}>
