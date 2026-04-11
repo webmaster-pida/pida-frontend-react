@@ -16,18 +16,27 @@ const TimelineChart = ({ dataString }) => {
 
   useEffect(() => {
     try {
-      const cleanJson = dataString.trim().replace(/^```json-timeline|```$/g, '');
+      let cleanJson = dataString.replace(/\x60{3}(?:json-timeline|json)?/gi, '').replace(/\x60{3}/g, '').trim();
+      if (!cleanJson) return;
       const parsedData = JSON.parse(cleanJson);
-      setEvents(parsedData);
       
-      const uniquePhases = [...new Set(parsedData.map(item => item.phase))];
-      setPhases(['Todas', ...uniquePhases]);
+      if (Array.isArray(parsedData)) {
+        setEvents(parsedData);
+        const uniquePhases = [...new Set(parsedData.map(item => item.phase || 'General'))];
+        setPhases(['Todas', ...uniquePhases]);
+      }
     } catch (e) {
-      console.error("Error parseando datos de línea de tiempo:", e);
+      // Silencioso mientras carga
     }
   }, [dataString]);
 
-  if (events.length === 0) return null;
+  if (!Array.isArray(events) || events.length === 0) {
+     return (
+       <div style={{ margin: '25px 0', padding: '20px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1', color: '#64748b' }}>
+         <span style={{ fontSize: '1.2rem', marginRight: '8px' }}>⏳</span> Generando línea de tiempo...
+       </div>
+     );
+  }
 
   const filteredEvents = filter === 'Todas' ? events : events.filter(e => e.phase === filter);
 
@@ -81,15 +90,23 @@ const FlowChart = ({ dataString }) => {
 
   useEffect(() => {
     try {
-      const cleanJson = dataString.trim().replace(/^```json-flow|```$/g, '');
+      let cleanJson = dataString.replace(/\x60{3}(?:json-flow|json)?/gi, '').replace(/\x60{3}/g, '').trim();
+      if (!cleanJson) return;
       const parsedData = JSON.parse(cleanJson);
-      setSteps(parsedData);
+      
+      if (Array.isArray(parsedData)) setSteps(parsedData);
     } catch (e) {
-      console.error("Error parseando datos de flujo:", e);
+      // Silencioso mientras carga
     }
   }, [dataString]);
 
-  if (steps.length === 0) return null;
+  if (!Array.isArray(steps) || steps.length === 0) {
+     return (
+       <div style={{ margin: '25px 0', padding: '20px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1', color: '#64748b' }}>
+         <span style={{ fontSize: '1.2rem', marginRight: '8px' }}>⏳</span> Generando diagrama de flujo...
+       </div>
+     );
+  }
 
   return (
     <div style={{ margin: '25px 0', width: '100%', background: '#F1F5F9', padding: '25px', borderRadius: '12px', border: '1px solid #CBD5E1', boxSizing: 'border-box' }}>
@@ -644,24 +661,22 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     const isCurrentlyTypingThis = isAnalyzing && idx === messages.length - 1; 
     const separatorRegex = /(?:---PREGUNTAS---|(?:\n|^)(?:#{2,4}\s*|\*\*\s*)?(?:Preguntas de Seguimiento|¿Quieres profundizar en este documento\?)(?:\s*\*\*|:)?\s*\n?)/i;
     
-    const parts = text.split(separatorRegex);
-    let mainContent = parts[0];
+    // REEMPLAZO EN TIEMPO REAL: Transformamos tus etiquetas al vuelo.
+    let processedText = text.replace(/\[TIMELINE_START\]([\s\S]*?)(?:\[TIMELINE_END\]|$)/gi, (match, jsonContent) => {
+        const cleanContent = jsonContent.replace(/\x60{3}(?:json)?/gi, '').replace(/\x60{3}/g, '').trim();
+        return `\n\x60\x60\x60json-timeline\n${cleanContent}\n\x60\x60\x60\n`;
+    });
+    
+    processedText = processedText.replace(/\[FLOW_START\]([\s\S]*?)(?:\[FLOW_END\]|$)/gi, (match, jsonContent) => {
+        const cleanContent = jsonContent.replace(/\x60{3}(?:json)?/gi, '').replace(/\x60{3}/g, '').trim();
+        return `\n\x60\x60\x60json-flow\n${cleanContent}\n\x60\x60\x60\n`;
+    });
 
-    // LA SOLUCIÓN ELEGANTE: Interceptamos tus delimitadores personalizados y 
-    // los convertimos en el bloque de código que activa los componentes visuales.
-    if (!isCurrentlyTypingThis) {
-        mainContent = mainContent.replace(/\[TIMELINE_START\]([\s\S]*?)\[TIMELINE_END\]/gi, (match, jsonContent) => {
-            return `\n\`\`\`json-timeline\n${jsonContent.trim()}\n\`\`\`\n`;
-        });
-        
-        mainContent = mainContent.replace(/\[FLOW_START\]([\s\S]*?)\[FLOW_END\]/gi, (match, jsonContent) => {
-            return `\n\`\`\`json-flow\n${jsonContent.trim()}\n\`\`\`\n`;
-        });
-    }
+    const parts = processedText.split(separatorRegex);
+    let mainContent = parts[0];
 
     if (parts.length > 1 && !isCurrentlyTypingThis) {
       const questionsPart = parts.slice(1).join('\n');
-
       const lines = questionsPart.split('\n');
       const questions = [];
       const sources = [];
@@ -669,7 +684,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed) continue; 
-
         const isListItem = /^([-*•]|\d+[.)])\s*/.test(trimmed);
         const isLinkOrSource = /\[.*\]\(http|\bhttps?:\/\//i.test(trimmed) || trimmed.toLowerCase().includes('fuente:');
 
@@ -678,13 +692,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         } else if (isLinkOrSource) {
           sources.push(line);
         }
-      }
-
-      // Auto-reparación si faltan etiquetas
-      if (timelineHeuristic.test(mainContent) && !mainContent.includes('```json-timeline')) {
-          mainContent = mainContent.replace(timelineHeuristic, (match) => `\n\`\`\`json-timeline\n${match}\n\`\`\`\n`);
-      } else if (flowHeuristic.test(mainContent) && !mainContent.includes('```json-flow')) {
-          mainContent = mainContent.replace(flowHeuristic, (match) => `\n\`\`\`json-flow\n${match}\n\`\`\`\n`);
       }
 
       return (
@@ -702,11 +709,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               </strong>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {questions.map((q, i) => (
-                  <button 
-                    key={i} 
-                    className="follow-up-btn"
-                    onClick={() => handleFollowUpClick(q)}
-                  >
+                  <button key={i} className="follow-up-btn" onClick={() => handleFollowUpClick(q)}>
                     {q}
                   </button>
                 ))}
@@ -725,19 +728,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       );
     }
 
-    let finalViewText = text;
-    if (!isCurrentlyTypingThis) {
-        if (timelineHeuristic.test(finalViewText) && !finalViewText.includes('```json-timeline')) {
-            finalViewText = finalViewText.replace(timelineHeuristic, (match) => `\n\`\`\`json-timeline\n${match}\n\`\`\`\n`);
-        } else if (flowHeuristic.test(finalViewText) && !finalViewText.includes('```json-flow')) {
-            finalViewText = finalViewText.replace(flowHeuristic, (match) => `\n\`\`\`json-flow\n${match}\n\`\`\`\n`);
-        }
-    }
-
     return (
         <div className="markdown-content" style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'hidden', wordBreak: 'break-word', boxSizing: 'border-box' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
-              {formatMarkdown(finalViewText)}
+              {formatMarkdown(mainContent)}
             </ReactMarkdown>
         </div>
     );
