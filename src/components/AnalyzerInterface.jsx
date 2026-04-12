@@ -144,7 +144,8 @@ const markdownComponents = {
   a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
 
   code: ({ node, inline, className, children, ...props }) => {
-    const match = /language-(\w+)/.exec(className || '');
+    // 👇 CAMBIO AQUÍ: Agregamos el guion dentro de los corchetes [\w-] 👇
+    const match = /language-([\w-]+)/.exec(className || '');
     
     if (!inline && match && match[1] === 'json-timeline') {
       return <TimelineChart dataString={String(children)} />;
@@ -559,8 +560,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       
       fd.append('files_data', JSON.stringify(uploadedFilesData)); 
       fd.append('instructions', promptToSend);
-      if (currentAnaId) fd.append('analysis_id', currentAnaId);
-      fd.append('history_json', JSON.stringify(newMessages)); 
+      if (currentAnaId) fd.append('analysis_id', currentAnaId); 
 
       const res = await fetch(`${API_ANA}/analyze`, {
         method: 'POST',
@@ -627,11 +627,32 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       }
     } catch (err) {
       console.error("Error en Análisis:", err);
-      const mappedError = translateFileError(err.message, files);
-      setErrorModal({ show: true, ...mappedError });
       
+      const errMsg = err.message ? err.message.toLowerCase() : "";
+      
+      // Si estamos en un follow-up (currentAnaId existe) y Google nos dice que el archivo no existe o no hay acceso
+      const isExpiredFile = currentAnaId && (
+        errMsg.includes('not exist') || 
+        errMsg.includes('not found') || 
+        errMsg.includes('no existe') || 
+        errMsg.includes('permission') ||
+        errMsg.includes('no encontrado')
+      );
+
+      if (isExpiredFile) {
+        // Disparamos el modal que ya tienes maquetado
+        setShowMissingFileModal(true);
+      } else {
+        // Si es otro error (tamaño, internet, etc.), usamos tu lógica normal
+        const mappedError = translateFileError(err.message, files);
+        setErrorModal({ show: true, ...mappedError });
+      }
+      
+      // Eliminamos la pregunta fallida del chat, pero ¡la devolvemos al input! 
+      // Así el usuario no tiene que volver a escribir su pregunta tras subir el documento.
       setMessages(prev => {
         if(prev.length > 0 && prev[prev.length - 1].role === 'user') {
+          setInstructions(prev[prev.length - 1].content); 
           return prev.slice(0, -1);
         }
         return prev;
