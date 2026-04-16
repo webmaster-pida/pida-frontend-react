@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { Exporter, getTimestampedName } from '../utils/exporter';
 
-import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress, Typography } from '@mui/material';
 
 const API_ANA = "https://analize-v20-genai-465781488910.us-central1.run.app";
 
@@ -860,12 +860,12 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           ))}
 
           {isAnalyzing && (!messages.length || messages[messages.length - 1].role === 'user') && (
-            <div style={{ textAlign: 'center', marginTop: '40px' }}>
-              <div className="loader"></div>
-              <p style={{ color: 'var(--pida-text-muted)', marginTop: '15px' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, gap: 2 }}>
+              <CircularProgress sx={{ color: 'var(--pida-primary)' }} />
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
                 {statusText || "Procesando solicitud..."}
-              </p>
-            </div>
+              </Typography>
+            </Box>
           )}
 
           <div ref={messagesEndRef} style={{ height: '1px' }} />

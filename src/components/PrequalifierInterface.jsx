@@ -327,10 +327,12 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
           )}
 
           {isAnalyzing && !resultText && (
-            <div style={{ textAlign: 'center', marginTop: '40px' }}>
-              <div className="loader"></div>
-              <p style={{ color: 'var(--pida-text-muted)', marginTop: '15px' }}>{statusMsg}</p>
-            </div>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, gap: 2 }}>
+              <CircularProgress sx={{ color: 'var(--pida-primary)' }} />
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                {statusMsg}
+              </Typography>
+            </Box>
           )}
 
           {resultText && (
