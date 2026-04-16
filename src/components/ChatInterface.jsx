@@ -10,7 +10,6 @@ import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, 
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import htmlToPdfmake from "html-to-pdfmake";
-import HTMLtoDOCX from 'html-to-docx';
 import { saveAs } from 'file-saver';
 import { marked } from 'marked';
 
@@ -454,29 +453,29 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     pdfMake.createPdf(docDefinition).download(`${getTimestampedName("Experto_PIDA")}.pdf`);
   };
 
-  const handleFrontendDOCX = async () => {
+  // 3. Generación de Word Nativo en Frontend (Sin librerías pesadas)
+  const handleFrontendDOCX = () => {
     if (messages.length === 0) {
       alert("No hay mensajes para exportar.");
       return;
     }
     
     const htmlString = getCleanChatHTML();
-    const fullHtmlString = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${htmlString}</body></html>`;
     
-    try {
-      const fileBuffer = await HTMLtoDOCX(fullHtmlString, null, {
-        table: { row: { cantSplit: true } },
-        footer: true,
-        pageNumber: true,
-        font: 'Arial',
-        margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
-      });
-      
-      saveAs(fileBuffer, `${getTimestampedName("Experto_PIDA")}.docx`);
-    } catch (error) {
-      console.error("Error generando DOCX:", error);
-      alert("Hubo un problema generando el documento DOCX.");
-    }
+    // Encabezados XML de Microsoft Office para que Word lo interprete correctamente
+    const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset='utf-8'><title>Documento PIDA</title></head><body>`;
+    const footer = "</body></html>";
+    
+    const fullHtmlString = header + htmlString + footer;
+    
+    // Usamos el MIME type nativo de Word
+    const blob = new Blob(['\ufeff', fullHtmlString], {
+      type: 'application/msword'
+    });
+    
+    // Lo guardamos con file-saver (el archivo será .doc para compatibilidad nativa)
+    saveAs(blob, `${getTimestampedName("Experto_PIDA")}.doc`);
   };
 
   // --- FIN DE NUEVAS FUNCIONES FRONTEND ---
