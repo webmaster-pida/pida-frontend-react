@@ -149,10 +149,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
   const [isTyping, setIsTyping] = useState(false);
   const [chatId, setChatId] = useState(null);
   
-  // Estado general de carga para exportaciones (PDF/DOCX)
-  const [isExporting, setIsExporting] = useState(false);
-  const [exportFormat, setExportFormat] = useState(null);
-  
   const [currentStatus, setCurrentStatus] = useState('Iniciando...'); 
   const [statusQueue, setStatusQueue] = useState([]);
   const [isProcessingStatus, setIsProcessingStatus] = useState(false);
@@ -179,6 +175,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     }
   }, [messages, isTyping]);
 
+  // EFECTO: PROCESADOR DE COLA DE ESTADOS VISUALES
   useEffect(() => {
     if (statusQueue.length > 0 && !isProcessingStatus) {
       setIsProcessingStatus(true);
@@ -372,16 +369,11 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     }
   };
 
-  // --- SOLUCIÓN ROBUSTA: DESCARGA DE PDF Y DOCX DESDE EL BACKEND ---
   const handleBackendDownload = async (format) => {
     if (!chatId) {
       alert("Por favor, interactúa en el chat antes de descargarlo.");
       return;
     }
-    
-    setIsExporting(true);
-    setExportFormat(format);
-
     try {
       const token = await user.getIdToken();
       const formData = new FormData();
@@ -407,14 +399,10 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error(error);
-      alert(`Hubo un problema descargando el archivo ${format.toUpperCase()}.`);
-    } finally {
-      setIsExporting(false);
-      setExportFormat(null);
+      alert("Hubo un problema descargando el archivo.");
     }
   };
 
-  // TXT se queda en el frontend porque es texto plano simple
   const handleTXTDownload = () => {
     const cleanMessages = messages.map(msg => {
       if (msg.role !== 'model') return msg;
@@ -607,37 +595,8 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
             <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
               <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={handleTXTDownload}>TXT</Button>
-              
-              <Button 
-                sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} 
-                onClick={() => handleBackendDownload('docx')}
-                disabled={isExporting}
-              >
-                {isExporting && exportFormat === 'docx' ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <CircularProgress size={12} color="inherit" />
-                    Generando...
-                  </Box>
-                ) : (
-                  'DOCX'
-                )}
-              </Button>
-              
-              <Button 
-                sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} 
-                onClick={() => handleBackendDownload('pdf')}
-                disabled={isExporting}
-              >
-                {isExporting && exportFormat === 'pdf' ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <CircularProgress size={12} color="inherit" />
-                    Generando...
-                  </Box>
-                ) : (
-                  'PDF'
-                )}
-              </Button>
-
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('docx')}>DOCX</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('pdf')}>PDF</Button>
             </ButtonGroup>
           </Box>
         )}
