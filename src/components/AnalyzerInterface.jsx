@@ -900,16 +900,6 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       )}
 
       <form className="pida-view-form" onSubmit={(e) => handleAnalyze(e)} style={{ maxWidth: '100%' }}>
-        {messages.length > 0 && (
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1, mt: -1 }}>
-            <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={handleTXTDownload}>TXT</Button>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('docx')}>DOCX</Button>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('pdf')}>PDF</Button>
-            </ButtonGroup>
-          </Box>
-        )}
-
         {/* --- BLOQUE DE SUGERENCIAS RÁPIDAS --- */}
         {files.length > 0 && messages.length === 0 && !isAnalyzing && (
           <div style={{ marginBottom: '15px', padding: '15px', background: '#F8FAFC', borderRadius: '8px', border: '1px dashed #CBD5E1' }}>
@@ -937,7 +927,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           onChange={handleFileChange}
         />
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
           <button 
             type="button"
             className="pida-header-btn primary" 
@@ -947,6 +937,14 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           >
             + Seleccionar Archivos
           </button>
+
+          {messages.length > 0 && (
+            <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={handleTXTDownload}>TXT</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('docx')}>DOCX</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('pdf')}>PDF</Button>
+            </ButtonGroup>
+          )}
         </div>
 
         {files.length > 0 && (
