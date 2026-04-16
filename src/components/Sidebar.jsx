@@ -17,7 +17,8 @@ import {
   Menu,
   MenuItem,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Button
 } from '@mui/material';
 import { 
   Search as SearchIcon, 
@@ -28,8 +29,6 @@ import {
   MoreHoriz as MoreIcon 
 } from '@mui/icons-material';
 import { auth } from '../config/firebase';
-
-const DRAWER_WIDTH = 260;
 
 export default function Sidebar({ currentView, setCurrentView, user }) {
   const theme = useTheme();
@@ -134,30 +133,60 @@ export default function Sidebar({ currentView, setCurrentView, user }) {
 
   // ... (El resto del código Desktop se mantiene igual)
   return (
-    <Box component="aside" sx={{ width: DRAWER_WIDTH, height: '100vh', bgcolor: 'var(--pida-primary)', display: 'flex', flexDirection: 'column', flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.1)' }}>
+    <Box component="aside" sx={{ width: { xs: 260, lg: 280 }, height: '100vh', bgcolor: 'var(--pida-primary)', display: 'flex', flexDirection: 'column', flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.1)' }}>
       <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
         <Box component="img" src="/img/PIDA-logo-blanco-scaled.png" alt="PIDA" sx={{ width: '100%', maxWidth: 160, cursor: 'pointer' }} onClick={() => setCurrentView('investigador')} />
       </Box>
       <List sx={{ px: 2, flexGrow: 1 }}>
         {navItems.map((item) => (
           <ListItem key={item.id} disablePadding sx={{ mb: 1 }}>
-            <ListItemButton selected={currentView === item.id} onClick={() => setCurrentView(item.id)} sx={{ borderRadius: '10px', color: 'rgba(255,255,255,0.7)', '&.Mui-selected': { bgcolor: 'rgba(255,255,255,0.15)', color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }, '& .MuiListItemIcon-root': { color: 'white' } }, '&:hover': { bgcolor: 'rgba(255,255,255,0.08)', color: 'white' } }}>
+            <ListItemButton selected={currentView === item.id} onClick={() => setCurrentView(item.id)} sx={{ borderRadius: '10px', color: 'rgba(255,255,255,0.7)', '&.Mui-selected': { bgcolor: 'rgba(255,255,255,0.15)', color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }, '& .MuiListItemIcon-root': { color: 'white' } }, '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' } }}>
               <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>{item.icon}</ListItemIcon>
               <ListItemText primary={item.fullLabel} primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: 500 }} />
             </ListItemButton>
           </ListItem>
         ))}
       </List>
-      <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.1)' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1, borderRadius: '10px', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }} onClick={() => setCurrentView('cuenta')}>
-          <Avatar src={user?.photoURL} sx={{ width: 36, height: 36, border: '1.5px solid rgba(255,255,255,0.3)' }}>{user?.displayName?.charAt(0) || 'U'}</Avatar>
-          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-            <Typography variant="subtitle2" sx={{ color: 'white', noWrap: true, fontSize: '0.85rem' }}>{user?.displayName || 'Usuario'}</Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', noWrap: true, display: 'block' }}>{user?.email}</Typography>
-          </Box>
-          <Tooltip title="Cerrar Sesión">
-            <IconButton size="small" onClick={(e) => { e.stopPropagation(); doLogout(); }} sx={{ color: 'rgba(255,255,255,0.4)' }}><LogoutIcon fontSize="small" /></IconButton>
-          </Tooltip>
+      <Box sx={{ p: 2, mt: 'auto', bgcolor: 'rgba(0,0,0,0.1)' }}>
+        <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            textAlign: 'center',
+        }}>
+            <Avatar 
+                src={user?.photoURL}
+                sx={{ width: 56, height: 56, mb: 1.5, cursor: 'pointer', border: '2px solid rgba(255,255,255,0.3)' }} 
+                onClick={() => setCurrentView('cuenta')}
+            />
+            <Typography 
+                variant="body2" 
+                sx={{ 
+                    fontWeight: 500,
+                    color: 'white',
+                    wordBreak: 'break-all',
+                    mb: 2,
+                    width: '100%',
+                    cursor: 'pointer'
+                }}
+                onClick={() => setCurrentView('cuenta')}
+            >
+                {user?.email}
+            </Typography>
+            <Button
+                variant="text"
+                startIcon={<LogoutIcon />}
+                onClick={doLogout}
+                sx={{ 
+                    textTransform: 'none', 
+                    color: 'rgba(255, 255, 255, 0.8)',
+                    '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }}
+            >
+                Salir
+            </Button>
         </Box>
       </Box>
     </Box>
