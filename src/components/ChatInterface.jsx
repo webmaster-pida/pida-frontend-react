@@ -6,9 +6,6 @@ import { Exporter, getTimestampedName } from '../utils/exporter';
 
 import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tooltip, CircularProgress, Typography } from '@mui/material';
 
-// Importación para procesar el Markdown en el PDF frontend
-import { marked } from 'marked';
-
 const API_CHAT = "https://chat-v20-genai-465781488910.us-central1.run.app";
 
 const PreviewLink = ({ href, children, node, title, ...props }) => {
@@ -152,8 +149,9 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
   const [isTyping, setIsTyping] = useState(false);
   const [chatId, setChatId] = useState(null);
   
-  // Estados para manejo visual de la carga de PDF
-  const [isExportingPDF, setIsExportingPDF] = useState(false); 
+  // Estado general de carga para exportaciones (PDF/DOCX)
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportFormat, setExportFormat] = useState(null);
   
   const [currentStatus, setCurrentStatus] = useState('Iniciando...'); 
   const [statusQueue, setStatusQueue] = useState([]);
@@ -374,12 +372,16 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     }
   };
 
-  // --- 1. RESTAURACIÓN DE LA FUNCIÓN DEL BACKEND PARA DOCX ---
+  // --- SOLUCIÓN ROBUSTA: DESCARGA DE PDF Y DOCX DESDE EL BACKEND ---
   const handleBackendDownload = async (format) => {
     if (!chatId) {
       alert("Por favor, interactúa en el chat antes de descargarlo.");
       return;
     }
+    
+    setIsExporting(true);
+    setExportFormat(format);
+
     try {
       const token = await user.getIdToken();
       const formData = new FormData();
@@ -405,95 +407,14 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error(error);
-      alert("Hubo un problema descargando el archivo.");
-    }
-  };
-
-  // --- 2. GENERACIÓN NATIVA DE PDF EN EL FRONTEND ---
-  const getCleanChatHTML = () => {
-    // CORRECCIÓN: Se eliminó el font-family: Arial que provocaba el crash de pdfmake
-    let htmlContent = `
-      <div style="font-size: 11pt;">
-        <h2 style="color: #1e293b; text-align: center;">Reporte Experto Jurídico - PIDA</h2>
-        <br/>
-    `;
-
-    messages.forEach(msg => {
-      const isUser = msg.role === 'user';
-      const roleName = isUser ? 'Usuario' : 'Experto PIDA';
-      const color = isUser ? '#475569' : '#2563eb';
-      
-      let cleanText = msg.content.replace(/_Fin del análisis\._/g, "");
-      cleanText = cleanText.replace(/<pida_questions>([\s\S]*?)<\/pida_questions>/g, "");
-      
-      const htmlParsed = marked.parse(cleanText);
-
-      htmlContent += `
-        <div style="margin-bottom: 15px;">
-          <strong style="color: ${color}; font-size: 12pt;">${roleName}:</strong>
-          <div style="margin-top: 5px;">${htmlParsed}</div>
-        </div>
-        <br/>
-      `;
-    });
-
-    htmlContent += `</div>`;
-    return htmlContent;
-  };
-
-  const handleFrontendPDF = async () => {
-    if (messages.length === 0) {
-      alert("No hay mensajes para exportar.");
-      return;
-    }
-    
-    setIsExportingPDF(true); 
-    
-    try {
-      const htmlString = getCleanChatHTML();
-      
-      // Importación asíncrona para no afectar la carga inicial de Vite
-      const pdfMakeModule = await import("pdfmake/build/pdfmake");
-      const pdfFontsModule = await import("pdfmake/build/vfs_fonts");
-      const htmlToPdfmakeModule = await import("html-to-pdfmake");
-
-      const pdfMake = pdfMakeModule.default || pdfMakeModule;
-      const pdfFonts = pdfFontsModule.default || pdfFontsModule;
-      const htmlToPdfmake = htmlToPdfmakeModule.default || htmlToPdfmakeModule;
-
-      if (pdfMake && pdfFonts && pdfFonts.pdfMake) {
-        pdfMake.vfs = pdfFonts.pdfMake.vfs;
-      }
-      
-      const pdfmakeContent = htmlToPdfmake(htmlString, {
-        defaultStyles: {
-          p: { margin: [0, 5, 0, 10] },
-          h1: { fontSize: 16, bold: true, margin: [0, 10, 0, 5] },
-          h2: { fontSize: 14, bold: true, margin: [0, 10, 0, 5] },
-          h3: { fontSize: 12, bold: true, margin: [0, 10, 0, 5] },
-          table: { margin: [0, 10, 0, 10] }
-        }
-      });
-
-      const docDefinition = {
-        content: pdfmakeContent,
-        defaultStyle: { font: 'Roboto', fontSize: 11, lineHeight: 1.2 }, // Usa Roboto por defecto
-        pageMargins: [40, 60, 40, 60],
-        footer: function(currentPage, pageCount) {
-          return { text: `Página ${currentPage} de ${pageCount}`, alignment: 'center', fontSize: 9, margin: [0, 10, 0, 0] };
-        }
-      };
-
-      pdfMake.createPdf(docDefinition).download(`${getTimestampedName("Experto_PIDA")}.pdf`);
-      
-    } catch (error) {
-      console.error("Error cargando librerías o generando PDF:", error);
-      alert("Hubo un problema al generar el PDF.");
+      alert(`Hubo un problema descargando el archivo ${format.toUpperCase()}.`);
     } finally {
-      setIsExportingPDF(false); 
+      setIsExporting(false);
+      setExportFormat(null);
     }
   };
 
+  // TXT se queda en el frontend porque es texto plano simple
   const handleTXTDownload = () => {
     const cleanMessages = messages.map(msg => {
       if (msg.role !== 'model') return msg;
@@ -686,15 +607,28 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
             <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
               <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={handleTXTDownload}>TXT</Button>
-              {/* DOCX VUELVE A SER GENERADO PROFESIONALMENTE EN EL BACKEND */}
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('docx')}>DOCX</Button>
-              {/* PDF SE GENERA VECTORIALMENTE EN EL FRONTEND */}
+              
               <Button 
                 sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} 
-                onClick={handleFrontendPDF}
-                disabled={isExportingPDF}
+                onClick={() => handleBackendDownload('docx')}
+                disabled={isExporting}
               >
-                {isExportingPDF ? (
+                {isExporting && exportFormat === 'docx' ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <CircularProgress size={12} color="inherit" />
+                    Generando...
+                  </Box>
+                ) : (
+                  'DOCX'
+                )}
+              </Button>
+              
+              <Button 
+                sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} 
+                onClick={() => handleBackendDownload('pdf')}
+                disabled={isExporting}
+              >
+                {isExporting && exportFormat === 'pdf' ? (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <CircularProgress size={12} color="inherit" />
                     Generando...
@@ -703,6 +637,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
                   'PDF'
                 )}
               </Button>
+
             </ButtonGroup>
           </Box>
         )}
