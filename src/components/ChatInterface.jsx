@@ -6,8 +6,7 @@ import { Exporter, getTimestampedName } from '../utils/exporter';
 
 import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tooltip, CircularProgress, Typography } from '@mui/material';
 
-// Importaciones para exportación en frontend
-import { saveAs } from 'file-saver';
+// Importación para procesar el Markdown en el PDF frontend
 import { marked } from 'marked';
 
 const API_CHAT = "https://chat-v20-genai-465781488910.us-central1.run.app";
@@ -152,6 +151,8 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [chatId, setChatId] = useState(null);
+  
+  // Estados para manejo visual de la carga de PDF
   const [isExportingPDF, setIsExportingPDF] = useState(false); 
   
   const [currentStatus, setCurrentStatus] = useState('Iniciando...'); 
@@ -180,7 +181,6 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     }
   }, [messages, isTyping]);
 
-  // EFECTO: PROCESADOR DE COLA DE ESTADOS VISUALES
   useEffect(() => {
     if (statusQueue.length > 0 && !isProcessingStatus) {
       setIsProcessingStatus(true);
@@ -374,11 +374,46 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     }
   };
 
-  // --- FUNCIONES PARA EXPORTACIÓN EN EL FRONTEND ---
+  // --- 1. RESTAURACIÓN DE LA FUNCIÓN DEL BACKEND PARA DOCX ---
+  const handleBackendDownload = async (format) => {
+    if (!chatId) {
+      alert("Por favor, interactúa en el chat antes de descargarlo.");
+      return;
+    }
+    try {
+      const token = await user.getIdToken();
+      const formData = new FormData();
+      formData.append("convo_id", chatId);
+      formData.append("file_format", format);
 
+      const res = await fetch(`${API_CHAT}/download-chat`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+
+      if (!res.ok) throw new Error("Error en el servidor al generar el documento.");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${getTimestampedName("Experto_PIDA")}.${format}`; 
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      alert("Hubo un problema descargando el archivo.");
+    }
+  };
+
+  // --- 2. GENERACIÓN NATIVA DE PDF EN EL FRONTEND ---
   const getCleanChatHTML = () => {
+    // CORRECCIÓN: Se eliminó el font-family: Arial que provocaba el crash de pdfmake
     let htmlContent = `
-      <div style="font-family: Arial, sans-serif; font-size: 11pt;">
+      <div style="font-size: 11pt;">
         <h2 style="color: #1e293b; text-align: center;">Reporte Experto Jurídico - PIDA</h2>
         <br/>
     `;
@@ -406,19 +441,18 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     return htmlContent;
   };
 
-  // Generación de PDF Nativo (Carga Perezosa / Dynamic Import)
   const handleFrontendPDF = async () => {
     if (messages.length === 0) {
       alert("No hay mensajes para exportar.");
       return;
     }
     
-    setIsExportingPDF(true); // Activar Loader
+    setIsExportingPDF(true); 
     
     try {
       const htmlString = getCleanChatHTML();
       
-      // Importamos las librerías pesadas SOLO cuando el usuario hace clic
+      // Importación asíncrona para no afectar la carga inicial de Vite
       const pdfMakeModule = await import("pdfmake/build/pdfmake");
       const pdfFontsModule = await import("pdfmake/build/vfs_fonts");
       const htmlToPdfmakeModule = await import("html-to-pdfmake");
@@ -443,7 +477,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
       const docDefinition = {
         content: pdfmakeContent,
-        defaultStyle: { font: 'Roboto', fontSize: 11, lineHeight: 1.2 },
+        defaultStyle: { font: 'Roboto', fontSize: 11, lineHeight: 1.2 }, // Usa Roboto por defecto
         pageMargins: [40, 60, 40, 60],
         footer: function(currentPage, pageCount) {
           return { text: `Página ${currentPage} de ${pageCount}`, alignment: 'center', fontSize: 9, margin: [0, 10, 0, 0] };
@@ -456,36 +490,9 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
       console.error("Error cargando librerías o generando PDF:", error);
       alert("Hubo un problema al generar el PDF.");
     } finally {
-      setIsExportingPDF(false); // Desactivar Loader
+      setIsExportingPDF(false); 
     }
   };
-
-  // Generación de Word Nativo en Frontend (Sin librerías pesadas)
-  const handleFrontendDOCX = () => {
-    if (messages.length === 0) {
-      alert("No hay mensajes para exportar.");
-      return;
-    }
-    
-    const htmlString = getCleanChatHTML();
-    
-    // Encabezados XML de Microsoft Office para que Word lo interprete correctamente
-    const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-      <head><meta charset='utf-8'><title>Documento PIDA</title></head><body>`;
-    const footer = "</body></html>";
-    
-    const fullHtmlString = header + htmlString + footer;
-    
-    // Usamos el MIME type nativo de Word
-    const blob = new Blob(['\ufeff', fullHtmlString], {
-      type: 'application/msword'
-    });
-    
-    // Lo guardamos con file-saver
-    saveAs(blob, `${getTimestampedName("Experto_PIDA")}.doc`);
-  };
-
-  // --- FIN DE FUNCIONES FRONTEND ---
 
   const handleTXTDownload = () => {
     const cleanMessages = messages.map(msg => {
@@ -679,7 +686,9 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
             <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
               <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={handleTXTDownload}>TXT</Button>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={handleFrontendDOCX}>DOCX</Button>
+              {/* DOCX VUELVE A SER GENERADO PROFESIONALMENTE EN EL BACKEND */}
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('docx')}>DOCX</Button>
+              {/* PDF SE GENERA VECTORIALMENTE EN EL FRONTEND */}
               <Button 
                 sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} 
                 onClick={handleFrontendPDF}
