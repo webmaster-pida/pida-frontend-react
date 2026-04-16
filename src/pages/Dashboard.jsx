@@ -140,6 +140,19 @@ const InAppCheckout = ({ user }) => {
 
   return (
     <Paper elevation={4} sx={{ maxWidth: 600, background: 'white', padding: '40px', borderRadius: '16px', textAlign: 'center', margin: '0 auto', width: '95%', position: 'relative' }}>
+      
+      {/* 👇 NUEVO: Botón para cambiar de cuenta / salir 👇 */}
+      <Button 
+        variant="text" 
+        color="error" 
+        size="small"
+        onClick={() => auth.signOut()}
+        sx={{ position: 'absolute', top: 16, right: 20, textTransform: 'none', fontWeight: 600 }}
+      >
+        Cerrar sesión
+      </Button>
+      {/* 👆 FIN NUEVO 👆 */}
+
       <Stepper activeStep={1} alternativeLabel sx={{ mb: 4 }}>
         {['Cuenta', 'Activación', 'Acceso'].map((label) => (
           <Step key={label}><StepLabel>{label}</StepLabel></Step>
@@ -148,7 +161,8 @@ const InAppCheckout = ({ user }) => {
 
       <Typography variant="h5" sx={{ color: 'var(--pida-primary)', marginBottom: '10px', fontWeight: 800 }}>Activa tus 5 días gratis</Typography>
       <p style={{ color: '#64748B', marginBottom: '30px', fontSize: '0.95rem' }}>
-        Has iniciado sesión como <strong>{user.email}</strong>. Configura tu plan final. No se realizará ningún cobro hoy.
+        Has iniciado sesión como <strong>{user.email}</strong>. <br/>
+        Configura tu plan final. No se realizará ningún cobro hoy.
       </p>
 
       <Box component="form" onSubmit={handlePay} style={{ textAlign: 'left' }}>
