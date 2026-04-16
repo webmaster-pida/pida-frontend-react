@@ -663,6 +663,60 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     }
   };
 
+  const handleTXTDownload = () => {
+    if (messages.length === 0) {
+      alert("Por favor, interactúa en el analizador antes de descargarlo.");
+      return;
+    }
+
+    const cleanMessages = messages.map(msg => {
+      if (msg.role !== 'model') return msg;
+      
+      let content = msg.content;
+
+      // Transformar bloque TIMELINE en texto plano
+      content = content.replace(/\[TIMELINE_START\]([\s\S]*?)\[TIMELINE_END\]/gi, (match, rawJson) => {
+        try {
+          const cleanJson = rawJson.replace(/\x60{3}(?:json-timeline|json)?/gi, '').replace(/\x60{3}/g, '').trim();
+          const data = JSON.parse(cleanJson);
+          let textRep = "\n=== LÍNEA DE TIEMPO ===\n\n";
+          data.forEach(item => {
+            textRep += `• FECHA: ${item.date}\n`;
+            textRep += `  FASE: ${item.phase}\n`;
+            textRep += `  DESCRIPCIÓN: ${item.description}\n\n`;
+          });
+          return textRep + "=======================\n";
+        } catch(e) {
+          return match; 
+        }
+      });
+
+      // Transformar bloque FLOW en texto plano
+      content = content.replace(/\[FLOW_START\]([\s\S]*?)\[FLOW_END\]/gi, (match, rawJson) => {
+        try {
+          const cleanJson = rawJson.replace(/\x60{3}(?:json-flow|json)?/gi, '').replace(/\x60{3}/g, '').trim();
+          const data = JSON.parse(cleanJson);
+          let textRep = "\n=== DIAGRAMA DE PROCESO ===\n\n";
+          data.forEach((item, i) => {
+            textRep += `${i + 1}. PASO: ${item.step}\n`;
+            if (item.requirement) textRep += `   REQUISITO: ${item.requirement}\n`;
+            textRep += `   ACCIÓN: ${item.action}\n\n`;
+          });
+          return textRep + "===========================\n";
+        } catch(e) {
+          return match;
+        }
+      });
+
+      // Quitar la palabra [INVESTIGADOR] o similares si hay ruido, 
+      // aunque el Exporter.downloadTXT suele encargarse del formato general.
+      
+      return { ...msg, content };
+    });
+
+    Exporter.downloadTXT(getTimestampedName("Analisis-PIDA"), "Análisis de Documentos", cleanMessages);
+  };
+
   const formatMarkdown = (text) => {
     if (!text) return "";
     let clean = text;
