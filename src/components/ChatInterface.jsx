@@ -6,17 +6,9 @@ import { Exporter, getTimestampedName } from '../utils/exporter';
 
 import { Box, TextField, Button, ButtonGroup, Fab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tooltip, CircularProgress, Typography } from '@mui/material';
 
-// --- NUEVAS IMPORTACIONES PARA EXPORTACIÓN FRONTEND ---
-import pdfMake from "pdfmake/build/pdfmake";
-import pdfFonts from "pdfmake/build/vfs_fonts";
-import htmlToPdfmake from "html-to-pdfmake";
+// Importaciones para exportación en frontend
 import { saveAs } from 'file-saver';
 import { marked } from 'marked';
-
-// Inicializar las fuentes para pdfmake
-if (pdfMake && pdfFonts && pdfFonts.pdfMake) {
-  pdfMake.vfs = pdfFonts.pdfMake.vfs;
-}
 
 const API_CHAT = "https://chat-v20-genai-465781488910.us-central1.run.app";
 
@@ -160,6 +152,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [chatId, setChatId] = useState(null);
+  const [isExportingPDF, setIsExportingPDF] = useState(false); 
   
   const [currentStatus, setCurrentStatus] = useState('Iniciando...'); 
   const [statusQueue, setStatusQueue] = useState([]);
@@ -381,7 +374,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     }
   };
 
-  // --- NUEVAS FUNCIONES PARA EXPORTACIÓN EN EL FRONTEND ---
+  // --- FUNCIONES PARA EXPORTACIÓN EN EL FRONTEND ---
 
   const getCleanChatHTML = () => {
     let htmlContent = `
@@ -413,47 +406,61 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     return htmlContent;
   };
 
-  const handleFrontendPDF = () => {
+  // Generación de PDF Nativo (Carga Perezosa / Dynamic Import)
+  const handleFrontendPDF = async () => {
     if (messages.length === 0) {
       alert("No hay mensajes para exportar.");
       return;
     }
     
-    const htmlString = getCleanChatHTML();
+    setIsExportingPDF(true); // Activar Loader
     
-    // Convertir el HTML a la estructura que entiende pdfmake
-    const pdfmakeContent = htmlToPdfmake(htmlString, {
-      defaultStyles: {
-        p: { margin: [0, 5, 0, 10] },
-        h1: { fontSize: 16, bold: true, margin: [0, 10, 0, 5] },
-        h2: { fontSize: 14, bold: true, margin: [0, 10, 0, 5] },
-        h3: { fontSize: 12, bold: true, margin: [0, 10, 0, 5] },
-        table: { margin: [0, 10, 0, 10] }
-      }
-    });
+    try {
+      const htmlString = getCleanChatHTML();
+      
+      // Importamos las librerías pesadas SOLO cuando el usuario hace clic
+      const pdfMakeModule = await import("pdfmake/build/pdfmake");
+      const pdfFontsModule = await import("pdfmake/build/vfs_fonts");
+      const htmlToPdfmakeModule = await import("html-to-pdfmake");
 
-    const docDefinition = {
-      content: pdfmakeContent,
-      defaultStyle: {
-        font: 'Roboto',
-        fontSize: 11,
-        lineHeight: 1.2
-      },
-      pageMargins: [40, 60, 40, 60],
-      footer: function(currentPage, pageCount) {
-        return {
-          text: `Página ${currentPage} de ${pageCount}`,
-          alignment: 'center',
-          fontSize: 9,
-          margin: [0, 10, 0, 0]
-        };
-      }
-    };
+      const pdfMake = pdfMakeModule.default || pdfMakeModule;
+      const pdfFonts = pdfFontsModule.default || pdfFontsModule;
+      const htmlToPdfmake = htmlToPdfmakeModule.default || htmlToPdfmakeModule;
 
-    pdfMake.createPdf(docDefinition).download(`${getTimestampedName("Experto_PIDA")}.pdf`);
+      if (pdfMake && pdfFonts && pdfFonts.pdfMake) {
+        pdfMake.vfs = pdfFonts.pdfMake.vfs;
+      }
+      
+      const pdfmakeContent = htmlToPdfmake(htmlString, {
+        defaultStyles: {
+          p: { margin: [0, 5, 0, 10] },
+          h1: { fontSize: 16, bold: true, margin: [0, 10, 0, 5] },
+          h2: { fontSize: 14, bold: true, margin: [0, 10, 0, 5] },
+          h3: { fontSize: 12, bold: true, margin: [0, 10, 0, 5] },
+          table: { margin: [0, 10, 0, 10] }
+        }
+      });
+
+      const docDefinition = {
+        content: pdfmakeContent,
+        defaultStyle: { font: 'Roboto', fontSize: 11, lineHeight: 1.2 },
+        pageMargins: [40, 60, 40, 60],
+        footer: function(currentPage, pageCount) {
+          return { text: `Página ${currentPage} de ${pageCount}`, alignment: 'center', fontSize: 9, margin: [0, 10, 0, 0] };
+        }
+      };
+
+      pdfMake.createPdf(docDefinition).download(`${getTimestampedName("Experto_PIDA")}.pdf`);
+      
+    } catch (error) {
+      console.error("Error cargando librerías o generando PDF:", error);
+      alert("Hubo un problema al generar el PDF.");
+    } finally {
+      setIsExportingPDF(false); // Desactivar Loader
+    }
   };
 
-  // 3. Generación de Word Nativo en Frontend (Sin librerías pesadas)
+  // Generación de Word Nativo en Frontend (Sin librerías pesadas)
   const handleFrontendDOCX = () => {
     if (messages.length === 0) {
       alert("No hay mensajes para exportar.");
@@ -474,11 +481,11 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
       type: 'application/msword'
     });
     
-    // Lo guardamos con file-saver (el archivo será .doc para compatibilidad nativa)
+    // Lo guardamos con file-saver
     saveAs(blob, `${getTimestampedName("Experto_PIDA")}.doc`);
   };
 
-  // --- FIN DE NUEVAS FUNCIONES FRONTEND ---
+  // --- FIN DE FUNCIONES FRONTEND ---
 
   const handleTXTDownload = () => {
     const cleanMessages = messages.map(msg => {
@@ -673,7 +680,20 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
             <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
               <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={handleTXTDownload}>TXT</Button>
               <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={handleFrontendDOCX}>DOCX</Button>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={handleFrontendPDF}>PDF</Button>
+              <Button 
+                sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} 
+                onClick={handleFrontendPDF}
+                disabled={isExportingPDF}
+              >
+                {isExportingPDF ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <CircularProgress size={12} color="inherit" />
+                    Generando...
+                  </Box>
+                ) : (
+                  'PDF'
+                )}
+              </Button>
             </ButtonGroup>
           </Box>
         )}
