@@ -927,7 +927,12 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           onChange={handleFileChange}
         />
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <Box sx={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          mb: 1.5,
+          mt: messages.length > 0 ? -1.5 : 0, // Sube la fila para alinearla con el Chat
+          position: 'relative', zIndex: 1
+        }}>
           <button 
             type="button"
             className="pida-header-btn primary" 
@@ -945,7 +950,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => handleBackendDownload('pdf')}>PDF</Button>
             </ButtonGroup>
           )}
-        </div>
+        </Box>
 
         {files.length > 0 && (
           <div id="active-files-area" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '10px' }}>
