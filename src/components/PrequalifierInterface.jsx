@@ -388,7 +388,7 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
       <div className="pida-view-form">
         
         {resultText && (
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5, mt: -1.5, position: 'relative', zIndex: 1 }}>
             <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
               <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Precalificador-PIDA"), "Precalificación de Caso", resultText)}>TXT</Button>
               <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Precalificador-PIDA"), "Precalificación de Caso", resultText)}>DOCX</Button>
