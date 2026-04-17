@@ -142,17 +142,7 @@ const InAppCheckout = ({ user }) => {
   return (
     <Paper elevation={4} sx={{ maxWidth: 600, background: 'white', padding: '40px', borderRadius: '16px', textAlign: 'center', margin: '0 auto', width: '95%', position: 'relative' }}>
       
-      {/* 👇 NUEVO: Botón para cambiar de cuenta / salir 👇 */}
-      <Button 
-        variant="text" 
-        color="error" 
-        size="small"
-        onClick={() => auth.signOut()}
-        sx={{ position: 'absolute', top: 16, right: 20, textTransform: 'none', fontWeight: 600 }}
-      >
-        Cerrar sesión
-      </Button>
-      {/* 👆 FIN NUEVO 👆 */}
+      {/* 1. SE ELIMINÓ EL BOTÓN ROJO DE LA ESQUINA SUPERIOR */}
 
       <Stepper activeStep={1} alternativeLabel sx={{ mb: 4 }}>
         {['Cuenta', 'Activación', 'Acceso'].map((label) => (
@@ -160,7 +150,9 @@ const InAppCheckout = ({ user }) => {
         ))}
       </Stepper>
 
-      <Typography variant="h5" sx={{ color: 'var(--pida-primary)', marginBottom: '10px', fontWeight: 800 }}>Activa tus 5 días gratis</Typography>
+      <Typography variant="h5" sx={{ color: 'var(--pida-primary)', marginBottom: '10px', fontWeight: 800 }}>
+        Activa tus 5 días gratis
+      </Typography>
       <p style={{ color: '#64748B', marginBottom: '30px', fontSize: '0.95rem' }}>
         Has iniciado sesión como <strong>{user.email}</strong>. <br/>
         Configura tu plan final. No se realizará ningún cobro hoy.
@@ -227,9 +219,37 @@ const InAppCheckout = ({ user }) => {
 
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         
-        <Button type="submit" variant="contained" fullWidth size="large" disabled={loading} sx={{ py: 1.5, borderRadius: 3, fontWeight: 700 }}>
+        {/* Botón adaptado a la estética del AuthModal */}
+        <Button 
+          type="submit" 
+          variant="contained" 
+          fullWidth 
+          size="large" 
+          disabled={loading} 
+          sx={{ 
+            py: 1.5, 
+            borderRadius: '8px', 
+            fontWeight: 700, 
+            textTransform: 'none',
+            fontSize: '1rem',
+            bgcolor: 'var(--pida-primary)', 
+            '&:hover': { bgcolor: 'var(--pida-accent)' } 
+          }}
+        >
           {loading ? <CircularProgress size={24} color="inherit" /> : 'Confirmar y empezar prueba gratuita'}
         </Button>
+
+        {/* 2. NUEVO ENLACE INFERIOR ESTILO AUTHMODAL */}
+        <div className="bottom-link" style={{ textAlign: 'center', marginTop: '22px' }}>
+          <span 
+            style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '600', transition: 'color 0.2s' }} 
+            onClick={() => auth.signOut()}
+            onMouseOver={(e) => e.target.style.color = 'var(--pida-accent)'}
+            onMouseOut={(e) => e.target.style.color = 'var(--pida-primary)'}
+          >
+            ← Iniciar sesión con otra cuenta
+          </span>
+        </div>
 
         <Backdrop
           sx={{ color: '#fff', zIndex: 3000, display: 'flex', flexDirection: 'column', backgroundColor: 'rgba(16, 24, 82, 0.98)', backdropFilter: 'blur(8px)' }}
@@ -242,7 +262,6 @@ const InAppCheckout = ({ user }) => {
       </Box>
     </Paper>
   );
-};
 
 export default function Dashboard({ user }) {
   const theme = useTheme();
