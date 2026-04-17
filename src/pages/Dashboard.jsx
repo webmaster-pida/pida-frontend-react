@@ -262,6 +262,7 @@ const InAppCheckout = ({ user }) => {
       </Box>
     </Paper>
   );
+};
 
 export default function Dashboard({ user }) {
   const theme = useTheme();
