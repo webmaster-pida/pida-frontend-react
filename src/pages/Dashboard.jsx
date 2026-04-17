@@ -113,7 +113,7 @@ const InAppCheckout = ({ user }) => {
           currency: currency.toLowerCase(), 
           plan_key: plan,
           name: user.displayName || user.email, 
-          paymentMethodId: paymentMethod.id
+          paymentMethodId: paymentMethod.id,
           promotion_code: discountData ? promoCode : ""
         })
       });
