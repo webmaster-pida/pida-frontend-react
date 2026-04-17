@@ -114,6 +114,7 @@ const InAppCheckout = ({ user }) => {
           plan_key: plan,
           name: user.displayName || user.email, 
           paymentMethodId: paymentMethod.id
+          promotion_code: discountData ? promoCode : ""
         })
       });
       
