@@ -561,6 +561,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               const d = JSON.parse(jsonStr);
               
               if (d.error) throw new Error(d.error); 
+
+              if (d.status) {
+                setStatusText(d.status);
+              }
               
               if (d.text) {
                 const chars = d.text;
