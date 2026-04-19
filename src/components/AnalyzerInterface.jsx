@@ -563,16 +563,23 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               if (d.error) throw new Error(d.error); 
               
               if (d.text) {
-                fullText += d.text;
-                
-                setMessages(prev => {
-                  const lastMsg = prev[prev.length - 1];
-                  if (lastMsg && lastMsg.role === 'model') {
-                      return [...prev.slice(0, -1), { ...lastMsg, content: fullText }];
-                  } else {
-                      return [...prev, { role: 'model', content: fullText }];
-                  }
-                });
+                const chars = d.text;
+                const step = 5; // Puedes usar 10 como en el chat, pero 5 se verá aún más suave
+                for (let i = 0; i < chars.length; i += step) {
+                  fullText += chars.substring(i, i + step);
+                  
+                  setMessages(prev => {
+                    const lastMsg = prev[prev.length - 1];
+                    if (lastMsg && lastMsg.role === 'model') {
+                        return [...prev.slice(0, -1), { ...lastMsg, content: fullText }];
+                    } else {
+                        return [...prev, { role: 'model', content: fullText }];
+                    }
+                  });
+                  
+                  // El micro-retraso que crea la magia visual
+                  await new Promise(resolve => setTimeout(resolve, 2));
+                }
               }
               
               if (d.analysis_id) {
