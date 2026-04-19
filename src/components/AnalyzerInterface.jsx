@@ -475,22 +475,12 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       const token = await user.getIdToken();
       let uploadedFilesData = [];
 
-      const smallFiles = [];
-      const largeFiles = [];
-
-      files.forEach(f => {
-          const sizeMB = f.size / (1024 * 1024);
-          if (sizeMB > 10 && sizeMB <= 50 && f.type === 'application/pdf') {
-              largeFiles.push(f);
-          } else {
-              smallFiles.push(f);
-          }
-      });
-
-      if (smallFiles.length > 0) {
+      // Procesamos TODOS los archivos directamente hacia Cloud Storage
+      if (files.length > 0) {
         setStatusText('Autenticando y preparando documentos...');
         
-        const fileMetadata = smallFiles.map(f => ({ name: f.name, type: f.type || 'application/pdf' }));
+        // 1. Pedimos las URLs firmadas para todos los archivos seleccionados
+        const fileMetadata = files.map(f => ({ name: f.name, type: f.type || 'application/pdf' }));
         const urlRes = await fetch(`${API_ANA}/generate-upload-urls`, {
           method: 'POST',
           headers: {
@@ -509,7 +499,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         const { urls } = urlData;
 
         setStatusText('Cargando documentos en el servidor seguro...');
-        const uploadPromises = smallFiles.map((file, i) => {
+        
+        // 2. Subimos los archivos DIRECTO a Google usando el método PUT
+        const uploadPromises = files.map((file, i) => {
           return fetch(urls[i].upload_url, {
             method: 'PUT',
             body: file,
@@ -519,39 +511,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
         await Promise.all(uploadPromises);
 
+        // 3. Guardamos los URIs que nos devolvió el servidor para pasárselos al Analizador
         urls.forEach(u => {
           uploadedFilesData.push({ gs_uri: u.gs_uri, filename: u.filename, mime_type: u.mime_type });
-        });
-      }
-
-      if (largeFiles.length > 0) {
-        setStatusText('Optimizando archivos pesados (reduciendo resolución para la IA)...');
-        
-        const optimizePromises = largeFiles.map(async (file) => {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const optRes = await fetch(`${API_ANA}/compress-and-upload`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
-            });
-
-            if (!optRes.ok) {
-                const errData = await optRes.json().catch(() => ({}));
-                throw new Error(errData.detail || `Fallo al optimizar el archivo: ${file.name}`);
-            }
-
-            return await optRes.json();
-        });
-
-        const optimizedResults = await Promise.all(optimizePromises);
-        optimizedResults.forEach(res => {
-            uploadedFilesData.push({
-                gs_uri: res.gs_uri,
-                filename: res.filename,
-                mime_type: res.mime_type
-            });
         });
       }
 
