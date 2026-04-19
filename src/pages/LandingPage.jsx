@@ -654,7 +654,7 @@ export default function LandingPage({ onOpenAuth }) {
                       <li>✅ 5 consultas diarias</li>
                       <li>✅ 3 análisis de documentos</li>
                       <li>✅ 1 archivo por análisis</li>
-                      <li>✅ 15 Mb por archivo</li>
+                      <li>✅ 30 Mb por archivo</li>
                       <li>❌ Sin precalificador</li>
                     </ul>
                     <Button 
@@ -678,7 +678,7 @@ export default function LandingPage({ onOpenAuth }) {
                       <li>✅ 20 consultas diarias</li>
                       <li>✅ 15 análisis de documentos</li>
                       <li>✅ 3 archivos por análisis</li>
-                      <li>✅ 40 Mb por archivo</li>
+                      <li>✅ 100 Mb por archivo</li>
                       <li>✅ 20 precalificaciones diarias</li>
                       <li>✅ Descuentos en productos IIRESODH</li>
                     </ul>
@@ -702,7 +702,7 @@ export default function LandingPage({ onOpenAuth }) {
                       <li>✅ 100 consultas diarias</li>
                       <li>✅ 25 análisis de documentos</li>
                       <li>✅ 5 archivos por análisis</li>
-                      <li>✅ 40 Mb por archivo</li>
+                      <li>✅ 100 Mb por archivo</li>
                       <li>✅ 100 precalificaciones diarias</li>
                       <li>✅ Descuentos en productos IIRESODH</li>
                     </ul>
