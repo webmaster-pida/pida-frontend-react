@@ -148,6 +148,19 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [chatId, setChatId] = useState(null);
+  const [questionQueue, setQuestionQueue] = useState([]);
+
+  useEffect(() => {
+    if (!isTyping && questionQueue.length > 0) {
+      const nextQuestion = questionQueue[0];
+      
+      // La sacamos de la fila
+      setQuestionQueue(prev => prev.slice(1));
+      
+      // La enviamos simulando el evento
+      handleSend(null, nextQuestion);
+    }
+  }, [isTyping, questionQueue]);
   
   const [currentStatus, setCurrentStatus] = useState('Iniciando...'); 
   const [statusQueue, setStatusQueue] = useState([]);
@@ -470,6 +483,16 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
     Exporter.downloadTXT(getTimestampedName("Experto_PIDA"), "Reporte Experto Jurídico", cleanMessages);
   };
 
+  const handleFollowUpClick = (question) => {
+    if (isTyping) {
+      // Si el bot está escribiendo, la formamos en la cola
+      setQuestionQueue(prev => [...prev, question]);
+    } else {
+      // Si está libre, la ejecutamos
+      handleSend(null, question);
+    }
+  };
+  
   const renderMessageContent = (msg, index) => {
     if (msg.role === 'user') {
       return <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{msg.content}</ReactMarkdown>;
@@ -543,9 +566,11 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
                 <button 
                   key={i} 
                   className="follow-up-btn"
-                  onClick={(e) => handleSend(e, q)}
+                  onClick={() => handleFollowUpClick(q)}
+                  disabled={questionQueue.includes(q)}
+                  style={{ opacity: questionQueue.includes(q) ? 0.6 : 1 }}
                 >
-                  {q}
+                  {questionQueue.includes(q) ? `⏳ En cola: ${q}` : q}
                 </button>
               ))}
             </div>
