@@ -288,6 +288,20 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [statusText, setStatusText] = useState('');
+  const [questionQueue, setQuestionQueue] = useState([]);
+
+  useEffect(() => {
+    // Si NO está analizando y hay preguntas haciendo fila...
+    if (!isAnalyzing && questionQueue.length > 0) {
+      const nextQuestion = questionQueue[0];
+      
+      // La sacamos de la fila
+      setQuestionQueue(prev => prev.slice(1));
+      
+      // ¡Y la ejecutamos!
+      handleAnalyze(nextQuestion);
+    }
+  }, [isAnalyzing, questionQueue]);
   
   const [errorModal, setErrorModal] = useState({ show: false, title: '', message: '' });
   const [showMissingFileModal, setShowMissingFileModal] = useState(false);
@@ -451,6 +465,9 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     if (eOrInstruction && eOrInstruction.preventDefault) {
       eOrInstruction.preventDefault();
     }
+
+    // 👇 BLOQUEO ANTI-TEMBLOR: Evita ejecuciones paralelas
+    if (isAnalyzing) return; 
 
     const currentInstruction = typeof eOrInstruction === 'string' ? eOrInstruction : instructions;
 
@@ -732,8 +749,14 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
   };
 
   const handleFollowUpClick = (question) => {
-    setInstructions(question);
-    handleAnalyze(question);
+    if (isAnalyzing) {
+      // Si el bot está escribiendo, formamos la pregunta en la cola
+      setQuestionQueue(prev => [...prev, question]);
+    } else {
+      // Si está libre, la ejecuta de inmediato
+      setInstructions(question);
+      handleAnalyze(question);
+    }
   };
 
   const renderAnalysisContent = (text, idx) => {
@@ -790,8 +813,14 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               </strong>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {questions.map((q, i) => (
-                  <button key={i} className="follow-up-btn" onClick={() => handleFollowUpClick(q)}>
-                    {q}
+                  <button 
+                    key={i} 
+                    className="follow-up-btn" 
+                    onClick={() => handleFollowUpClick(q)}
+                    disabled={questionQueue.includes(q)}
+                    style={{ opacity: questionQueue.includes(q) ? 0.6 : 1 }}
+                  >
+                    {questionQueue.includes(q) ? `⏳ En cola: ${q}` : q}
                   </button>
                 ))}
               </div>
