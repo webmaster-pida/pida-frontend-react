@@ -568,7 +568,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               
               if (d.text) {
                 const chars = d.text;
-                const step = 5; // Puedes usar 10 como en el chat, pero 5 se verá aún más suave
+                const chars = d.text;
+                const step = 2; // <-- Pintar de 1 en 1 (o máximo 2) para mayor fluidez
                 for (let i = 0; i < chars.length; i += step) {
                   fullText += chars.substring(i, i + step);
                   
@@ -581,8 +582,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
                     }
                   });
                   
-                  // El micro-retraso que crea la magia visual
-                  await new Promise(resolve => setTimeout(resolve, 2));
+                  // Esto simula la velocidad real de tipeo (aprox 60-100 caracteres por segundo)
+                  await new Promise(resolve => setTimeout(resolve, 12)); 
                 }
               }
               
