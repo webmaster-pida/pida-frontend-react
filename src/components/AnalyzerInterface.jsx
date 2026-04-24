@@ -550,27 +550,43 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
 
       const typeWriterEffect = async () => {
         isTyping = true;
+        let lastRenderTime = Date.now(); // <-- Control para no saturar a React
+        
         while (textQueue.current.length > 0) {
-          // Si la red envió mucho texto de golpe, aceleramos tomando de a 2 o 3 caracteres
-          // para que el efecto visual no se quede atrasado respecto a la IA.
-          const chunkSize = textQueue.current.length > 40 ? 3 : 1; 
+          const qLen = textQueue.current.length;
+          
+          // 1. ACELERADOR INTELIGENTE: Adaptamos la velocidad según la red
+          let chunkSize = 1;
+          let delay = 15;
+          
+          if (qLen > 150) { 
+            chunkSize = 4; delay = 10; // Si hay mucho texto acumulado, pintamos rápido
+          } else if (qLen > 50) { 
+            chunkSize = 2; delay = 12; // Velocidad normal
+          } else if (qLen < 15) { 
+            chunkSize = 1; delay = 35; // Si nos quedamos sin letras, FRENAMOS para darle tiempo a internet a entregar el siguiente bloque sin hacer pausas secas.
+          }
           
           const chunk = textQueue.current.substring(0, chunkSize);
           textQueue.current = textQueue.current.substring(chunkSize);
-
           fullText += chunk;
 
-          setMessages(prev => {
-            const lastMsg = prev[prev.length - 1];
-            if (lastMsg && lastMsg.role === 'model') {
-                return [...prev.slice(0, -1), { ...lastMsg, content: fullText }];
-            } else {
-                return [...prev, { role: 'model', content: fullText }];
-            }
-          });
+          // 2. SALVATAJE DE CPU: Solo actualizamos a React cada 40ms o al terminar
+          const now = Date.now();
+          if (now - lastRenderTime > 40 || textQueue.current.length === 0) {
+            setMessages(prev => {
+              const lastMsg = prev[prev.length - 1];
+              if (lastMsg && lastMsg.role === 'model') {
+                  return [...prev.slice(0, -1), { ...lastMsg, content: fullText }];
+              } else {
+                  return [...prev, { role: 'model', content: fullText }];
+              }
+            });
+            lastRenderTime = now;
+          }
 
-          // El micro-retraso visual (10ms a 15ms es ideal)
-          await new Promise(resolve => setTimeout(resolve, 12));
+          // El micro-retraso visual variable
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
         isTyping = false;
       };
