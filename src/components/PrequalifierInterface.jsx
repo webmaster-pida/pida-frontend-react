@@ -253,35 +253,86 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
       }
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
+      const decoder = new TextDecoder("utf-8");
       let fullText = "";
+      let streamBuffer = ""; // Anti-errores para red inestable
+
+      // --- INICIO DE LÓGICA DE COLA DE ESCRITURA ---
+      const textQueue = { current: "" };
+      let isTypingEffectActive = false;
+
+      const typeWriterEffect = async () => {
+        isTypingEffectActive = true;
+        let lastRenderTime = Date.now(); // Salvataje de CPU para React
+        
+        while (textQueue.current.length > 0) {
+          const qLen = textQueue.current.length;
+          
+          // ACELERADOR INTELIGENTE
+          let chunkSize = 1;
+          let delay = 15;
+          
+          if (qLen > 150) { 
+            chunkSize = 4; delay = 10; // Si hay mucha fila, aceleramos
+          } else if (qLen > 50) { 
+            chunkSize = 2; delay = 12; // Normal
+          } else if (qLen < 15) { 
+            chunkSize = 1; delay = 35; // Frenamos para evitar pausas secas
+          }
+          
+          const chunk = textQueue.current.substring(0, chunkSize);
+          textQueue.current = textQueue.current.substring(chunkSize);
+          fullText += chunk;
+
+          // Actualizamos la pantalla máximo cada 40ms
+          const now = Date.now();
+          if (now - lastRenderTime > 40 || textQueue.current.length === 0) {
+            setResultText(fullText);
+            lastRenderTime = now;
+          }
+
+          // Micro-retraso visual
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        isTypingEffectActive = false;
+      };
+      // --- FIN DE LÓGICA DE COLA ---
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n\n");
+        streamBuffer += decoder.decode(value, { stream: true });
+        const lines = streamBuffer.split("\n\n");
+        streamBuffer = lines.pop(); // Guardamos el pedazo incompleto para el siguiente ciclo
         
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
+          if (line.startsWith("data:")) { 
             try {
-              const data = JSON.parse(line.replace("data: ", "").trim());
+              const data = JSON.parse(line.replace(/^data:\s*/, "").trim());
               
               if (data.event === "status") { 
                   setStatusMsg(data.message); 
               } else if (data.text) {
-                  const chars = data.text;
-                  const step = 10; 
-                  for (let i = 0; i < chars.length; i += step) {
-                    fullText += chars.substring(i, i + step);
-                    setResultText(fullText);
-                    await new Promise(resolve => setTimeout(resolve, 2));
+                  // Guardamos en la cola en lugar de atascar la lectura de internet
+                  textQueue.current += data.text;
+                  
+                  // Despertamos al escritor si estaba dormido
+                  if (!isTypingEffectActive) {
+                      typeWriterEffect();
                   }
               }
-            } catch (e) {}
+            } catch (e) {
+              // Si el JSON viene cortado a la mitad, lo ignoramos y lo atrapamos en el próximo ciclo
+            }
           }
         }
+      }
+
+      // 👇 SEGURO DE CIERRE
+      // Evita que el programa marque como finalizado antes de vaciar la cola de letras
+      while (isTypingEffectActive || textQueue.current.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
     } catch (err) {
       console.error(err);
