@@ -417,6 +417,11 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
           }
         }
       }
+
+      while (isTypingEffectActive || textQueue.current.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
     } catch (error) {
       console.error(error);
       setMessages(prev => [...prev, { role: 'model', content: `❌ **Ocurrió un problema:** ${error.message}` }]);

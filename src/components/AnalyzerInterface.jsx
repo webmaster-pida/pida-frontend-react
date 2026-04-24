@@ -648,6 +648,11 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
           }
         }
       }
+
+      while (isTyping || textQueue.current.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
     } catch (err) {
       console.error("Error en Análisis:", err);
       
