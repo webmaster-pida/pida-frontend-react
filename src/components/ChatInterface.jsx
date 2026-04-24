@@ -321,15 +321,65 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
       }
 
       const reader = res.body.getReader();
-      const decoder = new TextDecoder();
+      const decoder = new TextDecoder("utf-8");
       let fullText = "";
+      let streamBuffer = ""; // Búfer para no romper JSONs cortados por la red
+
+      // --- INICIO DE LÓGICA DE COLA DE ESCRITURA ---
+      const textQueue = { current: "" };
+      let isTypingEffectActive = false;
+
+      const typeWriterEffect = async () => {
+        isTypingEffectActive = true;
+        let lastRenderTime = Date.now(); // Control para no saturar a React (CPU)
+        
+        while (textQueue.current.length > 0) {
+          const qLen = textQueue.current.length;
+          
+          // ACELERADOR INTELIGENTE
+          let chunkSize = 1;
+          let delay = 15;
+          
+          if (qLen > 150) { 
+            chunkSize = 4; delay = 10; // Red rápida: Aceleramos tipeo
+          } else if (qLen > 50) { 
+            chunkSize = 2; delay = 12; // Velocidad normal
+          } else if (qLen < 15) { 
+            chunkSize = 1; delay = 35; // Red lenta: Frenamos para no hacer pausas bruscas
+          }
+          
+          const chunk = textQueue.current.substring(0, chunkSize);
+          textQueue.current = textQueue.current.substring(chunkSize);
+          fullText += chunk;
+
+          // SALVATAJE DE CPU: Actualizamos Markdown solo cada 40ms
+          const now = Date.now();
+          if (now - lastRenderTime > 40 || textQueue.current.length === 0) {
+            setMessages(prev => {
+              const lastMsg = prev[prev.length - 1];
+              if (lastMsg && lastMsg.role === 'model') {
+                  return [...prev.slice(0, -1), { ...lastMsg, content: fullText }];
+              } else {
+                  return [...prev, { role: 'model', content: fullText }];
+              }
+            });
+            lastRenderTime = now;
+          }
+
+          // Micro-retraso visual
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        isTypingEffectActive = false;
+      };
+      // --- FIN DE LÓGICA DE COLA ---
 
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
         
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n\n');
+        streamBuffer += decoder.decode(value, { stream: true });
+        const lines = streamBuffer.split('\n\n');
+        streamBuffer = lines.pop(); // Guarda el último pedazo incompleto para el siguiente ciclo
         
         for (const line of lines) {
           if (line.startsWith('data:')) {
@@ -340,24 +390,17 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
                 setStatusQueue(prev => [...prev, data.message]);
               } 
               else if (data.text) {
-                const chars = data.text;
-                const step = 10; 
-                for (let i = 0; i < chars.length; i += step) {
-                  fullText += chars.substring(i, i + step);
-                  
-                  setMessages(prev => {
-                    const lastMsg = prev[prev.length - 1];
-                    if (lastMsg && lastMsg.role === 'model') {
-                      return [...prev.slice(0, -1), { ...lastMsg, content: fullText }];
-                    } else {
-                      return [...prev, { role: 'model', content: fullText }];
-                    }
-                  });
-                  
-                  await new Promise(resolve => setTimeout(resolve, 2));
+                // Guardamos en la cola en lugar de frenar la red
+                textQueue.current += data.text;
+                
+                // Si el escritor está dormido, lo despertamos
+                if (!isTypingEffectActive) {
+                  typeWriterEffect();
                 }
               }
-            } catch (e) {}
+            } catch (e) {
+              // Ignorar errores parciales de JSON de forma segura
+            }
           }
         }
       }
