@@ -509,9 +509,7 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
 
       displayContent = textBeforeTags + "\n" + textAfterTags;
 
-      if (!isCurrentlyTypingThis && textInsideAndAfter.includes(tagEnd)) {
-        questions = qString.split('|').map(q => q.trim()).filter(q => q.length > 0);
-      }
+      questions = qString.split('|').map(q => q.trim()).filter(q => q.length > 0);
     }
 
     displayContent = displayContent.replace(/["']br["']/g, '<br />');
