@@ -541,10 +541,40 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       const reader = res.body.getReader();
       const decoder = new TextDecoder("utf-8");
       let fullText = "";
-      
       let streamBuffer = ""; 
-      
       setStatusText(''); 
+
+      // --- INICIO DE LÓGICA DE COLA DE ESCRITURA ---
+      const textQueue = { current: "" };
+      let isTyping = false;
+
+      const typeWriterEffect = async () => {
+        isTyping = true;
+        while (textQueue.current.length > 0) {
+          // Si la red envió mucho texto de golpe, aceleramos tomando de a 2 o 3 caracteres
+          // para que el efecto visual no se quede atrasado respecto a la IA.
+          const chunkSize = textQueue.current.length > 40 ? 3 : 1; 
+          
+          const chunk = textQueue.current.substring(0, chunkSize);
+          textQueue.current = textQueue.current.substring(chunkSize);
+
+          fullText += chunk;
+
+          setMessages(prev => {
+            const lastMsg = prev[prev.length - 1];
+            if (lastMsg && lastMsg.role === 'model') {
+                return [...prev.slice(0, -1), { ...lastMsg, content: fullText }];
+            } else {
+                return [...prev, { role: 'model', content: fullText }];
+            }
+          });
+
+          // El micro-retraso visual (10ms a 15ms es ideal)
+          await new Promise(resolve => setTimeout(resolve, 12));
+        }
+        isTyping = false;
+      };
+      // --- FIN DE LÓGICA DE COLA ---
 
       while (true) {
         const { value, done } = await reader.read();
@@ -561,53 +591,22 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               const d = JSON.parse(jsonStr);
               
               if (d.error) throw new Error(d.error); 
-
-              if (d.status) {
-                setStatusText(d.status);
-              }
+              if (d.status) setStatusText(d.status);
               
-              { /*}
               if (d.text) {
-                const chars = d.text;
-                const step = 1; // <-- Pintar de 1 en 1 (o máximo 2) para mayor fluidez
-                for (let i = 0; i < chars.length; i += step) {
-                  fullText += chars.substring(i, i + step);
-                  
-                  setMessages(prev => {
-                    const lastMsg = prev[prev.length - 1];
-                    if (lastMsg && lastMsg.role === 'model') {
-                        return [...prev.slice(0, -1), { ...lastMsg, content: fullText }];
-                    } else {
-                        return [...prev, { role: 'model', content: fullText }];
-                    }
-                  });
-                  
-                  // Esto simula la velocidad real de tipeo (aprox 60-100 caracteres por segundo)
-                  await new Promise(resolve => setTimeout(resolve, 12)); 
+                // En lugar de pintar, guardamos en la cola
+                textQueue.current += d.text;
+                
+                // Si la máquina de escribir está apagada, la encendemos.
+                // NO usamos "await" aquí para NO bloquear la lectura de la red.
+                if (!isTyping) {
+                  typeWriterEffect(); 
                 }
               }
-                */ }
-
-              if (d.text) {
-                // Anexamos el texto que llega directamente sin demoras artificiales
-                fullText += d.text;
-                
-                setMessages(prev => {
-                  const lastMsg = prev[prev.length - 1];
-                  if (lastMsg && lastMsg.role === 'model') {
-                      return [...prev.slice(0, -1), { ...lastMsg, content: fullText }];
-                  } else {
-                      return [...prev, { role: 'model', content: fullText }];
-                  }
-                });
-              }
-
-
               
               if (d.analysis_id) {
-                  setCurrentAnaId(d.analysis_id);
+                 setCurrentAnaId(d.analysis_id);
               }
-              
             } catch (e) {
               if (e.message && !e.message.includes('JSON')) {
                  throw e; 
