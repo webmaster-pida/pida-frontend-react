@@ -568,7 +568,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
               
               if (d.text) {
                 const chars = d.text;
-                const step = 2; // <-- Pintar de 1 en 1 (o máximo 2) para mayor fluidez
+                const step = 1; // <-- Pintar de 1 en 1 (o máximo 2) para mayor fluidez
                 for (let i = 0; i < chars.length; i += step) {
                   fullText += chars.substring(i, i + step);
                   
