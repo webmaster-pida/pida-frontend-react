@@ -566,6 +566,7 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
                 setStatusText(d.status);
               }
               
+              { /*}
               if (d.text) {
                 const chars = d.text;
                 const step = 1; // <-- Pintar de 1 en 1 (o máximo 2) para mayor fluidez
@@ -585,6 +586,23 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
                   await new Promise(resolve => setTimeout(resolve, 12)); 
                 }
               }
+                */ }
+
+              if (d.text) {
+                // Anexamos el texto que llega directamente sin demoras artificiales
+                fullText += d.text;
+                
+                setMessages(prev => {
+                  const lastMsg = prev[prev.length - 1];
+                  if (lastMsg && lastMsg.role === 'model') {
+                      return [...prev.slice(0, -1), { ...lastMsg, content: fullText }];
+                  } else {
+                      return [...prev, { role: 'model', content: fullText }];
+                  }
+                });
+              }
+
+
               
               if (d.analysis_id) {
                   setCurrentAnaId(d.analysis_id);
