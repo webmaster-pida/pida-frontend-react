@@ -5,14 +5,17 @@ import {
   Typography, Container, Card, CardContent, Button, Box, Alert, 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, 
   TextField, IconButton, Chip, Select, MenuItem, FormControl, InputLabel,
-  Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
+  Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import { useAuth } from '../AuthContext';
 
 const MASTER_EMAIL = 'webmaster@pida-ai.com';
 
 export default function Usuarios() {
+  const { userRole } = useAuth(); // Obtenemos el rol actual del usuario logueado
+
   const [admins, setAdmins] = useState([]);
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState('lector'); // Por defecto, es más seguro dar el rol menor
@@ -40,6 +43,8 @@ export default function Usuarios() {
   }, []);
 
   const handleAddAdmin = async () => {
+    if (userRole === 'lector') return; // Bloqueo de seguridad
+
     if (!newEmail.trim() || !newEmail.includes('@')) {
       setStatus({ type: 'warning', message: 'Ingresa un correo electrónico válido.' });
       return;
@@ -70,12 +75,14 @@ export default function Usuarios() {
   };
 
   const confirmRemoveAdmin = (email) => {
+    if (userRole === 'lector') return; // Bloqueo de seguridad
     if (email === MASTER_EMAIL) return;
     setAdminToRemove(email);
     setOpenDialog(true);
   };
 
   const executeRemoveAdmin = async () => {
+    if (userRole === 'lector') return; // Bloqueo de seguridad
     setOpenDialog(false);
     if (!adminToRemove) return;
 
@@ -114,7 +121,7 @@ export default function Usuarios() {
               fullWidth label="Correo electrónico (ej. nombre@pida-ai.com)" 
               variant="outlined" value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
-              disabled={loading}
+              disabled={loading || userRole === 'lector'}
             />
             
             <FormControl sx={{ minWidth: 150 }}>
@@ -123,19 +130,23 @@ export default function Usuarios() {
                 value={newRole}
                 label="Rol"
                 onChange={(e) => setNewRole(e.target.value)}
-                disabled={loading}
+                disabled={loading || userRole === 'lector'}
               >
                 <MenuItem value="admin">Administrador</MenuItem>
                 <MenuItem value="lector">Solo Lectura</MenuItem>
               </Select>
             </FormControl>
 
-            <Button 
-              variant="contained" startIcon={<PersonAddIcon />} 
-              onClick={handleAddAdmin} disabled={loading} sx={{ px: 4, whiteSpace: 'nowrap' }}
-            >
-              Conceder
-            </Button>
+            <Tooltip title={userRole === 'lector' ? "No tienes permisos para agregar usuarios" : ""}>
+              <span style={{ display: 'flex' }}>
+                <Button 
+                  variant="contained" startIcon={<PersonAddIcon />} 
+                  onClick={handleAddAdmin} disabled={loading || userRole === 'lector'} sx={{ px: 4, whiteSpace: 'nowrap', height: '56px' }}
+                >
+                  Conceder
+                </Button>
+              </span>
+            </Tooltip>
           </Box>
         </CardContent>
       </Card>
@@ -163,9 +174,17 @@ export default function Usuarios() {
                 <TableCell>{admin.email}</TableCell>
                 <TableCell>{getRoleChip(admin.role)}</TableCell>
                 <TableCell align="center">
-                  <IconButton color="error" onClick={() => confirmRemoveAdmin(admin.email)}>
-                    <DeleteIcon />
-                  </IconButton>
+                  <Tooltip title={userRole === 'lector' ? "No tienes permisos para revocar accesos" : ""}>
+                    <span>
+                      <IconButton 
+                        color="error" 
+                        onClick={() => confirmRemoveAdmin(admin.email)}
+                        disabled={userRole === 'lector'}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}

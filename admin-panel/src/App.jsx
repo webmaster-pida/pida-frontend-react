@@ -8,6 +8,7 @@ import AdminLayout from './AdminLayout';
 import Dashboard from './pages/Dashboard';
 import Biblioteca from './pages/Biblioteca';
 import Ingesta from './pages/Ingesta';
+import Estadisticas from './pages/Estadisticas';
 import Login from './pages/Login';
 import Usuarios from './pages/Usuarios';
 import { Typography } from '@mui/material';
@@ -26,8 +27,7 @@ export default function App() {
           <Route path="/biblioteca" element={<Biblioteca />} />
           <Route path="/ingesta" element={<Ingesta />} />
           <Route path="/usuarios" element={<Usuarios />} />
-          
-          <Route path="/estadisticas" element={<Typography variant="h5" sx={{p:4}}>Módulo en construcción...</Typography>} />
+          <Route path="/estadisticas" element={<Estadisticas />} />
           <Route path="/configuracion" element={<Typography variant="h5" sx={{p:4}}>Módulo en construcción...</Typography>} />
           
           <Route path="*" element={<Navigate to="/" replace />} />

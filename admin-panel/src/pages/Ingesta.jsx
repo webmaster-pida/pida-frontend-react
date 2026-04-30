@@ -9,18 +9,20 @@ import {
   Alert, 
   Stack, 
   Divider, 
-  LinearProgress 
+  LinearProgress,
+  Tooltip
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SendIcon from '@mui/icons-material/Send';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 
 // Importaciones de Firebase Storage
-// IMPORTANTE: Asegúrate de importar la instancia de tu app de Firebase
 import { getStorage, ref, uploadBytes, getDownloadURL, StringFormat, uploadString } from 'firebase/storage';
-// import { app } from '../firebaseConfig'; // <-- Ajusta esta ruta a tu archivo de configuración
+import { useAuth } from '../AuthContext';
 
 export default function Ingesta() {
+  const { userRole } = useAuth();
+  
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
@@ -46,6 +48,8 @@ export default function Ingesta() {
 
   // Manejo del selector de archivos
   const handleFileChange = (e) => {
+    if (userRole === 'lector') return; // Bloqueo de seguridad
+
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       // Reiniciamos los estados si elige un nuevo archivo
@@ -60,6 +64,8 @@ export default function Ingesta() {
   // PASO 1: SUBIR PDF Y ESPERAR EL MARKDOWN DEL EXTRACTOR
   // =========================================================================
   const handleUploadAndListen = async () => {
+    if (userRole === 'lector') return; // Bloqueo de seguridad a nivel función
+
     if (!file) {
       setError('Por favor, selecciona un PDF primero.');
       return;
@@ -132,6 +138,8 @@ export default function Ingesta() {
   // PASO 2: INYECTAR METADATOS Y ENVIAR AL VECTORIZADOR (FLASK)
   // =========================================================================
   const handleIndex = async () => {
+    if (userRole === 'lector') return; // Bloqueo de seguridad a nivel función
+
     if (!title.trim() || !author.trim() || !markdownContent.trim()) {
       setError('Faltan metadatos (Título/Autor) o el texto Markdown está vacío.');
       return;
@@ -199,25 +207,40 @@ export default function Ingesta() {
           1. Subir PDF para Extracción
         </Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2}>
-          <Button 
-            variant="outlined" 
-            component="label" 
-            startIcon={<CloudUploadIcon />} 
-            sx={{ flexGrow: 1, textTransform: 'none', justifyContent: 'flex-start', px: 3 }}
-            color={file ? "success" : "primary"}
-          >
-            {file ? file.name : 'Seleccionar archivo PDF'}
-            <input type="file" hidden accept="application/pdf" onChange={handleFileChange} />
-          </Button>
+          <Tooltip title={userRole === 'lector' ? "No tienes permisos para subir documentos" : ""}>
+            <span style={{ display: 'flex', flexGrow: 1 }}>
+              <Button 
+                variant="outlined" 
+                component="label" 
+                startIcon={<CloudUploadIcon />} 
+                sx={{ flexGrow: 1, textTransform: 'none', justifyContent: 'flex-start', px: 3 }}
+                color={file ? "success" : "primary"}
+                disabled={userRole === 'lector'}
+              >
+                {file ? file.name : 'Seleccionar archivo PDF'}
+                <input 
+                  type="file" 
+                  hidden 
+                  accept="application/pdf" 
+                  onChange={handleFileChange} 
+                  disabled={userRole === 'lector'} 
+                />
+              </Button>
+            </span>
+          </Tooltip>
           
-          <Button 
-            variant="contained" 
-            onClick={handleUploadAndListen} 
-            disabled={!file || loadingPdf || waitingForMd}
-            sx={{ minWidth: 200 }}
-          >
-            {loadingPdf ? <CircularProgress size={24} color="inherit" /> : 'Extraer a Markdown'}
-          </Button>
+          <Tooltip title={userRole === 'lector' ? "No tienes permisos para extraer texto" : ""}>
+            <span>
+              <Button 
+                variant="contained" 
+                onClick={handleUploadAndListen} 
+                disabled={!file || loadingPdf || waitingForMd || userRole === 'lector'}
+                sx={{ minWidth: 200, height: '100%' }}
+              >
+                {loadingPdf ? <CircularProgress size={24} color="inherit" /> : 'Extraer a Markdown'}
+              </Button>
+            </span>
+          </Tooltip>
         </Stack>
 
         {/* Indicadores Visuales de Polling (Espera del Servidor) */}
@@ -254,7 +277,7 @@ export default function Ingesta() {
           variant="outlined"
           value={markdownContent}
           onChange={(e) => setMarkdownContent(e.target.value)}
-          disabled={loadingPdf || waitingForMd}
+          disabled={loadingPdf || waitingForMd || userRole === 'lector'}
           sx={{ mb: 4, fontFamily: 'monospace' }}
           InputProps={{
             sx: { fontFamily: 'monospace', fontSize: '0.9rem' }
@@ -276,7 +299,7 @@ export default function Ingesta() {
             variant="outlined"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            disabled={loadingIdx}
+            disabled={loadingIdx || userRole === 'lector'}
           />
           <TextField
             label="Autor Principal"
@@ -285,7 +308,7 @@ export default function Ingesta() {
             variant="outlined"
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
-            disabled={loadingIdx}
+            disabled={loadingIdx || userRole === 'lector'}
           />
         </Stack>
 
@@ -295,17 +318,21 @@ export default function Ingesta() {
               {statusText}
             </Typography>
           )}
-          <Button
-            variant="contained"
-            color="success"
-            size="large"
-            endIcon={<SendIcon />}
-            onClick={handleIndex}
-            disabled={!markdownContent || !title || !author || loadingIdx}
-            sx={{ px: 4, py: 1.5 }}
-          >
-            {loadingIdx ? <CircularProgress size={24} color="inherit" /> : 'Aprobar e Indexar Libro'}
-          </Button>
+          <Tooltip title={userRole === 'lector' ? "Modo de solo lectura activado" : ""}>
+            <span>
+              <Button
+                variant="contained"
+                color="success"
+                size="large"
+                endIcon={<SendIcon />}
+                onClick={handleIndex}
+                disabled={!markdownContent || !title || !author || loadingIdx || userRole === 'lector'}
+                sx={{ px: 4, py: 1.5 }}
+              >
+                {loadingIdx ? <CircularProgress size={24} color="inherit" /> : 'Aprobar e Indexar Libro'}
+              </Button>
+            </span>
+          </Tooltip>
         </Box>
 
       </Paper>
