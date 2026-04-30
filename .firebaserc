@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "pida-ai-v20"
-  }
+  },
+  "targets": {
+    "pida-ai-v20": {
+      "hosting": {
+        "main": [
+          "pida-ai-v20"
+        ],
+        "admin": [
+          "admin-pida-ai-v20"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
