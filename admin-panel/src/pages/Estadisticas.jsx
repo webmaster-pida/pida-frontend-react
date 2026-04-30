@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getCountFromServer } from 'firebase/firestore';
+import { collection, collectionGroup, getCountFromServer } from 'firebase/firestore';
 import { 
   Box, 
   Typography, 
@@ -11,10 +11,11 @@ import {
   Alert,
   Paper
 } from '@mui/material';
-import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
-import PeopleIcon from '@mui/icons-material/People';
 import StorageIcon from '@mui/icons-material/Storage';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import PeopleIcon from '@mui/icons-material/People';
+import DescriptionIcon from '@mui/icons-material/Description';
+import ForumIcon from '@mui/icons-material/Forum';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
 
 // Importaciones de Recharts para el gráfico
 import { 
@@ -32,13 +33,16 @@ export default function Estadisticas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({
-    totalDocs: 0,
+    totalChunks: 0,
     totalAdmins: 0,
-    // totalChunks: 0 // Lo dejaremos preparado para cuando sepamos la colección exacta de chunks
+    totalAnalisis: 0,
+    totalConversaciones: 0,
+    totalPrecalificaciones: 0
   });
 
   // Datos simulados (Mock Data) para el gráfico de uso semanal.
-  // En el futuro, esto se llenará con datos reales de Firestore.
+  // Nota: Para hacer este gráfico real sin gastar lecturas masivas, 
+  // se recomienda crear un "contador agregado" por día en Firestore en el futuro.
   const chartData = [
     { name: 'Lun', consultas: 12 },
     { name: 'Mar', consultas: 19 },
@@ -54,28 +58,45 @@ export default function Estadisticas() {
       setLoading(true);
       setError(null);
       try {
-        // Consultas de Agregación (getCountFromServer):
-        // Son extremadamente baratas en Firebase (1 lectura por cada 1000 conteos)
-        
-        // 1. Contar documentos en la biblioteca
-        const docsCol = collection(db, 'pida_kb_genai-v20');
-        const docsSnapshot = await getCountFromServer(docsCol);
-        const docsCount = docsSnapshot.data().count;
+        // 1. Contar Chunks / Vectores en la base de conocimientos
+        const kbCol = collection(db, 'pida_kb_genai-v20');
+        const kbSnapshot = await getCountFromServer(kbCol);
+        const chunksCount = kbSnapshot.data().count;
 
         // 2. Contar administradores autorizados
         const adminsCol = collection(db, 'admins');
         const adminsSnapshot = await getCountFromServer(adminsCol);
         const adminsCount = adminsSnapshot.data().count;
 
+        // 3. Contar el historial de Análisis de Documentos
+        const analysisCol = collection(db, 'analysis_history');
+        const analysisSnapshot = await getCountFromServer(analysisCol);
+        const analysisCount = analysisSnapshot.data().count;
+
+        // 4. Contar Conversaciones (Chat) en toda la base de datos
+        // Usamos collectionGroup porque 'conversations' es una subcolección de 'users'
+        const convGroup = collectionGroup(db, 'conversations');
+        const convSnapshot = await getCountFromServer(convGroup);
+        const conversacionesCount = convSnapshot.data().count;
+
+        // 5. Contar Precalificaciones en toda la base de datos
+        // Usamos collectionGroup porque 'prequalifications' es una subcolección de 'users'
+        const prequalGroup = collectionGroup(db, 'prequalifications');
+        const prequalSnapshot = await getCountFromServer(prequalGroup);
+        const prequalificacionesCount = prequalSnapshot.data().count;
+
         // Actualizamos el estado con los totales reales
         setStats({
-          totalDocs: docsCount,
+          totalChunks: chunksCount,
           totalAdmins: adminsCount,
+          totalAnalisis: analysisCount,
+          totalConversaciones: conversacionesCount,
+          totalPrecalificaciones: prequalificacionesCount
         });
 
       } catch (err) {
         console.error("Error obteniendo estadísticas:", err);
-        setError('No se pudieron cargar las estadísticas. Verifica tus permisos o conexión.');
+        setError('No se pudieron cargar las estadísticas. Verifica tus permisos en las reglas de Firestore.');
       } finally {
         setLoading(false);
       }
@@ -119,17 +140,25 @@ export default function Estadisticas() {
 
       {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
 
-      {/* FILA DE TARJETAS DE RESUMEN */}
+      {/* FILA DE TARJETAS DE RESUMEN (Ajustado para 5 tarjetas: 3 arriba, 2 abajo) */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <StatCard 
-            title="Documentos Base" 
-            value={stats.totalDocs} 
-            icon={<LibraryBooksIcon fontSize="large" />} 
+            title="Total Chunks (KB)" 
+            value={stats.totalChunks} 
+            icon={<StorageIcon fontSize="large" />} 
             color="primary" 
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
+          <StatCard 
+            title="Análisis Generados" 
+            value={stats.totalAnalisis} 
+            icon={<DescriptionIcon fontSize="large" />} 
+            color="warning" 
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
           <StatCard 
             title="Administradores" 
             value={stats.totalAdmins} 
@@ -137,20 +166,20 @@ export default function Estadisticas() {
             color="success" 
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={6}>
           <StatCard 
-            title="Total Chunks" 
-            value="---" // Placeholder temporal
-            icon={<StorageIcon fontSize="large" />} 
-            color="warning" 
+            title="Conversaciones (Chat)" 
+            value={stats.totalConversaciones} 
+            icon={<ForumIcon fontSize="large" />} 
+            color="info" 
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={6}>
           <StatCard 
-            title="Consultas Totales" 
-            value="151" // Placeholder temporal basado en la suma del mockData
-            icon={<TrendingUpIcon fontSize="large" />} 
-            color="info" 
+            title="Precalificaciones" 
+            value={stats.totalPrecalificaciones} 
+            icon={<FactCheckIcon fontSize="large" />} 
+            color="secondary" 
           />
         </Grid>
       </Grid>
@@ -158,10 +187,10 @@ export default function Estadisticas() {
       {/* SECCIÓN DEL GRÁFICO */}
       <Paper elevation={0} sx={{ p: 4, border: '1px solid #e0e0e0', borderRadius: 2 }}>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Historial de Consultas a la IA (Últimos 7 días)
+          Historial de Interacciones (Últimos 7 días)
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-          Métrica de uso basada en las interacciones de los usuarios finales con la aplicación principal.
+          Métrica de uso basada en la actividad reciente de los usuarios. (Datos de muestra visual).
         </Typography>
         
         <Box sx={{ width: '100%', height: 400 }}>
