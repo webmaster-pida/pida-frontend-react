@@ -189,9 +189,11 @@ export default function Estadisticas() {
           Métrica de uso basada en la actividad reciente de los usuarios. (Datos de muestra visual).
         </Typography>
         
-        {/* CORRECCIÓN RECHARTS: Agregamos minHeight explícito en Box y ResponsiveContainer */}
-        <Box sx={{ width: '100%', height: 400, minHeight: 400 }}>
-          <ResponsiveContainer width="100%" height="100%" minHeight={400}>
+        {/* CORRECCIÓN DEFINITIVA RECHARTS: 
+            Se quitó height="100%" y se fijó el height a 400 como número. 
+            El width se mantiene fluido al 100%. */}
+        <Box sx={{ width: '100%' }}>
+          <ResponsiveContainer width="100%" height={400}>
             <LineChart
               data={chartData}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
