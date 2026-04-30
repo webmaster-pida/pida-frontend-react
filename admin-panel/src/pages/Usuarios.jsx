@@ -4,7 +4,7 @@ import { collection, getDocs, setDoc, deleteDoc, doc } from 'firebase/firestore'
 import { 
   Typography, Container, Card, CardContent, Button, Box, Alert, 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, 
-  TextField, IconButton, Chip,
+  TextField, IconButton, Chip, Select, MenuItem, FormControl, InputLabel,
   Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -15,10 +15,10 @@ const MASTER_EMAIL = 'webmaster@pida-ai.com';
 export default function Usuarios() {
   const [admins, setAdmins] = useState([]);
   const [newEmail, setNewEmail] = useState('');
+  const [newRole, setNewRole] = useState('lector'); // Por defecto, es más seguro dar el rol menor
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({ type: '', message: '' });
 
-  // Estados para el Modal de Confirmación
   const [openDialog, setOpenDialog] = useState(false);
   const [adminToRemove, setAdminToRemove] = useState(null);
 
@@ -54,30 +54,29 @@ export default function Usuarios() {
 
     try {
       await setDoc(doc(db, 'admins', newEmail.toLowerCase()), {
-        role: 'admin',
+        role: newRole, // Guardamos el rol seleccionado
         addedAt: new Date().toISOString()
       });
-      setStatus({ type: 'success', message: `Acceso concedido a ${newEmail}` });
+      setStatus({ type: 'success', message: `Acceso de ${newRole} concedido a ${newEmail}` });
       setNewEmail('');
+      setNewRole('lector'); // Reseteamos al rol seguro
       fetchAdmins();
     } catch (error) {
       console.error("Error agregando admin: ", error);
-      setStatus({ type: 'error', message: 'Error al agregar el usuario.' });
+      setStatus({ type: 'error', message: 'Error al agregar el usuario. Verifica que tengas permisos de administrador total.' });
     } finally {
       setLoading(false);
     }
   };
 
-  // 1. Abre el modal y guarda a quién queremos borrar
   const confirmRemoveAdmin = (email) => {
     if (email === MASTER_EMAIL) return;
     setAdminToRemove(email);
     setOpenDialog(true);
   };
 
-  // 2. Ejecuta el borrado si el usuario dice "Aceptar" en el modal
   const executeRemoveAdmin = async () => {
-    setOpenDialog(false); // Cerramos el modal primero
+    setOpenDialog(false);
     if (!adminToRemove) return;
 
     try {
@@ -86,10 +85,17 @@ export default function Usuarios() {
       fetchAdmins();
     } catch (error) {
       console.error("Error eliminando admin: ", error);
-      setStatus({ type: 'error', message: 'Error al remover el usuario.' });
+      setStatus({ type: 'error', message: 'Error al remover el usuario. Verifica tus permisos.' });
     } finally {
-      setAdminToRemove(null); // Limpiamos el estado
+      setAdminToRemove(null);
     }
+  };
+
+  // Función auxiliar para pintar las etiquetas bonitas
+  const getRoleChip = (role) => {
+    if (role === 'admin') return <Chip label="Administrador" color="primary" size="small" />;
+    if (role === 'lector') return <Chip label="Solo Lectura" color="default" size="small" variant="outlined" />;
+    return <Chip label={role} size="small" />;
   };
 
   return (
@@ -102,19 +108,33 @@ export default function Usuarios() {
 
       <Card sx={{ mb: 4, border: '1px solid #e0e0e0', borderRadius: 2 }} elevation={0}>
         <CardContent>
-          <Typography variant="h6" gutterBottom>Dar acceso a nuevo administrador</Typography>
-          <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+          <Typography variant="h6" gutterBottom>Dar acceso a nuevo usuario</Typography>
+          <Box sx={{ display: 'flex', gap: 2, mt: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
             <TextField 
               fullWidth label="Correo electrónico (ej. nombre@pida-ai.com)" 
               variant="outlined" value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
               disabled={loading}
             />
+            
+            <FormControl sx={{ minWidth: 150 }}>
+              <InputLabel>Rol</InputLabel>
+              <Select
+                value={newRole}
+                label="Rol"
+                onChange={(e) => setNewRole(e.target.value)}
+                disabled={loading}
+              >
+                <MenuItem value="admin">Administrador</MenuItem>
+                <MenuItem value="lector">Solo Lectura</MenuItem>
+              </Select>
+            </FormControl>
+
             <Button 
               variant="contained" startIcon={<PersonAddIcon />} 
               onClick={handleAddAdmin} disabled={loading} sx={{ px: 4, whiteSpace: 'nowrap' }}
             >
-              Conceder Acceso
+              Conceder
             </Button>
           </Box>
         </CardContent>
@@ -132,7 +152,7 @@ export default function Usuarios() {
           <TableBody>
             <TableRow>
               <TableCell>{MASTER_EMAIL}</TableCell>
-              <TableCell><Chip label="Super Admin (Master)" color="primary" size="small" /></TableCell>
+              <TableCell><Chip label="Super Admin (Master)" color="secondary" size="small" /></TableCell>
               <TableCell align="center">
                 <Typography variant="caption" color="textSecondary">Inamovible</Typography>
               </TableCell>
@@ -141,7 +161,7 @@ export default function Usuarios() {
             {admins.map((admin) => (
               <TableRow key={admin.email}>
                 <TableCell>{admin.email}</TableCell>
-                <TableCell><Chip label="Admin" color="default" size="small" /></TableCell>
+                <TableCell>{getRoleChip(admin.role)}</TableCell>
                 <TableCell align="center">
                   <IconButton color="error" onClick={() => confirmRemoveAdmin(admin.email)}>
                     <DeleteIcon />
@@ -153,23 +173,16 @@ export default function Usuarios() {
         </Table>
       </TableContainer>
 
-      {/* --- MODAL DE CONFIRMACIÓN MUI --- */}
-      <Dialog
-        open={openDialog}
-        onClose={() => setOpenDialog(false)}
-      >
-        <DialogTitle>
-          ¿Revocar acceso?
-        </DialogTitle>
+      {/* MODAL DE CONFIRMACIÓN MUI */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>¿Revocar acceso?</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Estás a punto de revocar el acceso de administrador a <strong>{adminToRemove}</strong>. Esta persona ya no podrá ingresar al panel ni modificar la base de datos.
+            Estás a punto de revocar el acceso a <strong>{adminToRemove}</strong>. Esta persona ya no podrá ingresar al panel.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setOpenDialog(false)} color="inherit">
-            Cancelar
-          </Button>
+          <Button onClick={() => setOpenDialog(false)} color="inherit">Cancelar</Button>
           <Button onClick={executeRemoveAdmin} color="error" variant="contained" autoFocus>
             Sí, Revocar Acceso
           </Button>
