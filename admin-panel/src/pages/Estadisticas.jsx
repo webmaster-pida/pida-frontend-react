@@ -41,8 +41,6 @@ export default function Estadisticas() {
   });
 
   // Datos simulados (Mock Data) para el gráfico de uso semanal.
-  // Nota: Para hacer este gráfico real sin gastar lecturas masivas, 
-  // se recomienda crear un "contador agregado" por día en Firestore en el futuro.
   const chartData = [
     { name: 'Lun', consultas: 12 },
     { name: 'Mar', consultas: 19 },
@@ -74,13 +72,11 @@ export default function Estadisticas() {
         const analysisCount = analysisSnapshot.data().count;
 
         // 4. Contar Conversaciones (Chat) en toda la base de datos
-        // Usamos collectionGroup porque 'conversations' es una subcolección de 'users'
         const convGroup = collectionGroup(db, 'conversations');
         const convSnapshot = await getCountFromServer(convGroup);
         const conversacionesCount = convSnapshot.data().count;
 
         // 5. Contar Precalificaciones en toda la base de datos
-        // Usamos collectionGroup porque 'prequalifications' es una subcolección de 'users'
         const prequalGroup = collectionGroup(db, 'prequalifications');
         const prequalSnapshot = await getCountFromServer(prequalGroup);
         const prequalificacionesCount = prequalSnapshot.data().count;
@@ -140,7 +136,7 @@ export default function Estadisticas() {
 
       {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
 
-      {/* FILA DE TARJETAS DE RESUMEN (Ajustado para 5 tarjetas: 3 arriba, 2 abajo) */}
+      {/* FILA DE TARJETAS DE RESUMEN */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={4}>
           <StatCard 
@@ -193,8 +189,9 @@ export default function Estadisticas() {
           Métrica de uso basada en la actividad reciente de los usuarios. (Datos de muestra visual).
         </Typography>
         
-        <Box sx={{ width: '100%', height: 400 }}>
-          <ResponsiveContainer width="100%" height="100%">
+        {/* CORRECCIÓN RECHARTS: Agregamos minHeight explícito en Box y ResponsiveContainer */}
+        <Box sx={{ width: '100%', height: 400, minHeight: 400 }}>
+          <ResponsiveContainer width="100%" height="100%" minHeight={400}>
             <LineChart
               data={chartData}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
