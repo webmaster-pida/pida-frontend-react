@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // <-- NUEVO: Para poder redirigir
 import { auth, googleProvider, db } from '../firebase';
 import { signInWithPopup, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -11,6 +12,7 @@ const MASTER_EMAIL = 'webmaster@pida-ai.com';
 export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate(); // <-- NUEVO: Inicializamos el hook
 
   const handleGoogleLogin = async () => {
     setError('');
@@ -19,19 +21,23 @@ export default function Login() {
       const result = await signInWithPopup(auth, googleProvider);
       const userEmail = result.user.email;
 
-      // 1. Si es el Webmaster, lo dejamos pasar automáticamente
+      // 1. Si es el Webmaster, lo dejamos pasar y lo enviamos al Dashboard
       if (userEmail === MASTER_EMAIL) {
-        setLoading(false);
-        return; // React Router hará el resto
+        navigate('/', { replace: true }); // Redirige a la raíz (Dashboard)
+        return; 
       }
 
       // 2. Si NO es el webmaster, validamos en Firestore
-      const adminDocRef = doc(db, 'admins', userEmail);
+      // NUEVO: Agregado .toLowerCase() para evitar errores por mayúsculas
+      const adminDocRef = doc(db, 'admins', userEmail.toLowerCase()); 
       const adminDocSnap = await getDoc(adminDocRef);
 
       if (!adminDocSnap.exists()) {
         await signOut(auth);
         setError(`El correo ${userEmail} no tiene permisos registrados.`);
+      } else {
+        // Si existe en Firestore, lo enviamos al Dashboard
+        navigate('/', { replace: true });
       }
 
     } catch (err) {
