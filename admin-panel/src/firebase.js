@@ -5,7 +5,7 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC5nqsx4Fe4gMKkKdvnbMf8VFnI6TYL64k",
-  authDomain: "pida-ai-v20.firebaseapp.com",
+  authDomain: "admin.pida-ai.com",
   projectId: "pida-ai-v20",
   storageBucket: "pida-ai-v20.firebasestorage.app",
   messagingSenderId: "465781488910",
