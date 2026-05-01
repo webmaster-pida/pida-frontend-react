@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../firebase';
 import { 
   collection, 
-  collectionGroup, 
   getCountFromServer, 
+  getDocs,
   query, 
-  where, 
-  Timestamp 
+  orderBy,
+  collectionGroup,
+  writeBatch,
+  doc
 } from 'firebase/firestore';
 import { 
   Box, 
@@ -17,9 +19,9 @@ import {
   CircularProgress, 
   Alert,
   Paper,
-  ToggleButton,
-  ToggleButtonGroup,
-  Stack
+  Stack,
+  Button,
+  LinearProgress
 } from '@mui/material';
 import StorageIcon from '@mui/icons-material/Storage';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
@@ -29,8 +31,8 @@ import FactCheckIcon from '@mui/icons-material/FactCheck';
 
 // Importaciones de Recharts para el gráfico
 import { 
-  LineChart, 
-  Line, 
+  BarChart, 
+  Bar, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -44,128 +46,173 @@ export default function Estadisticas() {
   const [loadingChart, setLoadingChart] = useState(false);
   const [error, setError] = useState(null);
   
-  // Rango de días: 7 o 30
-  const [daysRange, setDaysRange] = useState(30);
+  // Estados para la migración
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [migrationStatus, setMigrationStatus] = useState('');
+  const [migrationProgress, setMigrationProgress] = useState(0);
 
   // Estado para las tarjetas superiores
   const [stats, setStats] = useState({
     totalConversaciones: 0,
     totalAnalisis: 0,
     totalPrecalificaciones: 0,
-    totalDocs: 0, // AHORA SÍ CONECTADO AL CATÁLOGO
+    totalDocs: 0,
     totalChunks: 0
   });
 
-  // Estado para el gráfico lineal
+  // Estado para el gráfico
   const [chartData, setChartData] = useState([]);
 
-  // 1. CARGA DE TOTALES GLOBALES (Se ejecuta una sola vez al montar)
-  useEffect(() => {
-    const fetchTotals = async () => {
-      try {
-        const convGroup = collectionGroup(db, 'conversations');
-        const analysisCol = collection(db, 'analysis_history');
-        const prequalGroup = collectionGroup(db, 'prequalifications');
-        const chunksCol = collection(db, 'pida_kb_genai-v20'); // Vectores
-        const catalogCol = collection(db, 'library_registry'); // Catálogo de Libros
+  // Función envuelta en useCallback para poder llamarla al cargar y al terminar la migración
+  const fetchDashboardData = useCallback(async () => {
+    setLoading(true);
+    setLoadingChart(true);
+    setError(null);
+    
+    try {
+      // 1. CARGAR CATÁLOGO Y CHUNKS
+      const chunksCol = collection(db, 'pida_kb_genai-v20');
+      const catalogCol = collection(db, 'library_registry');
 
-        const [convSnap, analysisSnap, prequalSnap, chunksSnap, catalogSnap] = await Promise.all([
-          getCountFromServer(convGroup),
-          getCountFromServer(analysisCol),
-          getCountFromServer(prequalGroup),
-          getCountFromServer(chunksCol),
-          getCountFromServer(catalogCol) // Contamos los libros únicos
-        ]);
+      const [chunksSnap, catalogSnap] = await Promise.all([
+        getCountFromServer(chunksCol),
+        getCountFromServer(catalogCol)
+      ]);
 
-        setStats({
-          totalConversaciones: convSnap.data().count,
-          totalAnalisis: analysisSnap.data().count,
-          totalPrecalificaciones: prequalSnap.data().count,
-          totalDocs: catalogSnap.data().count, // Dato real e instantáneo
-          totalChunks: chunksSnap.data().count
+      // 2. CARGAR HISTORIAL MENSUAL DESDE 'monthly_stats'
+      const statsRef = collection(db, 'monthly_stats');
+      const q = query(statsRef, orderBy('__name__', 'asc')); 
+      const statsSnapshot = await getDocs(q);
+
+      let sumConversaciones = 0;
+      let sumAnalisis = 0;
+      let sumPrecalificaciones = 0;
+      const monthlyData = [];
+
+      statsSnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const monthId = docSnap.id; // Ej: "2026-04"
+        
+        const [year, month] = monthId.split('-');
+        const dateObj = new Date(year, parseInt(month) - 1, 1);
+        const monthLabel = new Intl.DateTimeFormat('es-ES', { month: 'short', year: 'numeric' }).format(dateObj);
+        const capitalizedLabel = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1).replace('.', '');
+
+        const convos = data.conversaciones || 0;
+        const anals = data.analisis || 0;
+        const prequals = data.precalificaciones || 0;
+
+        sumConversaciones += convos;
+        sumAnalisis += anals;
+        sumPrecalificaciones += prequals;
+
+        monthlyData.push({
+          name: capitalizedLabel,
+          conversaciones: convos,
+          analisis: anals,
+          precalificaciones: prequals,
+          totalInteracciones: convos + anals + prequals
         });
-      } catch (err) {
-        console.error("Error obteniendo totales:", err);
-      }
-    };
-    fetchTotals();
+      });
+
+      setStats({
+        totalConversaciones: sumConversaciones,
+        totalAnalisis: sumAnalisis,
+        totalPrecalificaciones: sumPrecalificaciones,
+        totalDocs: catalogSnap.data().count,
+        totalChunks: chunksSnap.data().count
+      });
+
+      setChartData(monthlyData);
+
+    } catch (err) {
+      console.error("Error cargando dashboard:", err);
+      setError('Error al cargar las estadísticas. Verifica los permisos de Firestore.');
+    } finally {
+      setLoadingChart(false);
+      setLoading(false);
+    }
   }, []);
 
-  // 2. CARGA DEL GRÁFICO (Se ejecuta al montar y cada vez que cambie daysRange)
+  // Cargar datos al montar el componente
   useEffect(() => {
-    const fetchChartData = async () => {
-      setLoadingChart(true);
-      setError(null);
-      
-      try {
-        const analysisCol = collection(db, 'analysis_history');
-        const convGroup = collectionGroup(db, 'conversations');
-        const prequalGroup = collectionGroup(db, 'prequalifications');
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
-        const timeFrames = [];
-        const today = new Date();
-        
-        // Generar los rangos de fecha dinámicamente según el daysRange
-        for (let i = daysRange - 1; i >= 0; i--) {
-          const d = new Date(today);
-          d.setDate(d.getDate() - i);
-          
-          const startOfDay = new Date(d);
-          startOfDay.setHours(0, 0, 0, 0);
-          
-          const endOfDay = new Date(d);
-          endOfDay.setHours(23, 59, 59, 999);
+  // --- FUNCIÓN DEL BOTÓN TEMPORAL DE MIGRACIÓN ---
+  const ejecutarMigracion = async () => {
+    if (!window.confirm("¿Deseas iniciar la consolidación histórica? Esto leerá tu base de datos y agrupará las interacciones por mes.")) return;
 
-          // Formato de etiqueta
-          let label = "";
-          if (daysRange <= 7) {
-            const dayName = new Intl.DateTimeFormat('es-ES', { weekday: 'short' }).format(d);
-            label = dayName.charAt(0).toUpperCase() + dayName.slice(1).replace('.', '');
-          } else {
-            label = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short' }).format(d);
-          }
+    setIsMigrating(true);
+    setMigrationStatus('Iniciando conteo...');
+    setMigrationProgress(10);
 
-          timeFrames.push({ 
-            start: Timestamp.fromDate(startOfDay), 
-            end: Timestamp.fromDate(endOfDay), 
-            name: label 
-          });
+    try {
+      const statsMap = {}; 
+
+      setMigrationStatus('Contando conversaciones (Chat)...');
+      const convosSnapshot = await getDocs(query(collectionGroup(db, 'conversations')));
+      convosSnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.created_at) {
+          const date = data.created_at.toDate();
+          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          if (!statsMap[monthKey]) statsMap[monthKey] = { conversaciones: 0, analisis: 0, precalificaciones: 0 };
+          statsMap[monthKey].conversaciones++;
         }
+      });
+      setMigrationProgress(40);
 
-        // Consultas concurrentes por cada día del rango
-        const results = await Promise.all(timeFrames.map(async (frame) => {
-          const qA = query(analysisCol, where('timestamp', '>=', frame.start), where('timestamp', '<=', frame.end));
-          const qC = query(convGroup, where('created_at', '>=', frame.start), where('created_at', '<=', frame.end));
-          const qP = query(prequalGroup, where('created_at', '>=', frame.start), where('created_at', '<=', frame.end));
+      setMigrationStatus('Contando análisis...');
+      const analysisSnapshot = await getDocs(collection(db, 'analysis_history'));
+      analysisSnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.timestamp) {
+          const date = data.timestamp.toDate();
+          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          if (!statsMap[monthKey]) statsMap[monthKey] = { conversaciones: 0, analisis: 0, precalificaciones: 0 };
+          statsMap[monthKey].analisis++;
+        }
+      });
+      setMigrationProgress(70);
 
-          const [sA, sC, sP] = await Promise.all([
-            getCountFromServer(qA),
-            getCountFromServer(qC),
-            getCountFromServer(qP)
-          ]);
+      setMigrationStatus('Contando precalificaciones...');
+      const prequalSnapshot = await getDocs(query(collectionGroup(db, 'prequalifications')));
+      prequalSnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.created_at) {
+          const date = data.created_at.toDate();
+          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          if (!statsMap[monthKey]) statsMap[monthKey] = { conversaciones: 0, analisis: 0, precalificaciones: 0 };
+          statsMap[monthKey].precalificaciones++;
+        }
+      });
+      setMigrationProgress(90);
 
-          return {
-            name: frame.name,
-            consultas: sA.data().count + sC.data().count + sP.data().count
-          };
-        }));
+      setMigrationStatus('Guardando matriz consolidada...');
+      const batch = writeBatch(db);
+      Object.keys(statsMap).forEach(monthKey => {
+        const docRef = doc(db, 'monthly_stats', monthKey);
+        batch.set(docRef, statsMap[monthKey], { merge: true });
+      });
 
-        setChartData(results);
-      } catch (err) {
-        console.error("Error en gráfico:", err);
-        setError('Error al cargar historial. Verifica los índices de Firestore en la consola (F12).');
-      } finally {
-        setLoadingChart(false);
-        setLoading(false);
-      }
-    };
+      await batch.commit();
+      
+      setMigrationProgress(100);
+      setMigrationStatus('¡Éxito! Recargando datos del panel...');
+      
+      // Refrescar el panel automáticamente para mostrar el gráfico nuevo
+      await fetchDashboardData();
+      
+      // Ocultar la barra después de unos segundos
+      setTimeout(() => {
+        setIsMigrating(false);
+      }, 3000);
 
-    fetchChartData();
-  }, [daysRange]);
-
-  const handleRangeChange = (event, newRange) => {
-    if (newRange !== null) {
-      setDaysRange(newRange);
+    } catch (err) {
+      console.error("Error en migración:", err);
+      setMigrationStatus(`Error: ${err.message}`);
+      setIsMigrating(false);
     }
   };
 
@@ -188,7 +235,7 @@ export default function Estadisticas() {
             {title}
           </Typography>
           <Typography variant="h4" fontWeight="bold" color="text.primary">
-            {loading ? <CircularProgress size={20} /> : value}
+            {loading ? <CircularProgress size={20} /> : value.toLocaleString()}
           </Typography>
         </Box>
       </CardContent>
@@ -197,15 +244,39 @@ export default function Estadisticas() {
 
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', p: 2 }}>
+      
+      {/* BOTÓN TEMPORAL DE MIGRACIÓN */}
+      <Paper sx={{ p: 2, mb: 4, bgcolor: '#fff3e0', border: '1px solid #ffcc80' }} elevation={0}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Box>
+            <Typography variant="subtitle1" fontWeight="bold" color="warning.dark">
+              🛠️ Herramienta de Configuración Inicial
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Ejecuta esto solo una vez para consolidar el historial pasado (2024-2025). Puedes borrar este bloque de código después.
+            </Typography>
+          </Box>
+          <Button variant="contained" color="warning" onClick={ejecutarMigracion} disabled={isMigrating}>
+            Consolidar Historial
+          </Button>
+        </Stack>
+        {isMigrating && (
+          <Box sx={{ mt: 2 }}>
+            <LinearProgress variant="determinate" value={migrationProgress} color="warning" />
+            <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'warning.dark' }}>
+              {migrationStatus}
+            </Typography>
+          </Box>
+        )}
+      </Paper>
+
       <Typography variant="h4" gutterBottom fontWeight="bold" color="primary" sx={{ mb: 4 }}>
         Panel de Estadísticas
       </Typography>
 
       {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
 
-      {/* FILA DE TARJETAS DE RESUMEN (Nuevo Orden Solicitado) */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        {/* Fila superior: 3 tarjetas de Interacción */}
         <Grid item xs={12} sm={6} md={4}>
           <StatCard title="Conversaciones (Chat)" value={stats.totalConversaciones} icon={<ForumIcon fontSize="large" />} color="info" />
         </Grid>
@@ -216,7 +287,6 @@ export default function Estadisticas() {
           <StatCard title="Precalificaciones" value={stats.totalPrecalificaciones} icon={<FactCheckIcon fontSize="large" />} color="secondary" />
         </Grid>
         
-        {/* Fila inferior: 2 tarjetas Técnicas */}
         <Grid item xs={12} sm={6} md={6}>
           <StatCard title="Documentos en Biblioteca" value={stats.totalDocs} icon={<LibraryBooksIcon fontSize="large" />} color="success" />
         </Grid>
@@ -225,69 +295,47 @@ export default function Estadisticas() {
         </Grid>
       </Grid>
 
-      {/* SECCIÓN DEL GRÁFICO REAL */}
       <Paper elevation={0} sx={{ p: 4, border: '1px solid #e0e0e0', borderRadius: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" spacing={2} sx={{ mb: 4 }}>
           <Box>
             <Typography variant="h6" fontWeight="bold">
-              Historial de Interacciones
+              Historial de Interacciones Mensual
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Suma de actividad en Análisis, Chat y Precalificaciones.
+              Desglose histórico del uso de la plataforma por mes.
             </Typography>
           </Box>
-          
-          <ToggleButtonGroup
-            color="primary"
-            value={daysRange}
-            exclusive
-            onChange={handleRangeChange}
-            size="small"
-          >
-            <ToggleButton value={7}>Últimos 7 días</ToggleButton>
-            <ToggleButton value={30}>Últimos 30 días</ToggleButton>
-          </ToggleButtonGroup>
         </Stack>
         
         {loadingChart ? (
           <Box sx={{ width: '100%', height: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <CircularProgress sx={{ mb: 2 }} />
-            <Typography color="text.secondary">Procesando datos de Firestore...</Typography>
+            <Typography color="text.secondary">Cargando gráfico...</Typography>
           </Box>
         ) : (
           <Box sx={{ width: '100%' }}>
-            <ResponsiveContainer width="100%" height={400}>
-              <LineChart
-                data={chartData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
-                <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#666', fontSize: 12 }} 
-                    dy={10} 
-                    interval={daysRange > 7 ? 4 : 0} 
-                />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#666' }} dx={-10} allowDecimals={false} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-                  labelStyle={{ fontWeight: 'bold', color: '#333' }}
-                />
-                <Legend wrapperStyle={{ paddingTop: '20px' }}/>
-                <Line 
-                  type="monotone" 
-                  name="Interacciones Totales" 
-                  dataKey="consultas" 
-                  stroke="#1976d2" 
-                  strokeWidth={3} 
-                  dot={daysRange <= 7} 
-                  activeDot={{ r: 6 }} 
-                  animationDuration={1000}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {chartData.length === 0 ? (
+                <Box sx={{ width: '100%', height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Typography color="text.secondary">No hay datos históricos disponibles aún.</Typography>
+                </Box>
+            ) : (
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#666', fontSize: 12 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#666' }} dx={-10} allowDecimals={false} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                    labelStyle={{ fontWeight: 'bold', color: '#333', marginBottom: '8px' }}
+                    cursor={{fill: '#f5f5f5'}}
+                  />
+                  <Legend wrapperStyle={{ paddingTop: '20px' }}/>
+                  <Bar dataKey="conversaciones" name="Conversaciones" stackId="a" fill="#0288d1" radius={[0, 0, 4, 4]} />
+                  <Bar dataKey="analisis" name="Análisis" stackId="a" fill="#ed6c02" />
+                  <Bar dataKey="precalificaciones" name="Precalificaciones" stackId="a" fill="#9c27b0" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </Box>
         )}
       </Paper>
