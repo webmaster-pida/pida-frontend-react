@@ -7,7 +7,8 @@ import {
   where, 
   writeBatch, 
   doc,
-  deleteDoc
+  deleteDoc,
+  setDoc
 } from 'firebase/firestore';
 import { 
   Typography, 
@@ -35,10 +36,11 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { useAuth } from '../AuthContext'; // Importamos tu seguridad
+import BuildIcon from '@mui/icons-material/Build'; // Icono para la migración
+import { useAuth } from '../AuthContext'; 
 
 export default function Biblioteca() {
-  const { userRole } = useAuth(); // Blindaje de seguridad
+  const { userRole } = useAuth(); 
 
   const [books, setBooks] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,14 +51,14 @@ export default function Biblioteca() {
   const [openDialog, setOpenDialog] = useState(false);
   const [bookToDelete, setBookToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Estado para la migración
+  const [isMigrating, setIsMigrating] = useState(false);
 
-  // Cargar el catálogo de libros
   const fetchBooks = async () => {
     setLoading(true);
     setStatus({ type: '', message: '' });
     try {
-      // ATENCIÓN: Leemos de una colección catálogo (library_registry)
-      // Esto hace que cargar 100 libros cueste 100 lecturas, NO 50,000.
       const querySnapshot = await getDocs(collection(db, 'library_registry'));
       const booksList = [];
       querySnapshot.forEach((document) => {
@@ -75,15 +77,13 @@ export default function Biblioteca() {
     fetchBooks();
   }, []);
 
-  // Filtrado de búsqueda en el cliente (rápido y gratis)
   const filteredBooks = books.filter(book => 
     (book.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (book.author || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Manejo de Eliminación
   const confirmDelete = (book) => {
-    if (userRole === 'lector') return; // Seguridad
+    if (userRole === 'lector') return; 
     setBookToDelete(book);
     setOpenDialog(true);
   };
@@ -93,41 +93,96 @@ export default function Biblioteca() {
     
     setIsDeleting(true);
     try {
-      // 1. Buscar todos los chunks en pida_kb_genai-v20 que pertenezcan a este libro
       const chunksRef = collection(db, 'pida_kb_genai-v20');
-      // Asegúrate de que el campo en tu base de datos se llame 'title' o 'metadata.title' según corresponda
+      // Aseguramos que busque por la estructura exacta de tus metadatos
       const q = query(chunksRef, where('metadata.title', '==', bookToDelete.title));
       const chunkSnapshots = await getDocs(q);
 
-      // 2. Borrar los chunks usando "Batched Writes" (Lotes de 500 máximo por transacción en Firestore)
       const batch = writeBatch(db);
       let count = 0;
       
       chunkSnapshots.forEach((chunkDoc) => {
         batch.delete(chunkDoc.ref);
         count++;
-        // Si tienes más de 500 chunks para un libro, la lógica requeriría múltiples batches.
-        // Para la mayoría de los casos, 500 es suficiente por operación.
       });
 
       if (count > 0) {
         await batch.commit();
       }
 
-      // 3. Borrar el libro del catálogo (library_registry)
       await deleteDoc(doc(db, 'library_registry', bookToDelete.id));
 
       setStatus({ type: 'success', message: `Se eliminó el libro y sus ${count} vectores correctamente.` });
       setOpenDialog(false);
       setBookToDelete(null);
       
-      // Refrescar tabla
       fetchBooks();
     } catch (error) {
       console.error("Error al eliminar:", error);
-      setStatus({ type: 'error', message: 'Hubo un problema al intentar eliminar los vectores. Es posible que necesites un Índice en Firestore.' });
+      setStatus({ type: 'error', message: 'Hubo un problema al intentar eliminar los vectores.' });
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // =========================================================================
+  // SCRIPT DE MIGRACIÓN: Lee todos los chunks y crea el catálogo
+  // =========================================================================
+  const runMigration = async () => {
+    if (userRole === 'lector') return;
+    if (!window.confirm("Esto agrupará miles de vectores para crear el catálogo. ¿Continuar?")) return;
+    
+    setIsMigrating(true);
+    setStatus({ type: 'info', message: 'Iniciando migración. Por favor no cierres la ventana...' });
+    
+    try {
+      // 1. Descargamos TODOS los vectores (Esta es la lectura pesada que solo haremos hoy)
+      const chunksSnap = await getDocs(collection(db, 'pida_kb_genai-v20'));
+      
+      const catalog = {}; // Objeto temporal para agrupar
+      
+      // 2. Recorremos cada chunk y lo agrupamos por su título
+      chunksSnap.forEach(docSnap => {
+        const data = docSnap.data();
+        // Protegemos el acceso en caso de que algún chunk viejo no tenga la estructura correcta
+        if (data.metadata && data.metadata.title) {
+          const title = data.metadata.title;
+          const author = data.metadata.author || "Autor Desconocido";
+          
+          if (!catalog[title]) {
+            catalog[title] = { title: title, author: author, total_chunks: 1 };
+          } else {
+            catalog[title].total_chunks += 1;
+          }
+        }
+      });
+
+      // 3. Guardamos los libros encontrados en la nueva colección
+      const batch = writeBatch(db);
+      const registryRef = collection(db, 'library_registry');
+      
+      let booksFound = 0;
+      Object.keys(catalog).forEach(title => {
+        // Usamos un nombre de archivo seguro como ID del documento
+        const safeId = title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
+        const docRef = doc(registryRef, safeId);
+        batch.set(docRef, catalog[title]);
+        booksFound++;
+      });
+
+      if (booksFound > 0) {
+        await batch.commit();
+        setStatus({ type: 'success', message: `¡Migración exitosa! Se catalogaron ${booksFound} libros.` });
+        fetchBooks(); // Recargamos la tabla
+      } else {
+        setStatus({ type: 'warning', message: 'No se encontraron metadatos válidos en los vectores.' });
+      }
+
+    } catch (error) {
+      console.error("Error en migración:", error);
+      setStatus({ type: 'error', message: 'Error durante la migración: ' + error.message });
+    } finally {
+      setIsMigrating(false);
     }
   };
 
@@ -139,8 +194,8 @@ export default function Biblioteca() {
 
       {status.message && <Alert severity={status.type} sx={{ mb: 3 }}>{status.message}</Alert>}
 
-      {/* BARRA DE HERRAMIENTAS: Buscador y Refrescar */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+      {/* BARRA DE HERRAMIENTAS */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
         <TextField 
           variant="outlined"
           placeholder="Buscar por título o autor..."
@@ -153,10 +208,23 @@ export default function Biblioteca() {
           variant="outlined" 
           startIcon={<RefreshIcon />} 
           onClick={fetchBooks}
-          disabled={loading || isDeleting}
+          disabled={loading || isDeleting || isMigrating}
         >
           REFRESCAR LISTA
         </Button>
+        
+        {/* BOTÓN TEMPORAL DE MIGRACIÓN (Solo visible si la tabla está vacía y es admin) */}
+        {books.length === 0 && userRole !== 'lector' && (
+          <Button 
+            variant="contained" 
+            color="secondary"
+            startIcon={isMigrating ? <CircularProgress size={20} color="inherit" /> : <BuildIcon />} 
+            onClick={runMigration}
+            disabled={isMigrating}
+          >
+            {isMigrating ? 'PROCESANDO VECTORES...' : 'EJECUTAR MIGRACIÓN (SÓLO UNA VEZ)'}
+          </Button>
+        )}
       </Box>
 
       {/* TABLA PRINCIPAL */}
@@ -204,7 +272,7 @@ export default function Biblioteca() {
                       <IconButton 
                         color="error" 
                         onClick={() => confirmDelete(book)}
-                        disabled={userRole === 'lector'} // Blindaje visual
+                        disabled={userRole === 'lector'} 
                         title={userRole === 'lector' ? 'No tienes permisos' : 'Eliminar documento'}
                       >
                         <DeleteIcon />
