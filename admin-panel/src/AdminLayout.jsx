@@ -6,8 +6,8 @@ import {
   ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton, Tooltip
 } from '@mui/material';
 import {
-  Dashboard as DashboardIcon, LibraryBooks as LibraryIcon,
-  BarChart as AnalyticsIcon, Settings as SettingsIcon, Person as PersonIcon, Logout as LogoutIcon
+  LibraryBooks as LibraryIcon, BarChart as AnalyticsIcon, 
+  Settings as SettingsIcon, Person as PersonIcon, Logout as LogoutIcon
 } from '@mui/icons-material';
 
 const drawerWidth = 240;
@@ -22,11 +22,11 @@ export default function AdminLayout() {
     navigate('/login');
   };
 
+  // Se eliminó 'Dashboard' y se posicionó 'Estadísticas' como la vista principal
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+    { text: 'Estadísticas', icon: <AnalyticsIcon />, path: '/estadisticas' },
     { text: 'Biblioteca', icon: <LibraryIcon />, path: '/biblioteca' },
     { text: 'Ingesta', icon: <LibraryIcon />, path: '/ingesta' },
-    { text: 'Estadísticas', icon: <AnalyticsIcon />, path: '/estadisticas' },
     { text: 'Usuarios', icon: <PersonIcon />, path: '/usuarios' },
     { text: 'Configuración', icon: <SettingsIcon />, path: '/configuracion' },
   ];
@@ -40,7 +40,7 @@ export default function AdminLayout() {
             PIDA <span style={{ color: '#1976d2' }}>ADMIN</span>
           </Typography>
           <Typography variant="body2" sx={{ mr: 2, color: 'text.secondary' }}>
-            {user.email}
+            {user?.email}
           </Typography>
           <Tooltip title="Cerrar sesión">
             <IconButton onClick={handleLogout} color="error">

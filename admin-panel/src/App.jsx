@@ -4,8 +4,7 @@ import { AuthProvider } from './AuthContext';
 import RequireAuth from './RequireAuth';
 import AdminLayout from './AdminLayout';
 
-// Tus páginas
-import Dashboard from './pages/Dashboard';
+// Tus páginas (Adiós Dashboard)
 import Biblioteca from './pages/Biblioteca';
 import Ingesta from './pages/Ingesta';
 import Estadisticas from './pages/Estadisticas';
@@ -23,14 +22,18 @@ export default function App() {
 
         {/* RUTAS PROTEGIDAS */}
         <Route element={<RequireAuth><AdminLayout /></RequireAuth>}>
-          <Route path="/" element={<Dashboard />} />
+          
+          {/* Redirigimos la raíz "/" directamente a Estadísticas */}
+          <Route path="/" element={<Navigate to="/estadisticas" replace />} />
+          
+          <Route path="/estadisticas" element={<Estadisticas />} />
           <Route path="/biblioteca" element={<Biblioteca />} />
           <Route path="/ingesta" element={<Ingesta />} />
           <Route path="/usuarios" element={<Usuarios />} />
-          <Route path="/estadisticas" element={<Estadisticas />} />
           <Route path="/configuracion" element={<Typography variant="h5" sx={{p:4}}>Módulo en construcción...</Typography>} />
           
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Cualquier URL que no exista los devuelve a Estadísticas */}
+          <Route path="*" element={<Navigate to="/estadisticas" replace />} />
         </Route>
       </Routes>
     </AuthProvider>
