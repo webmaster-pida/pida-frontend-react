@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, collectionGroup, getCountFromServer } from 'firebase/firestore';
+import { 
+  collection, 
+  collectionGroup, 
+  getCountFromServer, 
+  query, 
+  where, 
+  Timestamp 
+} from 'firebase/firestore';
 import { 
   Box, 
   Typography, 
@@ -32,6 +39,8 @@ import {
 export default function Estadisticas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Estado para las tarjetas superiores
   const [stats, setStats] = useState({
     totalChunks: 0,
     totalAdmins: 0,
@@ -40,68 +49,104 @@ export default function Estadisticas() {
     totalPrecalificaciones: 0
   });
 
-  // Datos simulados (Mock Data) para el gráfico de uso semanal.
-  const chartData = [
-    { name: 'Lun', consultas: 12 },
-    { name: 'Mar', consultas: 19 },
-    { name: 'Mié', consultas: 15 },
-    { name: 'Jue', consultas: 25 },
-    { name: 'Vie', consultas: 22 },
-    { name: 'Sáb', consultas: 30 },
-    { name: 'Dom', consultas: 28 },
-  ];
+  // Estado para el gráfico lineal
+  const [chartData, setChartData] = useState([]);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchAllData = async () => {
       setLoading(true);
       setError(null);
+      
       try {
-        // 1. Contar Chunks / Vectores en la base de conocimientos
+        // ====================================================================
+        // 1. CARGA DE TOTALES GLOBALES (Tarjetas)
+        // ====================================================================
         const kbCol = collection(db, 'pida_kb_genai-v20');
-        const kbSnapshot = await getCountFromServer(kbCol);
-        const chunksCount = kbSnapshot.data().count;
-
-        // 2. Contar administradores autorizados
         const adminsCol = collection(db, 'admins');
-        const adminsSnapshot = await getCountFromServer(adminsCol);
-        const adminsCount = adminsSnapshot.data().count;
-
-        // 3. Contar el historial de Análisis de Documentos
         const analysisCol = collection(db, 'analysis_history');
-        const analysisSnapshot = await getCountFromServer(analysisCol);
-        const analysisCount = analysisSnapshot.data().count;
-
-        // 4. Contar Conversaciones (Chat) en toda la base de datos
         const convGroup = collectionGroup(db, 'conversations');
-        const convSnapshot = await getCountFromServer(convGroup);
-        const conversacionesCount = convSnapshot.data().count;
-
-        // 5. Contar Precalificaciones en toda la base de datos
         const prequalGroup = collectionGroup(db, 'prequalifications');
-        const prequalSnapshot = await getCountFromServer(prequalGroup);
-        const prequalificacionesCount = prequalSnapshot.data().count;
 
-        // Actualizamos el estado con los totales reales
+        // Ejecutamos las 5 consultas generales al mismo tiempo para mayor velocidad
+        const [kbSnap, adminsSnap, analysisSnap, convSnap, prequalSnap] = await Promise.all([
+          getCountFromServer(kbCol),
+          getCountFromServer(adminsCol),
+          getCountFromServer(analysisCol),
+          getCountFromServer(convGroup),
+          getCountFromServer(prequalGroup)
+        ]);
+
         setStats({
-          totalChunks: chunksCount,
-          totalAdmins: adminsCount,
-          totalAnalisis: analysisCount,
-          totalConversaciones: conversacionesCount,
-          totalPrecalificaciones: prequalificacionesCount
+          totalChunks: kbSnap.data().count,
+          totalAdmins: adminsSnap.data().count,
+          totalAnalisis: analysisSnap.data().count,
+          totalConversaciones: convSnap.data().count,
+          totalPrecalificaciones: prequalSnap.data().count
         });
+
+        // ====================================================================
+        // 2. CARGA DEL HISTORIAL DE 7 DÍAS (Gráfico)
+        // ====================================================================
+        const last7Days = [];
+        const today = new Date();
+        
+        // Generar los rangos de fecha de los últimos 7 días (0 = hoy, 6 = hace seis días)
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(today);
+          d.setDate(d.getDate() - i);
+          
+          const startOfDay = new Date(d);
+          startOfDay.setHours(0, 0, 0, 0);
+          
+          const endOfDay = new Date(d);
+          endOfDay.setHours(23, 59, 59, 999);
+
+          // Sacar el nombre del día en español (ej. 'lun', 'mar') y capitalizarlo
+          const dayName = new Intl.DateTimeFormat('es-ES', { weekday: 'short' }).format(d);
+          const capitalizedDayName = dayName.charAt(0).toUpperCase() + dayName.slice(1).replace('.', '');
+
+          last7Days.push({ 
+            startOfDay: Timestamp.fromDate(startOfDay), 
+            endOfDay: Timestamp.fromDate(endOfDay), 
+            name: capitalizedDayName 
+          });
+        }
+
+        // Consultar cada día de forma concurrente
+        const chartDataResult = await Promise.all(last7Days.map(async (day) => {
+          // El campo de fecha es 'timestamp' en analysis_history y 'created_at' en los otros dos
+          const qAnalysis = query(analysisCol, where('timestamp', '>=', day.startOfDay), where('timestamp', '<=', day.endOfDay));
+          const qChat = query(convGroup, where('created_at', '>=', day.startOfDay), where('created_at', '<=', day.endOfDay));
+          const qPrequal = query(prequalGroup, where('created_at', '>=', day.startOfDay), where('created_at', '<=', day.endOfDay));
+
+          const [snapAnalysisDay, snapChatDay, snapPrequalDay] = await Promise.all([
+            getCountFromServer(qAnalysis),
+            getCountFromServer(qChat),
+            getCountFromServer(qPrequal)
+          ]);
+
+          // Sumamos todas las interacciones de los 3 servicios en ese día específico
+          const totalDia = snapAnalysisDay.data().count + snapChatDay.data().count + snapPrequalDay.data().count;
+
+          return {
+            name: day.name,
+            consultas: totalDia
+          };
+        }));
+
+        setChartData(chartDataResult);
 
       } catch (err) {
         console.error("Error obteniendo estadísticas:", err);
-        setError('No se pudieron cargar las estadísticas. Verifica tus permisos en las reglas de Firestore.');
+        setError('Error al cargar datos. Si es la primera vez, abre la consola (F12) y haz clic en los enlaces azules para crear los índices en Firestore.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStats();
+    fetchAllData();
   }, []);
 
-  // Componente auxiliar para las Tarjetas (Cards) superiores
   const StatCard = ({ title, value, icon, color }) => (
     <Card sx={{ border: '1px solid #e0e0e0', borderRadius: 2, height: '100%' }} elevation={0}>
       <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
@@ -180,43 +225,47 @@ export default function Estadisticas() {
         </Grid>
       </Grid>
 
-      {/* SECCIÓN DEL GRÁFICO */}
+      {/* SECCIÓN DEL GRÁFICO REAL */}
       <Paper elevation={0} sx={{ p: 4, border: '1px solid #e0e0e0', borderRadius: 2 }}>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
           Historial de Interacciones (Últimos 7 días)
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-          Métrica de uso basada en la actividad reciente de los usuarios. (Datos de muestra visual).
+          Suma de interacciones de Análisis, Chat y Precalificaciones extraída en tiempo real de Firestore.
         </Typography>
         
-        {/* CORRECCIÓN DEFINITIVA RECHARTS: 
-            Se quitó height="100%" y se fijó el height a 400 como número. 
-            El width se mantiene fluido al 100%. */}
-        <Box sx={{ width: '100%' }}>
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart
-              data={chartData}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#666' }} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#666' }} dx={-10} />
-              <Tooltip 
-                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-              />
-              <Legend wrapperStyle={{ paddingTop: '20px' }}/>
-              <Line 
-                type="monotone" 
-                name="Consultas" 
-                dataKey="consultas" 
-                stroke="#1976d2" 
-                strokeWidth={3} 
-                activeDot={{ r: 8 }} 
-                animationDuration={1500}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </Box>
+        {loading && chartData.length === 0 ? (
+          <Box sx={{ width: '100%', height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <Box sx={{ width: '100%' }}>
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart
+                data={chartData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#666' }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#666' }} dx={-10} allowDecimals={false} />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                  labelStyle={{ fontWeight: 'bold', color: '#333' }}
+                />
+                <Legend wrapperStyle={{ paddingTop: '20px' }}/>
+                <Line 
+                  type="monotone" 
+                  name="Interacciones Totales" 
+                  dataKey="consultas" 
+                  stroke="#1976d2" 
+                  strokeWidth={3} 
+                  activeDot={{ r: 8 }} 
+                  animationDuration={1500}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </Box>
+        )}
       </Paper>
     </Box>
   );
