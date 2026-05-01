@@ -21,8 +21,7 @@ import {
   ToggleButtonGroup,
   Stack
 } from '@mui/material';
-import StorageIcon from '@mui/icons-material/Storage';
-import PeopleIcon from '@mui/icons-material/People';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import DescriptionIcon from '@mui/icons-material/Description';
 import ForumIcon from '@mui/icons-material/Forum';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
@@ -47,13 +46,12 @@ export default function Estadisticas() {
   // Rango de días: 7 o 30
   const [daysRange, setDaysRange] = useState(30);
 
-  // Estado para las tarjetas superiores
+  // Estado para las tarjetas superiores (Sin Chunks)
   const [stats, setStats] = useState({
-    totalChunks: 0,
-    totalAdmins: 0,
-    totalAnalisis: 0,
     totalConversaciones: 0,
-    totalPrecalificaciones: 0
+    totalAnalisis: 0,
+    totalPrecalificaciones: 0,
+    totalDocs: "---" // Placeholder hasta definir cómo contar los libros únicos
   });
 
   // Estado para el gráfico lineal
@@ -63,26 +61,21 @@ export default function Estadisticas() {
   useEffect(() => {
     const fetchTotals = async () => {
       try {
-        const kbCol = collection(db, 'pida_kb_genai-v20');
-        const adminsCol = collection(db, 'admins');
-        const analysisCol = collection(db, 'analysis_history');
         const convGroup = collectionGroup(db, 'conversations');
+        const analysisCol = collection(db, 'analysis_history');
         const prequalGroup = collectionGroup(db, 'prequalifications');
 
-        const [kbSnap, adminsSnap, analysisSnap, convSnap, prequalSnap] = await Promise.all([
-          getCountFromServer(kbCol),
-          getCountFromServer(adminsCol),
-          getCountFromServer(analysisCol),
+        const [convSnap, analysisSnap, prequalSnap] = await Promise.all([
           getCountFromServer(convGroup),
+          getCountFromServer(analysisCol),
           getCountFromServer(prequalGroup)
         ]);
 
         setStats({
-          totalChunks: kbSnap.data().count,
-          totalAdmins: adminsSnap.data().count,
-          totalAnalisis: analysisSnap.data().count,
           totalConversaciones: convSnap.data().count,
-          totalPrecalificaciones: prequalSnap.data().count
+          totalAnalisis: analysisSnap.data().count,
+          totalPrecalificaciones: prequalSnap.data().count,
+          totalDocs: "---" // Pendiente de conexión
         });
       } catch (err) {
         console.error("Error obteniendo totales:", err);
@@ -116,7 +109,7 @@ export default function Estadisticas() {
           const endOfDay = new Date(d);
           endOfDay.setHours(23, 59, 59, 999);
 
-          // Formato de etiqueta: Si es 7 días usamos nombre día, si es 30 usamos fecha corta
+          // Formato de etiqueta
           let label = "";
           if (daysRange <= 7) {
             const dayName = new Intl.DateTimeFormat('es-ES', { weekday: 'short' }).format(d);
@@ -203,22 +196,19 @@ export default function Estadisticas() {
 
       {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
 
-      {/* FILA DE TARJETAS DE RESUMEN */}
+      {/* FILA DE TARJETAS DE RESUMEN (4 Tarjetas equitativas) */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={4}>
-          <StatCard title="Total Chunks (KB)" value={stats.totalChunks} icon={<StorageIcon fontSize="large" />} color="primary" />
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard title="Conversaciones" value={stats.totalConversaciones} icon={<ForumIcon fontSize="large" />} color="info" />
         </Grid>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard title="Análisis Generados" value={stats.totalAnalisis} icon={<DescriptionIcon fontSize="large" />} color="warning" />
         </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <StatCard title="Administradores" value={stats.totalAdmins} icon={<PeopleIcon fontSize="large" />} color="success" />
-        </Grid>
-        <Grid item xs={12} sm={6} md={6}>
-          <StatCard title="Conversaciones (Chat)" value={stats.totalConversaciones} icon={<ForumIcon fontSize="large" />} color="info" />
-        </Grid>
-        <Grid item xs={12} sm={6} md={6}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard title="Precalificaciones" value={stats.totalPrecalificaciones} icon={<FactCheckIcon fontSize="large" />} color="secondary" />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard title="Docs en Biblioteca" value={stats.totalDocs} icon={<LibraryBooksIcon fontSize="large" />} color="success" />
         </Grid>
       </Grid>
 
@@ -265,7 +255,7 @@ export default function Estadisticas() {
                     tickLine={false} 
                     tick={{ fill: '#666', fontSize: 12 }} 
                     dy={10} 
-                    interval={daysRange > 7 ? 4 : 0} // Espacia las etiquetas en 30 días para que no se saturen
+                    interval={daysRange > 7 ? 4 : 0} 
                 />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#666' }} dx={-10} allowDecimals={false} />
                 <Tooltip 
@@ -279,7 +269,7 @@ export default function Estadisticas() {
                   dataKey="consultas" 
                   stroke="#1976d2" 
                   strokeWidth={3} 
-                  dot={daysRange <= 7} // Solo mostrar puntos en vista semanal para que en 30 días no se vea saturado
+                  dot={daysRange <= 7} 
                   activeDot={{ r: 6 }} 
                   animationDuration={1000}
                 />

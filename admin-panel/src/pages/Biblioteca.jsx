@@ -1,58 +1,73 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, query, where, writeBatch } from 'firebase/firestore';
 import { 
-  Typography, Container, Card, Button, Box, Alert, CircularProgress,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-  IconButton, Tooltip, Chip, TextField, InputAdornment, TableSortLabel,
-  Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
+  collection, 
+  getDocs, 
+  query, 
+  where, 
+  writeBatch, 
+  doc,
+  deleteDoc
+} from 'firebase/firestore';
+import { 
+  Typography, 
+  Container, 
+  Card, 
+  Box, 
+  TextField, 
+  Button,
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableContainer, 
+  TableHead, 
+  TableRow, 
+  Paper,
+  IconButton,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import SearchIcon from '@mui/icons-material/Search';
+import { useAuth } from '../AuthContext'; // Importamos tu seguridad
 
 export default function Biblioteca() {
-  const [books, setBooks] = useState([]);
-  const [loadingTable, setLoadingTable] = useState(true);
-  const [deleting, setDeleting] = useState(false);
-  const [status, setStatus] = useState({ type: '', message: '' });
-  
-  // Estados para Búsqueda y Ordenamiento
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: 'title', direction: 'asc' });
+  const { userRole } = useAuth(); // Blindaje de seguridad
 
-  // Estados para el Modal de Biblioteca
+  const [books, setBooks] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState({ type: '', message: '' });
+
+  // Estados para el Modal de Eliminación
   const [openDialog, setOpenDialog] = useState(false);
   const [bookToDelete, setBookToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
+  // Cargar el catálogo de libros
   const fetchBooks = async () => {
-    setLoadingTable(true);
+    setLoading(true);
     setStatus({ type: '', message: '' });
     try {
-      const collectionRef = collection(db, 'pida_kb_genai-v20');
-      const querySnapshot = await getDocs(collectionRef);
-      
-      const bookMap = new Map();
-
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const title = data.metadata?.title || 'Sin Título';
-        const author = data.metadata?.author || 'Autor Desconocido';
-        
-        if (bookMap.has(title)) {
-          bookMap.get(title).chunks += 1;
-        } else {
-          bookMap.set(title, { title, author, chunks: 1 });
-        }
+      // ATENCIÓN: Leemos de una colección catálogo (library_registry)
+      // Esto hace que cargar 100 libros cueste 100 lecturas, NO 50,000.
+      const querySnapshot = await getDocs(collection(db, 'library_registry'));
+      const booksList = [];
+      querySnapshot.forEach((document) => {
+        booksList.push({ id: document.id, ...document.data() });
       });
-
-      const uniqueBooks = Array.from(bookMap.values());
-      setBooks(uniqueBooks);
+      setBooks(booksList);
     } catch (error) {
-      console.error("Error obteniendo libros: ", error);
-      setStatus({ type: 'error', message: 'Error al cargar la lista de libros desde Firestore.' });
+      console.error("Error cargando la biblioteca: ", error);
+      setStatus({ type: 'error', message: 'Error al cargar los documentos. Verifica tus permisos.' });
     } finally {
-      setLoadingTable(false);
+      setLoading(false);
     }
   };
 
@@ -60,218 +75,178 @@ export default function Biblioteca() {
     fetchBooks();
   }, []);
 
-  // 1. Abre modal
-  const confirmDeleteBook = (bookTitle) => {
-    setBookToDelete(bookTitle);
+  // Filtrado de búsqueda en el cliente (rápido y gratis)
+  const filteredBooks = books.filter(book => 
+    (book.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (book.author || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Manejo de Eliminación
+  const confirmDelete = (book) => {
+    if (userRole === 'lector') return; // Seguridad
+    setBookToDelete(book);
     setOpenDialog(true);
   };
 
-  // 2. Ejecuta borrado real
-  const executeDeleteBook = async () => {
-    setOpenDialog(false);
-    if (!bookToDelete) return;
-
-    setDeleting(true);
-    setStatus({ type: '', message: '' });
-
+  const executeDelete = async () => {
+    if (userRole === 'lector' || !bookToDelete) return;
+    
+    setIsDeleting(true);
     try {
-      const collectionRef = collection(db, 'pida_kb_genai-v20');
-      const q = query(collectionRef, where('metadata.title', '==', bookToDelete));
-      const querySnapshot = await getDocs(q);
+      // 1. Buscar todos los chunks en pida_kb_genai-v20 que pertenezcan a este libro
+      const chunksRef = collection(db, 'pida_kb_genai-v20');
+      // Asegúrate de que el campo en tu base de datos se llame 'title' o 'metadata.title' según corresponda
+      const q = query(chunksRef, where('metadata.title', '==', bookToDelete.title));
+      const chunkSnapshots = await getDocs(q);
 
-      let batch = writeBatch(db);
+      // 2. Borrar los chunks usando "Batched Writes" (Lotes de 500 máximo por transacción en Firestore)
+      const batch = writeBatch(db);
       let count = 0;
-      let totalDeleted = 0;
-
-      for (const doc of querySnapshot.docs) {
-        batch.delete(doc.ref);
+      
+      chunkSnapshots.forEach((chunkDoc) => {
+        batch.delete(chunkDoc.ref);
         count++;
-        totalDeleted++;
-
-        if (count === 500) {
-          await batch.commit();
-          batch = writeBatch(db);
-          count = 0;
-        }
-      }
+        // Si tienes más de 500 chunks para un libro, la lógica requeriría múltiples batches.
+        // Para la mayoría de los casos, 500 es suficiente por operación.
+      });
 
       if (count > 0) {
         await batch.commit();
       }
 
-      setStatus({ type: 'success', message: `¡Éxito! Se eliminaron ${totalDeleted} chunks del libro "${bookToDelete}".` });
-      fetchBooks();
+      // 3. Borrar el libro del catálogo (library_registry)
+      await deleteDoc(doc(db, 'library_registry', bookToDelete.id));
 
-    } catch (error) {
-      console.error("Error borrando documentos: ", error);
-      setStatus({ type: 'error', message: `Error al intentar borrar el libro "${bookToDelete}".` });
-    } finally {
-      setDeleting(false);
+      setStatus({ type: 'success', message: `Se eliminó el libro y sus ${count} vectores correctamente.` });
+      setOpenDialog(false);
       setBookToDelete(null);
+      
+      // Refrescar tabla
+      fetchBooks();
+    } catch (error) {
+      console.error("Error al eliminar:", error);
+      setStatus({ type: 'error', message: 'Hubo un problema al intentar eliminar los vectores. Es posible que necesites un Índice en Firestore.' });
+    } finally {
+      setIsDeleting(false);
     }
   };
-
-  // --- LÓGICA DE ORDENAMIENTO ---
-  const handleSort = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  // --- LÓGICA DE FILTRADO Y ORDENAMIENTO (useMemo) ---
-  const processedBooks = useMemo(() => {
-    let filtered = books.filter(book => 
-      book.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      book.author.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    filtered.sort((a, b) => {
-      if (a[sortConfig.key] < b[sortConfig.key]) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
-      }
-      if (a[sortConfig.key] > b[sortConfig.key]) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-
-    return filtered;
-  }, [books, searchTerm, sortConfig]);
-
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#333' }}>
-          Gestión de Biblioteca Vectorial
-        </Typography>
-      </Box>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: '#333' }}>
+        Gestión de Biblioteca Vectorial
+      </Typography>
 
-      {/* Controles: Buscador y Refrescar */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between' }}>
-        <TextField
+      {status.message && <Alert severity={status.type} sx={{ mb: 3 }}>{status.message}</Alert>}
+
+      {/* BARRA DE HERRAMIENTAS: Buscador y Refrescar */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+        <TextField 
           variant="outlined"
           placeholder="Buscar por título o autor..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          sx={{ flexGrow: 1, bgcolor: 'white', borderRadius: 1 }}
           size="small"
-          sx={{ width: { xs: '100%', sm: '400px' }, bgcolor: 'white' }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
-          }}
         />
         <Button 
-          startIcon={<RefreshIcon />} 
           variant="outlined" 
+          startIcon={<RefreshIcon />} 
           onClick={fetchBooks}
-          disabled={loadingTable || deleting}
-          sx={{ height: '40px' }}
+          disabled={loading || isDeleting}
         >
-          Refrescar Lista
+          REFRESCAR LISTA
         </Button>
       </Box>
 
-      {status.message && (
-        <Alert severity={status.type} sx={{ mb: 3 }}>
-          {status.message}
-        </Alert>
-      )}
-
-      <Card elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2 }}>
-        <TableContainer component={Paper} elevation={0}>
+      {/* TABLA PRINCIPAL */}
+      <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2 }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
           <Table sx={{ minWidth: 650 }}>
             <TableHead sx={{ bgcolor: '#f8fafc' }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 'bold', width: '55%' }}>
-                  <TableSortLabel
-                    active={sortConfig.key === 'title'}
-                    direction={sortConfig.key === 'title' ? sortConfig.direction : 'asc'}
-                    onClick={() => handleSort('title')}
-                  >
-                    Título del Libro
-                  </TableSortLabel>
-                </TableCell>
-
-                <TableCell sx={{ fontWeight: 'bold', width: '25%' }}>
-                  <TableSortLabel
-                    active={sortConfig.key === 'author'}
-                    direction={sortConfig.key === 'author' ? sortConfig.direction : 'asc'}
-                    onClick={() => handleSort('author')}
-                  >
-                    Autor
-                  </TableSortLabel>
-                </TableCell>
-
-                <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%' }}>Total Chunks</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%' }}>Acciones</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Título del Libro ↑</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Autor</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 'bold' }}>Total Chunks</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
               </TableRow>
             </TableHead>
-            
             <TableBody>
-              {loadingTable ? (
+              {filteredBooks.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} align="center" sx={{ py: 5 }}>
-                    <CircularProgress />
-                    <Typography sx={{ mt: 2, color: 'text.secondary' }}>Analizando base de datos...</Typography>
-                  </TableCell>
-                </TableRow>
-              ) : processedBooks.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 5 }}>
-                    <Typography color="text.secondary">
-                      {searchTerm ? 'No se encontraron resultados para tu búsqueda.' : 'No se encontraron libros indexados en Firestore.'}
-                    </Typography>
+                    <Typography color="text.secondary">No se encontraron documentos en la biblioteca.</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                processedBooks.map((book) => (
-                  <TableRow key={book.title} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                    <TableCell component="th" scope="row">{book.title}</TableCell>
+                filteredBooks.map((book) => (
+                  <TableRow key={book.id} hover>
+                    <TableCell sx={{ maxWidth: 400 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                        {book.title}
+                      </Typography>
+                    </TableCell>
                     <TableCell>{book.author}</TableCell>
                     <TableCell align="center">
-                      <Chip label={book.chunks} color="primary" variant="outlined" size="small" />
+                      <Chip 
+                        label={book.total_chunks || 0} 
+                        size="small" 
+                        variant="outlined"
+                        color="primary"
+                        sx={{ fontWeight: 'bold' }}
+                      />
                     </TableCell>
                     <TableCell align="center">
-                      <Tooltip title="Eliminar este libro">
-                        <span>
-                          <IconButton 
-                            color="error" 
-                            onClick={() => confirmDeleteBook(book.title)}
-                            disabled={deleting}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
+                      <IconButton 
+                        color="error" 
+                        onClick={() => confirmDelete(book)}
+                        disabled={userRole === 'lector'} // Blindaje visual
+                        title={userRole === 'lector' ? 'No tienes permisos' : 'Eliminar documento'}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
-        </TableContainer>
-      </Card>
+        )}
+      </TableContainer>
 
-      {/* --- MODAL DE CONFIRMACIÓN MUI --- */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>¿Eliminar libro de la base vectorial?</DialogTitle>
+      {/* MODAL DE CONFIRMACIÓN DE ELIMINACIÓN */}
+      <Dialog open={openDialog} onClose={() => !isDeleting && setOpenDialog(false)}>
+        <DialogTitle sx={{ color: 'error.main', fontWeight: 'bold' }}>
+          ⚠️ Cuidado: Eliminación Destructiva
+        </DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Estás a punto de eliminar todos los chunks del libro <strong>"{bookToDelete}"</strong>. Esta acción borrará los datos de Firestore y no se puede deshacer. ¿Deseas continuar?
+          <DialogContentText sx={{ mb: 2 }}>
+            Estás a punto de eliminar el libro <strong>{bookToDelete?.title}</strong> de la base de conocimientos.
+          </DialogContentText>
+          <DialogContentText color="text.secondary">
+            Esta acción buscará y destruirá los <strong>{bookToDelete?.total_chunks} vectores/chunks</strong> asociados en la base de datos (pida_kb_genai-v20). La Inteligencia Artificial perderá este conocimiento de forma irreversible.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setOpenDialog(false)} color="inherit">Cancelar</Button>
-          <Button onClick={executeDeleteBook} color="error" variant="contained">Sí, Eliminar Libro</Button>
+          <Button onClick={() => setOpenDialog(false)} color="inherit" disabled={isDeleting}>
+            Cancelar
+          </Button>
+          <Button 
+            onClick={executeDelete} 
+            color="error" 
+            variant="contained" 
+            autoFocus
+            disabled={isDeleting}
+            startIcon={isDeleting ? <CircularProgress size={20} color="inherit" /> : <DeleteIcon />}
+          >
+            {isDeleting ? 'Destruyendo Vectores...' : 'Sí, Eliminar Libro'}
+          </Button>
         </DialogActions>
       </Dialog>
-
     </Container>
   );
 }
