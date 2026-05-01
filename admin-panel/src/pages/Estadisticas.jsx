@@ -6,9 +6,9 @@ import {
   getDocs,
   query, 
   orderBy,
+  where,
   collectionGroup,
-  writeBatch,
-  doc
+  Timestamp
 } from 'firebase/firestore';
 import { 
   Box, 
@@ -20,8 +20,8 @@ import {
   Alert,
   Paper,
   Stack,
-  Button,
-  LinearProgress
+  ToggleButton,
+  ToggleButtonGroup
 } from '@mui/material';
 import StorageIcon from '@mui/icons-material/Storage';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
@@ -46,31 +46,24 @@ export default function Estadisticas() {
   const [loadingChart, setLoadingChart] = useState(false);
   const [error, setError] = useState(null);
   
-  // Estados para la migración
-  const [isMigrating, setIsMigrating] = useState(false);
-  const [migrationStatus, setMigrationStatus] = useState('');
-  const [migrationProgress, setMigrationProgress] = useState(0);
+  // Selector de tiempo: 'hoy', 'semana', 'mes', 'año'
+  const [timeRange, setTimeRange] = useState('año');
 
   // Estado para las tarjetas superiores
   const [stats, setStats] = useState({
-    totalConversaciones: 0,
-    totalAnalisis: 0,
-    totalPrecalificaciones: 0,
-    totalDocs: 0,
-    totalChunks: 0
+    interacciones: { conversaciones: 0, analisis: 0, precalificaciones: 0 },
+    globales: { docs: 0, chunks: 0 }
   });
 
   // Estado para el gráfico
   const [chartData, setChartData] = useState([]);
 
-  // Función envuelta en useCallback para poder llamarla al cargar y al terminar la migración
   const fetchDashboardData = useCallback(async () => {
-    setLoading(true);
     setLoadingChart(true);
-    setError(null);
+    if (loading) setError(null);
     
     try {
-      // 1. CARGAR CATÁLOGO Y CHUNKS
+      // 1. CARGA DE GLOBALES (Solo la primera vez o independiente del filtro)
       const chunksCol = collection(db, 'pida_kb_genai-v20');
       const catalogCol = collection(db, 'library_registry');
 
@@ -79,154 +72,137 @@ export default function Estadisticas() {
         getCountFromServer(catalogCol)
       ]);
 
-      // 2. CARGAR HISTORIAL MENSUAL DESDE 'monthly_stats'
-      const statsRef = collection(db, 'monthly_stats');
-      const q = query(statsRef, orderBy('__name__', 'asc')); 
-      const statsSnapshot = await getDocs(q);
+      const globales = {
+        docs: catalogSnap.data().count,
+        chunks: chunksSnap.data().count
+      };
 
+      // 2. CARGA DE INTERACCIONES SEGÚN EL RANGO
       let sumConversaciones = 0;
       let sumAnalisis = 0;
       let sumPrecalificaciones = 0;
-      const monthlyData = [];
+      let newChartData = [];
 
-      statsSnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const monthId = docSnap.id; // Ej: "2026-04"
-        
-        const [year, month] = monthId.split('-');
-        const dateObj = new Date(year, parseInt(month) - 1, 1);
-        const monthLabel = new Intl.DateTimeFormat('es-ES', { month: 'short', year: 'numeric' }).format(dateObj);
-        const capitalizedLabel = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1).replace('.', '');
+      if (timeRange === 'año') {
+        // MODO AÑO: Leer de la colección barata (monthly_stats)
+        const statsRef = collection(db, 'monthly_stats');
+        const q = query(statsRef, orderBy('__name__', 'asc')); 
+        const statsSnapshot = await getDocs(q);
 
-        const convos = data.conversaciones || 0;
-        const anals = data.analisis || 0;
-        const prequals = data.precalificaciones || 0;
+        statsSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const monthId = docSnap.id; 
+          
+          const [year, month] = monthId.split('-');
+          const dateObj = new Date(year, parseInt(month) - 1, 1);
+          const monthLabel = new Intl.DateTimeFormat('es-ES', { month: 'short', year: 'numeric' }).format(dateObj);
+          
+          const convos = data.conversaciones || 0;
+          const anals = data.analisis || 0;
+          const prequals = data.precalificaciones || 0;
 
-        sumConversaciones += convos;
-        sumAnalisis += anals;
-        sumPrecalificaciones += prequals;
+          sumConversaciones += convos;
+          sumAnalisis += anals;
+          sumPrecalificaciones += prequals;
 
-        monthlyData.push({
-          name: capitalizedLabel,
-          conversaciones: convos,
-          analisis: anals,
-          precalificaciones: prequals,
-          totalInteracciones: convos + anals + prequals
+          newChartData.push({
+            name: monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1).replace('.', ''),
+            conversaciones: convos,
+            analisis: anals,
+            precalificaciones: prequals
+          });
         });
-      });
+
+      } else {
+        // MODO DÍAS: Consultas en vivo a las colecciones reales
+        const analysisCol = collection(db, 'analysis_history');
+        const convGroup = collectionGroup(db, 'conversations');
+        const prequalGroup = collectionGroup(db, 'prequalifications');
+
+        const timeFrames = [];
+        const today = new Date();
+        const daysToFetch = timeRange === 'hoy' ? 1 : (timeRange === 'semana' ? 7 : 30);
+
+        // Generar los bloques de días
+        for (let i = daysToFetch - 1; i >= 0; i--) {
+          const d = new Date(today);
+          d.setDate(d.getDate() - i);
+          
+          const start = new Date(d); start.setHours(0, 0, 0, 0);
+          const end = new Date(d); end.setHours(23, 59, 59, 999);
+
+          let label = "";
+          if (timeRange === 'hoy') {
+            label = "Hoy";
+          } else if (timeRange === 'semana') {
+            const dayName = new Intl.DateTimeFormat('es-ES', { weekday: 'short' }).format(d);
+            label = dayName.charAt(0).toUpperCase() + dayName.slice(1).replace('.', '');
+          } else {
+            label = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short' }).format(d);
+          }
+
+          timeFrames.push({ start: Timestamp.fromDate(start), end: Timestamp.fromDate(end), name: label });
+        }
+
+        // Consultar cada día (Promesas concurrentes para máxima velocidad)
+        const results = await Promise.all(timeFrames.map(async (frame) => {
+          const qA = query(analysisCol, where('timestamp', '>=', frame.start), where('timestamp', '<=', frame.end));
+          const qC = query(convGroup, where('created_at', '>=', frame.start), where('created_at', '<=', frame.end));
+          const qP = query(prequalGroup, where('created_at', '>=', frame.start), where('created_at', '<=', frame.end));
+
+          const [sA, sC, sP] = await Promise.all([
+            getCountFromServer(qA), getCountFromServer(qC), getCountFromServer(qP)
+          ]);
+
+          const anals = sA.data().count;
+          const convos = sC.data().count;
+          const prequals = sP.data().count;
+
+          sumAnalisis += anals;
+          sumConversaciones += convos;
+          sumPrecalificaciones += prequals;
+
+          return { name: frame.name, conversaciones: convos, analisis: anals, precalificaciones: prequals };
+        }));
+
+        newChartData = results;
+      }
 
       setStats({
-        totalConversaciones: sumConversaciones,
-        totalAnalisis: sumAnalisis,
-        totalPrecalificaciones: sumPrecalificaciones,
-        totalDocs: catalogSnap.data().count,
-        totalChunks: chunksSnap.data().count
+        interacciones: {
+          conversaciones: sumConversaciones,
+          analisis: sumAnalisis,
+          precalificaciones: sumPrecalificaciones
+        },
+        globales
       });
 
-      setChartData(monthlyData);
+      setChartData(newChartData);
 
     } catch (err) {
       console.error("Error cargando dashboard:", err);
-      setError('Error al cargar las estadísticas. Verifica los permisos de Firestore.');
+      setError('Error al cargar estadísticas. Revisa la consola o los índices de Firestore.');
     } finally {
       setLoadingChart(false);
       setLoading(false);
     }
-  }, []);
+  }, [timeRange]); // Se vuelve a ejecutar cuando cambie el selector
 
-  // Cargar datos al montar el componente
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // --- FUNCIÓN DEL BOTÓN TEMPORAL DE MIGRACIÓN ---
-  const ejecutarMigracion = async () => {
-    if (!window.confirm("¿Deseas iniciar la consolidación histórica? Esto leerá tu base de datos y agrupará las interacciones por mes.")) return;
-
-    setIsMigrating(true);
-    setMigrationStatus('Iniciando conteo...');
-    setMigrationProgress(10);
-
-    try {
-      const statsMap = {}; 
-
-      setMigrationStatus('Contando conversaciones (Chat)...');
-      const convosSnapshot = await getDocs(query(collectionGroup(db, 'conversations')));
-      convosSnapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        if (data.created_at) {
-          const date = data.created_at.toDate();
-          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          if (!statsMap[monthKey]) statsMap[monthKey] = { conversaciones: 0, analisis: 0, precalificaciones: 0 };
-          statsMap[monthKey].conversaciones++;
-        }
-      });
-      setMigrationProgress(40);
-
-      setMigrationStatus('Contando análisis...');
-      const analysisSnapshot = await getDocs(collection(db, 'analysis_history'));
-      analysisSnapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        if (data.timestamp) {
-          const date = data.timestamp.toDate();
-          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          if (!statsMap[monthKey]) statsMap[monthKey] = { conversaciones: 0, analisis: 0, precalificaciones: 0 };
-          statsMap[monthKey].analisis++;
-        }
-      });
-      setMigrationProgress(70);
-
-      setMigrationStatus('Contando precalificaciones...');
-      const prequalSnapshot = await getDocs(query(collectionGroup(db, 'prequalifications')));
-      prequalSnapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        if (data.created_at) {
-          const date = data.created_at.toDate();
-          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          if (!statsMap[monthKey]) statsMap[monthKey] = { conversaciones: 0, analisis: 0, precalificaciones: 0 };
-          statsMap[monthKey].precalificaciones++;
-        }
-      });
-      setMigrationProgress(90);
-
-      setMigrationStatus('Guardando matriz consolidada...');
-      const batch = writeBatch(db);
-      Object.keys(statsMap).forEach(monthKey => {
-        const docRef = doc(db, 'monthly_stats', monthKey);
-        batch.set(docRef, statsMap[monthKey], { merge: true });
-      });
-
-      await batch.commit();
-      
-      setMigrationProgress(100);
-      setMigrationStatus('¡Éxito! Recargando datos del panel...');
-      
-      // Refrescar el panel automáticamente para mostrar el gráfico nuevo
-      await fetchDashboardData();
-      
-      // Ocultar la barra después de unos segundos
-      setTimeout(() => {
-        setIsMigrating(false);
-      }, 3000);
-
-    } catch (err) {
-      console.error("Error en migración:", err);
-      setMigrationStatus(`Error: ${err.message}`);
-      setIsMigrating(false);
+  const handleRangeChange = (event, newRange) => {
+    if (newRange !== null) {
+      setTimeRange(newRange);
     }
   };
 
-  const StatCard = ({ title, value, icon, color }) => (
+  const StatCard = ({ title, value, icon, color, subtitle }) => (
     <Card sx={{ border: '1px solid #e0e0e0', borderRadius: 2, height: '100%' }} elevation={0}>
       <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
         <Box sx={{ 
-          bgcolor: `${color}.light`, 
-          color: `${color}.main`, 
-          p: 2, 
-          borderRadius: 2, 
-          display: 'flex', 
-          mr: 3,
-          opacity: 0.8
+          bgcolor: `${color}.light`, color: `${color}.main`, p: 2, borderRadius: 2, display: 'flex', mr: 3, opacity: 0.8
         }}>
           {icon}
         </Box>
@@ -235,8 +211,13 @@ export default function Estadisticas() {
             {title}
           </Typography>
           <Typography variant="h4" fontWeight="bold" color="text.primary">
-            {loading ? <CircularProgress size={20} /> : value.toLocaleString()}
+            {loadingChart ? <CircularProgress size={20} /> : value.toLocaleString()}
           </Typography>
+          {subtitle && (
+            <Typography variant="caption" color="text.secondary">
+              {subtitle}
+            </Typography>
+          )}
         </Box>
       </CardContent>
     </Card>
@@ -245,78 +226,91 @@ export default function Estadisticas() {
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', p: 2 }}>
       
-      {/* BOTÓN TEMPORAL DE MIGRACIÓN */}
-      <Paper sx={{ p: 2, mb: 4, bgcolor: '#fff3e0', border: '1px solid #ffcc80' }} elevation={0}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Typography variant="subtitle1" fontWeight="bold" color="warning.dark">
-              🛠️ Herramienta de Configuración Inicial
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Ejecuta esto solo una vez para consolidar el historial pasado (2024-2025). Puedes borrar este bloque de código después.
-            </Typography>
-          </Box>
-          <Button variant="contained" color="warning" onClick={ejecutarMigracion} disabled={isMigrating}>
-            Consolidar Historial
-          </Button>
-        </Stack>
-        {isMigrating && (
-          <Box sx={{ mt: 2 }}>
-            <LinearProgress variant="determinate" value={migrationProgress} color="warning" />
-            <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'warning.dark' }}>
-              {migrationStatus}
-            </Typography>
-          </Box>
-        )}
-      </Paper>
-
-      <Typography variant="h4" gutterBottom fontWeight="bold" color="primary" sx={{ mb: 4 }}>
-        Panel de Estadísticas
-      </Typography>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
+        <Typography variant="h4" fontWeight="bold" color="primary">
+          Panel de Estadísticas
+        </Typography>
+        
+        {/* SELECTOR DE TIEMPO */}
+        <ToggleButtonGroup
+          color="primary"
+          value={timeRange}
+          exclusive
+          onChange={handleRangeChange}
+          size="small"
+          sx={{ bgcolor: '#fff' }}
+        >
+          <ToggleButton value="hoy">Hoy</ToggleButton>
+          <ToggleButton value="semana">7 Días</ToggleButton>
+          <ToggleButton value="mes">30 Días</ToggleButton>
+          <ToggleButton value="año">Histórico</ToggleButton>
+        </ToggleButtonGroup>
+      </Stack>
 
       {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
 
+      {/* TARJETAS SUPERIORES */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={4}>
-          <StatCard title="Conversaciones (Chat)" value={stats.totalConversaciones} icon={<ForumIcon fontSize="large" />} color="info" />
+          <StatCard 
+            title="Conversaciones" 
+            value={stats.interacciones.conversaciones} 
+            icon={<ForumIcon fontSize="large" />} 
+            color="info" 
+            subtitle={timeRange === 'año' ? "Total histórico" : `En el periodo seleccionado`}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={4}>
-          <StatCard title="Análisis Generados" value={stats.totalAnalisis} icon={<DescriptionIcon fontSize="large" />} color="warning" />
+          <StatCard 
+            title="Análisis Generados" 
+            value={stats.interacciones.analisis} 
+            icon={<DescriptionIcon fontSize="large" />} 
+            color="warning" 
+            subtitle={timeRange === 'año' ? "Total histórico" : `En el periodo seleccionado`}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={4}>
-          <StatCard title="Precalificaciones" value={stats.totalPrecalificaciones} icon={<FactCheckIcon fontSize="large" />} color="secondary" />
+          <StatCard 
+            title="Precalificaciones" 
+            value={stats.interacciones.precalificaciones} 
+            icon={<FactCheckIcon fontSize="large" />} 
+            color="secondary" 
+            subtitle={timeRange === 'año' ? "Total histórico" : `En el periodo seleccionado`}
+          />
         </Grid>
         
+        {/* ESTAS NUNCA CAMBIAN CON EL FILTRO PORQUE SON LA BIBLIOTECA GLOBAL */}
         <Grid item xs={12} sm={6} md={6}>
-          <StatCard title="Documentos en Biblioteca" value={stats.totalDocs} icon={<LibraryBooksIcon fontSize="large" />} color="success" />
+          <StatCard title="Documentos en Biblioteca" value={stats.globales.docs} icon={<LibraryBooksIcon fontSize="large" />} color="success" subtitle="Total actual en plataforma" />
         </Grid>
         <Grid item xs={12} sm={6} md={6}>
-          <StatCard title="Total Chunks (Vectores)" value={stats.totalChunks} icon={<StorageIcon fontSize="large" />} color="primary" />
+          <StatCard title="Total Chunks (Vectores)" value={stats.globales.chunks} icon={<StorageIcon fontSize="large" />} color="primary" subtitle="Base de conocimiento IA" />
         </Grid>
       </Grid>
 
+      {/* SECCIÓN DEL GRÁFICO */}
       <Paper elevation={0} sx={{ p: 4, border: '1px solid #e0e0e0', borderRadius: 2 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" spacing={2} sx={{ mb: 4 }}>
-          <Box>
-            <Typography variant="h6" fontWeight="bold">
-              Historial de Interacciones Mensual
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Desglose histórico del uso de la plataforma por mes.
-            </Typography>
-          </Box>
-        </Stack>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" fontWeight="bold">
+            Distribución de Actividad
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {timeRange === 'año' 
+              ? "Desglose por meses según tu historial agrupado." 
+              : `Desglose diario de los últimos ${timeRange === 'hoy' ? '24 horas' : (timeRange === 'semana' ? '7 días' : '30 días')}.`}
+          </Typography>
+        </Box>
         
         {loadingChart ? (
           <Box sx={{ width: '100%', height: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <CircularProgress sx={{ mb: 2 }} />
-            <Typography color="text.secondary">Cargando gráfico...</Typography>
+            <Typography color="text.secondary">Procesando datos...</Typography>
           </Box>
         ) : (
           <Box sx={{ width: '100%' }}>
             {chartData.length === 0 ? (
                 <Box sx={{ width: '100%', height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography color="text.secondary">No hay datos históricos disponibles aún.</Typography>
+                  <Typography color="text.secondary">No hay datos en este periodo.</Typography>
                 </Box>
             ) : (
               <ResponsiveContainer width="100%" height={400}>
@@ -330,9 +324,9 @@ export default function Estadisticas() {
                     cursor={{fill: '#f5f5f5'}}
                   />
                   <Legend wrapperStyle={{ paddingTop: '20px' }}/>
-                  <Bar dataKey="conversaciones" name="Conversaciones" stackId="a" fill="#0288d1" radius={[0, 0, 4, 4]} />
+                  <Bar dataKey="conversaciones" name="Conversaciones" stackId="a" fill="#0288d1" radius={timeRange === 'hoy' ? [4,4,0,0] : [0, 0, 4, 4]} />
                   <Bar dataKey="analisis" name="Análisis" stackId="a" fill="#ed6c02" />
-                  <Bar dataKey="precalificaciones" name="Precalificaciones" stackId="a" fill="#9c27b0" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="precalificaciones" name="Precalificaciones" stackId="a" fill="#9c27b0" radius={timeRange !== 'hoy' ? [4, 4, 0, 0] : [0,0,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
