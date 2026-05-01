@@ -16,7 +16,10 @@ import {
   CardContent, 
   CircularProgress, 
   Alert,
-  Paper
+  Paper,
+  ToggleButton,
+  ToggleButtonGroup,
+  Stack
 } from '@mui/material';
 import StorageIcon from '@mui/icons-material/Storage';
 import PeopleIcon from '@mui/icons-material/People';
@@ -38,8 +41,12 @@ import {
 
 export default function Estadisticas() {
   const [loading, setLoading] = useState(true);
+  const [loadingChart, setLoadingChart] = useState(false);
   const [error, setError] = useState(null);
   
+  // Rango de días: 7 o 30
+  const [daysRange, setDaysRange] = useState(30);
+
   // Estado para las tarjetas superiores
   const [stats, setStats] = useState({
     totalChunks: 0,
@@ -52,22 +59,16 @@ export default function Estadisticas() {
   // Estado para el gráfico lineal
   const [chartData, setChartData] = useState([]);
 
+  // 1. CARGA DE TOTALES GLOBALES (Se ejecuta una sola vez al montar)
   useEffect(() => {
-    const fetchAllData = async () => {
-      setLoading(true);
-      setError(null);
-      
+    const fetchTotals = async () => {
       try {
-        // ====================================================================
-        // 1. CARGA DE TOTALES GLOBALES (Tarjetas)
-        // ====================================================================
         const kbCol = collection(db, 'pida_kb_genai-v20');
         const adminsCol = collection(db, 'admins');
         const analysisCol = collection(db, 'analysis_history');
         const convGroup = collectionGroup(db, 'conversations');
         const prequalGroup = collectionGroup(db, 'prequalifications');
 
-        // Ejecutamos las 5 consultas generales al mismo tiempo para mayor velocidad
         const [kbSnap, adminsSnap, analysisSnap, convSnap, prequalSnap] = await Promise.all([
           getCountFromServer(kbCol),
           getCountFromServer(adminsCol),
@@ -83,15 +84,29 @@ export default function Estadisticas() {
           totalConversaciones: convSnap.data().count,
           totalPrecalificaciones: prequalSnap.data().count
         });
+      } catch (err) {
+        console.error("Error obteniendo totales:", err);
+      }
+    };
+    fetchTotals();
+  }, []);
 
-        // ====================================================================
-        // 2. CARGA DEL HISTORIAL DE 7 DÍAS (Gráfico)
-        // ====================================================================
-        const last7Days = [];
+  // 2. CARGA DEL GRÁFICO (Se ejecuta al montar y cada vez que cambie daysRange)
+  useEffect(() => {
+    const fetchChartData = async () => {
+      setLoadingChart(true);
+      setError(null);
+      
+      try {
+        const analysisCol = collection(db, 'analysis_history');
+        const convGroup = collectionGroup(db, 'conversations');
+        const prequalGroup = collectionGroup(db, 'prequalifications');
+
+        const timeFrames = [];
         const today = new Date();
         
-        // Generar los rangos de fecha de los últimos 7 días (0 = hoy, 6 = hace seis días)
-        for (let i = 6; i >= 0; i--) {
+        // Generar los rangos de fecha dinámicamente según el daysRange
+        for (let i = daysRange - 1; i >= 0; i--) {
           const d = new Date(today);
           d.setDate(d.getDate() - i);
           
@@ -101,51 +116,58 @@ export default function Estadisticas() {
           const endOfDay = new Date(d);
           endOfDay.setHours(23, 59, 59, 999);
 
-          // Sacar el nombre del día en español (ej. 'lun', 'mar') y capitalizarlo
-          const dayName = new Intl.DateTimeFormat('es-ES', { weekday: 'short' }).format(d);
-          const capitalizedDayName = dayName.charAt(0).toUpperCase() + dayName.slice(1).replace('.', '');
+          // Formato de etiqueta: Si es 7 días usamos nombre día, si es 30 usamos fecha corta
+          let label = "";
+          if (daysRange <= 7) {
+            const dayName = new Intl.DateTimeFormat('es-ES', { weekday: 'short' }).format(d);
+            label = dayName.charAt(0).toUpperCase() + dayName.slice(1).replace('.', '');
+          } else {
+            label = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short' }).format(d);
+          }
 
-          last7Days.push({ 
-            startOfDay: Timestamp.fromDate(startOfDay), 
-            endOfDay: Timestamp.fromDate(endOfDay), 
-            name: capitalizedDayName 
+          timeFrames.push({ 
+            start: Timestamp.fromDate(startOfDay), 
+            end: Timestamp.fromDate(endOfDay), 
+            name: label 
           });
         }
 
-        // Consultar cada día de forma concurrente
-        const chartDataResult = await Promise.all(last7Days.map(async (day) => {
-          // El campo de fecha es 'timestamp' en analysis_history y 'created_at' en los otros dos
-          const qAnalysis = query(analysisCol, where('timestamp', '>=', day.startOfDay), where('timestamp', '<=', day.endOfDay));
-          const qChat = query(convGroup, where('created_at', '>=', day.startOfDay), where('created_at', '<=', day.endOfDay));
-          const qPrequal = query(prequalGroup, where('created_at', '>=', day.startOfDay), where('created_at', '<=', day.endOfDay));
+        // Consultas concurrentes por cada día del rango
+        const results = await Promise.all(timeFrames.map(async (frame) => {
+          const qA = query(analysisCol, where('timestamp', '>=', frame.start), where('timestamp', '<=', frame.end));
+          const qC = query(convGroup, where('created_at', '>=', frame.start), where('created_at', '<=', frame.end));
+          const qP = query(prequalGroup, where('created_at', '>=', frame.start), where('created_at', '<=', frame.end));
 
-          const [snapAnalysisDay, snapChatDay, snapPrequalDay] = await Promise.all([
-            getCountFromServer(qAnalysis),
-            getCountFromServer(qChat),
-            getCountFromServer(qPrequal)
+          const [sA, sC, sP] = await Promise.all([
+            getCountFromServer(qA),
+            getCountFromServer(qC),
+            getCountFromServer(qP)
           ]);
 
-          // Sumamos todas las interacciones de los 3 servicios en ese día específico
-          const totalDia = snapAnalysisDay.data().count + snapChatDay.data().count + snapPrequalDay.data().count;
-
           return {
-            name: day.name,
-            consultas: totalDia
+            name: frame.name,
+            consultas: sA.data().count + sC.data().count + sP.data().count
           };
         }));
 
-        setChartData(chartDataResult);
-
+        setChartData(results);
       } catch (err) {
-        console.error("Error obteniendo estadísticas:", err);
-        setError('Error al cargar datos. Si es la primera vez, abre la consola (F12) y haz clic en los enlaces azules para crear los índices en Firestore.');
+        console.error("Error en gráfico:", err);
+        setError('Error al cargar historial. Verifica los índices de Firestore en la consola (F12).');
       } finally {
+        setLoadingChart(false);
         setLoading(false);
       }
     };
 
-    fetchAllData();
-  }, []);
+    fetchChartData();
+  }, [daysRange]);
+
+  const handleRangeChange = (event, newRange) => {
+    if (newRange !== null) {
+      setDaysRange(newRange);
+    }
+  };
 
   const StatCard = ({ title, value, icon, color }) => (
     <Card sx={{ border: '1px solid #e0e0e0', borderRadius: 2, height: '100%' }} elevation={0}>
@@ -166,7 +188,7 @@ export default function Estadisticas() {
             {title}
           </Typography>
           <Typography variant="h4" fontWeight="bold" color="text.primary">
-            {loading ? <CircularProgress size={24} sx={{ mt: 1 }} /> : value}
+            {loading ? <CircularProgress size={20} /> : value}
           </Typography>
         </Box>
       </CardContent>
@@ -184,59 +206,50 @@ export default function Estadisticas() {
       {/* FILA DE TARJETAS DE RESUMEN */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={4}>
-          <StatCard 
-            title="Total Chunks (KB)" 
-            value={stats.totalChunks} 
-            icon={<StorageIcon fontSize="large" />} 
-            color="primary" 
-          />
+          <StatCard title="Total Chunks (KB)" value={stats.totalChunks} icon={<StorageIcon fontSize="large" />} color="primary" />
         </Grid>
         <Grid item xs={12} sm={6} md={4}>
-          <StatCard 
-            title="Análisis Generados" 
-            value={stats.totalAnalisis} 
-            icon={<DescriptionIcon fontSize="large" />} 
-            color="warning" 
-          />
+          <StatCard title="Análisis Generados" value={stats.totalAnalisis} icon={<DescriptionIcon fontSize="large" />} color="warning" />
         </Grid>
         <Grid item xs={12} sm={6} md={4}>
-          <StatCard 
-            title="Administradores" 
-            value={stats.totalAdmins} 
-            icon={<PeopleIcon fontSize="large" />} 
-            color="success" 
-          />
+          <StatCard title="Administradores" value={stats.totalAdmins} icon={<PeopleIcon fontSize="large" />} color="success" />
         </Grid>
         <Grid item xs={12} sm={6} md={6}>
-          <StatCard 
-            title="Conversaciones (Chat)" 
-            value={stats.totalConversaciones} 
-            icon={<ForumIcon fontSize="large" />} 
-            color="info" 
-          />
+          <StatCard title="Conversaciones (Chat)" value={stats.totalConversaciones} icon={<ForumIcon fontSize="large" />} color="info" />
         </Grid>
         <Grid item xs={12} sm={6} md={6}>
-          <StatCard 
-            title="Precalificaciones" 
-            value={stats.totalPrecalificaciones} 
-            icon={<FactCheckIcon fontSize="large" />} 
-            color="secondary" 
-          />
+          <StatCard title="Precalificaciones" value={stats.totalPrecalificaciones} icon={<FactCheckIcon fontSize="large" />} color="secondary" />
         </Grid>
       </Grid>
 
       {/* SECCIÓN DEL GRÁFICO REAL */}
       <Paper elevation={0} sx={{ p: 4, border: '1px solid #e0e0e0', borderRadius: 2 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Historial de Interacciones (Últimos 7 días)
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-          Suma de interacciones de Análisis, Chat y Precalificaciones extraída en tiempo real de Firestore.
-        </Typography>
+        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" spacing={2} sx={{ mb: 4 }}>
+          <Box>
+            <Typography variant="h6" fontWeight="bold">
+              Historial de Interacciones
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Suma de actividad en Análisis, Chat y Precalificaciones.
+            </Typography>
+          </Box>
+          
+          <ToggleButtonGroup
+            color="primary"
+            value={daysRange}
+            exclusive
+            onChange={handleRangeChange}
+            size="small"
+          >
+            <ToggleButton value={7}>Últimos 7 días</ToggleButton>
+            <ToggleButton value={30}>Últimos 30 días</ToggleButton>
+          </ToggleButtonGroup>
+        </Stack>
         
-        {loading && chartData.length === 0 ? (
-          <Box sx={{ width: '100%', height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <CircularProgress />
+        {loadingChart ? (
+          <Box sx={{ width: '100%', height: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <CircularProgress sx={{ mb: 2 }} />
+            <Typography color="text.secondary">Procesando datos de Firestore...</Typography>
           </Box>
         ) : (
           <Box sx={{ width: '100%' }}>
@@ -246,7 +259,14 @@ export default function Estadisticas() {
                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#666' }} dy={10} />
+                <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: '#666', fontSize: 12 }} 
+                    dy={10} 
+                    interval={daysRange > 7 ? 4 : 0} // Espacia las etiquetas en 30 días para que no se saturen
+                />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#666' }} dx={-10} allowDecimals={false} />
                 <Tooltip 
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
@@ -259,8 +279,9 @@ export default function Estadisticas() {
                   dataKey="consultas" 
                   stroke="#1976d2" 
                   strokeWidth={3} 
-                  activeDot={{ r: 8 }} 
-                  animationDuration={1500}
+                  dot={daysRange <= 7} // Solo mostrar puntos en vista semanal para que en 30 días no se vea saturado
+                  activeDot={{ r: 6 }} 
+                  animationDuration={1000}
                 />
               </LineChart>
             </ResponsiveContainer>
