@@ -21,6 +21,7 @@ import {
   ToggleButtonGroup,
   Stack
 } from '@mui/material';
+import StorageIcon from '@mui/icons-material/Storage';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import DescriptionIcon from '@mui/icons-material/Description';
 import ForumIcon from '@mui/icons-material/Forum';
@@ -46,12 +47,13 @@ export default function Estadisticas() {
   // Rango de días: 7 o 30
   const [daysRange, setDaysRange] = useState(30);
 
-  // Estado para las tarjetas superiores (Sin Chunks)
+  // Estado para las tarjetas superiores
   const [stats, setStats] = useState({
     totalConversaciones: 0,
     totalAnalisis: 0,
     totalPrecalificaciones: 0,
-    totalDocs: "---" // Placeholder hasta definir cómo contar los libros únicos
+    totalDocs: 0, // AHORA SÍ CONECTADO AL CATÁLOGO
+    totalChunks: 0
   });
 
   // Estado para el gráfico lineal
@@ -64,18 +66,23 @@ export default function Estadisticas() {
         const convGroup = collectionGroup(db, 'conversations');
         const analysisCol = collection(db, 'analysis_history');
         const prequalGroup = collectionGroup(db, 'prequalifications');
+        const chunksCol = collection(db, 'pida_kb_genai-v20'); // Vectores
+        const catalogCol = collection(db, 'library_registry'); // Catálogo de Libros
 
-        const [convSnap, analysisSnap, prequalSnap] = await Promise.all([
+        const [convSnap, analysisSnap, prequalSnap, chunksSnap, catalogSnap] = await Promise.all([
           getCountFromServer(convGroup),
           getCountFromServer(analysisCol),
-          getCountFromServer(prequalGroup)
+          getCountFromServer(prequalGroup),
+          getCountFromServer(chunksCol),
+          getCountFromServer(catalogCol) // Contamos los libros únicos
         ]);
 
         setStats({
           totalConversaciones: convSnap.data().count,
           totalAnalisis: analysisSnap.data().count,
           totalPrecalificaciones: prequalSnap.data().count,
-          totalDocs: "---" // Pendiente de conexión
+          totalDocs: catalogSnap.data().count, // Dato real e instantáneo
+          totalChunks: chunksSnap.data().count
         });
       } catch (err) {
         console.error("Error obteniendo totales:", err);
@@ -196,19 +203,25 @@ export default function Estadisticas() {
 
       {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
 
-      {/* FILA DE TARJETAS DE RESUMEN (4 Tarjetas equitativas) */}
+      {/* FILA DE TARJETAS DE RESUMEN (Nuevo Orden Solicitado) */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Conversaciones" value={stats.totalConversaciones} icon={<ForumIcon fontSize="large" />} color="info" />
+        {/* Fila superior: 3 tarjetas de Interacción */}
+        <Grid item xs={12} sm={6} md={4}>
+          <StatCard title="Conversaciones (Chat)" value={stats.totalConversaciones} icon={<ForumIcon fontSize="large" />} color="info" />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <StatCard title="Análisis Generados" value={stats.totalAnalisis} icon={<DescriptionIcon fontSize="large" />} color="warning" />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <StatCard title="Precalificaciones" value={stats.totalPrecalificaciones} icon={<FactCheckIcon fontSize="large" />} color="secondary" />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Docs en Biblioteca" value={stats.totalDocs} icon={<LibraryBooksIcon fontSize="large" />} color="success" />
+        
+        {/* Fila inferior: 2 tarjetas Técnicas */}
+        <Grid item xs={12} sm={6} md={6}>
+          <StatCard title="Documentos en Biblioteca" value={stats.totalDocs} icon={<LibraryBooksIcon fontSize="large" />} color="success" />
+        </Grid>
+        <Grid item xs={12} sm={6} md={6}>
+          <StatCard title="Total Chunks (Vectores)" value={stats.totalChunks} icon={<StorageIcon fontSize="large" />} color="primary" />
         </Grid>
       </Grid>
 
