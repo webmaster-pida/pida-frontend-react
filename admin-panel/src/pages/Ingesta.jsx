@@ -86,7 +86,7 @@ export default function Ingesta() {
       
       setLoadingPdf(false);
       setWaitingForMd(true);
-      setStatusText('PDF subido. Gemini está extrayendo el texto (esto puede tardar varios minutos)...');
+      setStatusText('PDF subido. PIDA está extrayendo el texto (esto puede tardar varios minutos)...');
       
       // Predecimos el nombre del archivo Markdown resultante (reemplaza .pdf o .PDF por .md)
       const expectedMdName = file.name.replace(/\.[^/.]+$/, "") + ".md";
@@ -224,7 +224,7 @@ export default function Ingesta() {
   return (
     <Box sx={{ maxWidth: 1000, mx: 'auto', p: 3 }}>
       <Typography variant="h4" gutterBottom fontWeight="bold" color="primary">
-        Ingesta de Documentos (Human-in-the-loop)
+        Ingesta de Documentos (Control Humano)
       </Typography>
       <Typography variant="body1" color="text.secondary" gutterBottom>
         Sube un documento PDF, revisa el texto extraído por la IA para corregir errores, 
@@ -286,7 +286,7 @@ export default function Ingesta() {
               {statusText}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
-              Gemini está procesando el documento página por página.
+              PIDA está procesando el documento página por página.
             </Typography>
             <LinearProgress sx={{ height: 6, borderRadius: 3 }} />
             <style>
