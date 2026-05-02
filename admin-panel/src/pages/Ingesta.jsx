@@ -54,6 +54,8 @@ export default function Ingesta() {
       setFile(e.target.files[0]);
       // Reiniciamos los estados si elige un nuevo archivo
       setMarkdownContent('');
+      setTitle('');
+      setAuthor('');
       setError(null);
       setSuccess(null);
       setStatusText('');
@@ -112,9 +114,42 @@ export default function Ingesta() {
       const response = await fetch(url);
       const text = await response.text();
       
-      setMarkdownContent(text);
+      // =========================================================================
+      // LÓGICA NUEVA: AUTO-LLENADO DE METADATOS MEDIANTE REGEX
+      // =========================================================================
+      let extractedTitle = '';
+      let extractedAuthor = '';
+      let cleanText = text;
+
+      // 1. Extraer Título (Línea que empieza con un "#" seguido de un espacio)
+      const titleMatch = cleanText.match(/^#\s+(.+)$/m);
+      if (titleMatch) {
+        extractedTitle = titleMatch[1].trim();
+        // Borramos esa línea del editor para evitar duplicarla al indexar
+        cleanText = cleanText.replace(/^#\s+.+$/m, '');
+      }
+
+      // 2. Extraer Autor (Línea que contiene "**Autor:**")
+      const authorMatch = cleanText.match(/\*\*Autor:\*\*\s*(.+)$/m);
+      if (authorMatch) {
+        extractedAuthor = authorMatch[1].trim();
+        // Borramos esa línea del editor
+        cleanText = cleanText.replace(/\*\*Autor:\*\*\s*.+$/m, '');
+      }
+
+      // Limpiamos los saltos de línea en blanco que quedaron al inicio
+      cleanText = cleanText.trimStart();
+
+      // Rellenamos las cajas automáticamente si encontramos datos
+      if (extractedTitle) setTitle(extractedTitle);
+      if (extractedAuthor) setAuthor(extractedAuthor);
+      
+      // Colocamos el texto limpio en el editor
+      setMarkdownContent(cleanText);
+      // =========================================================================
+
       setWaitingForMd(false);
-      setSuccess('¡Texto recuperado exitosamente! Por favor, revísalo y completa los Metadatos.');
+      setSuccess('¡Texto extraído exitosamente! Gemini ha sugerido el Título y Autor (verifícalos abajo).');
       setStatusText('');
     } catch (err) {
       if (err.code === 'storage/object-not-found') {
