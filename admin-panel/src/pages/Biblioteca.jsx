@@ -32,7 +32,8 @@ import {
   DialogContentText,
   DialogTitle,
   CircularProgress,
-  Alert
+  Alert,
+  TableSortLabel
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -46,6 +47,10 @@ export default function Biblioteca() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState({ type: '', message: '' });
+
+  // Estados para el ordenamiento
+  const [order, setOrder] = useState('asc');
+  const [orderBy, setOrderBy] = useState('title');
 
   // Estados para el Modal de Eliminación
   const [openDialog, setOpenDialog] = useState(false);
@@ -77,10 +82,39 @@ export default function Biblioteca() {
     fetchBooks();
   }, []);
 
-  const filteredBooks = books.filter(book => 
-    (book.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (book.author || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Función para manejar el clic en los encabezados
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
+  // Función para ordenar y filtrar
+  const getSortedAndFilteredBooks = () => {
+    const filtered = books.filter(book => 
+      (book.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (book.author || '').toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    return filtered.sort((a, b) => {
+      let valueA = a[orderBy] || '';
+      let valueB = b[orderBy] || '';
+      
+      // Convertir a minúsculas para ordenar correctamente
+      if (typeof valueA === 'string') valueA = valueA.toLowerCase();
+      if (typeof valueB === 'string') valueB = valueB.toLowerCase();
+
+      if (valueA < valueB) {
+        return order === 'asc' ? -1 : 1;
+      }
+      if (valueA > valueB) {
+        return order === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  };
+
+  const sortedAndFilteredBooks = getSortedAndFilteredBooks();
 
   const confirmDelete = (book) => {
     if (userRole === 'lector') return; 
@@ -94,7 +128,6 @@ export default function Biblioteca() {
     setIsDeleting(true);
     try {
       const chunksRef = collection(db, 'pida_kb_genai-v20');
-      // Aseguramos que busque por la estructura exacta de tus metadatos
       const q = query(chunksRef, where('metadata.title', '==', bookToDelete.title));
       const chunkSnapshots = await getDocs(q);
 
@@ -126,25 +159,21 @@ export default function Biblioteca() {
   };
 
   // =========================================================================
-  // SCRIPT DE MIGRACIÓN: Lee todos los chunks y crea el catálogo
+  // SCRIPT DE MIGRACIÓN/SINCRONIZACIÓN
   // =========================================================================
   const runMigration = async () => {
     if (userRole === 'lector') return;
-    if (!window.confirm("Esto agrupará miles de vectores para crear el catálogo. ¿Continuar?")) return;
+    if (!window.confirm("Esto sincronizará el catálogo leyendo todos los vectores actuales. ¿Continuar?")) return;
     
     setIsMigrating(true);
-    setStatus({ type: 'info', message: 'Iniciando migración. Por favor no cierres la ventana...' });
+    setStatus({ type: 'info', message: 'Sincronizando biblioteca. Por favor no cierres la ventana...' });
     
     try {
-      // 1. Descargamos TODOS los vectores (Esta es la lectura pesada que solo haremos hoy)
       const chunksSnap = await getDocs(collection(db, 'pida_kb_genai-v20'));
+      const catalog = {}; 
       
-      const catalog = {}; // Objeto temporal para agrupar
-      
-      // 2. Recorremos cada chunk y lo agrupamos por su título
       chunksSnap.forEach(docSnap => {
         const data = docSnap.data();
-        // Protegemos el acceso en caso de que algún chunk viejo no tenga la estructura correcta
         if (data.metadata && data.metadata.title) {
           const title = data.metadata.title;
           const author = data.metadata.author || "Autor Desconocido";
@@ -157,13 +186,11 @@ export default function Biblioteca() {
         }
       });
 
-      // 3. Guardamos los libros encontrados en la nueva colección
       const batch = writeBatch(db);
       const registryRef = collection(db, 'library_registry');
       
       let booksFound = 0;
       Object.keys(catalog).forEach(title => {
-        // Usamos un nombre de archivo seguro como ID del documento
         const safeId = title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
         const docRef = doc(registryRef, safeId);
         batch.set(docRef, catalog[title]);
@@ -172,15 +199,15 @@ export default function Biblioteca() {
 
       if (booksFound > 0) {
         await batch.commit();
-        setStatus({ type: 'success', message: `¡Migración exitosa! Se catalogaron ${booksFound} libros.` });
-        fetchBooks(); // Recargamos la tabla
+        setStatus({ type: 'success', message: `¡Sincronización exitosa! Se catalogaron ${booksFound} libros.` });
+        fetchBooks(); 
       } else {
         setStatus({ type: 'warning', message: 'No se encontraron metadatos válidos en los vectores.' });
       }
 
     } catch (error) {
-      console.error("Error en migración:", error);
-      setStatus({ type: 'error', message: 'Error durante la migración: ' + error.message });
+      console.error("Error en sincronización:", error);
+      setStatus({ type: 'error', message: 'Error durante la sincronización: ' + error.message });
     } finally {
       setIsMigrating(false);
     }
@@ -213,8 +240,8 @@ export default function Biblioteca() {
           REFRESCAR LISTA
         </Button>
         
-        {/* BOTÓN TEMPORAL DE MIGRACIÓN (Solo visible si la tabla está vacía y es admin) */}
-        {books.length === 0 && userRole !== 'lector' && (
+        {/* BOTÓN DE SINCRONIZACIÓN (Siempre visible para admins) */}
+        {userRole !== 'lector' && (
           <Button 
             variant="contained" 
             color="secondary"
@@ -222,7 +249,7 @@ export default function Biblioteca() {
             onClick={runMigration}
             disabled={isMigrating}
           >
-            {isMigrating ? 'PROCESANDO VECTORES...' : 'EJECUTAR MIGRACIÓN (SÓLO UNA VEZ)'}
+            {isMigrating ? 'SINC. VECTORES...' : 'SINCRONIZAR CATÁLOGO'}
           </Button>
         )}
       </Box>
@@ -237,21 +264,37 @@ export default function Biblioteca() {
           <Table sx={{ minWidth: 650 }}>
             <TableHead sx={{ bgcolor: '#f8fafc' }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 'bold' }}>Título del Libro ↑</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Autor</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>
+                  <TableSortLabel
+                    active={orderBy === 'title'}
+                    direction={orderBy === 'title' ? order : 'asc'}
+                    onClick={() => handleRequestSort('title')}
+                  >
+                    Título del Libro
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>
+                  <TableSortLabel
+                    active={orderBy === 'author'}
+                    direction={orderBy === 'author' ? order : 'asc'}
+                    onClick={() => handleRequestSort('author')}
+                  >
+                    Autor
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>Total Chunks</TableCell>
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredBooks.length === 0 ? (
+              {sortedAndFilteredBooks.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} align="center" sx={{ py: 5 }}>
                     <Typography color="text.secondary">No se encontraron documentos en la biblioteca.</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredBooks.map((book) => (
+                sortedAndFilteredBooks.map((book) => (
                   <TableRow key={book.id} hover>
                     <TableCell sx={{ maxWidth: 400 }}>
                       <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
