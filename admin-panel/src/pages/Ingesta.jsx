@@ -228,7 +228,7 @@ export default function Ingesta() {
       </Typography>
       <Typography variant="body1" color="text.secondary" gutterBottom>
         Sube un documento PDF, revisa el texto extraído por la IA para corregir errores, 
-        agrega los metadatos y envíalo para su vectorización final en la base de datos.
+        revisa los metadatos y envíalo para su vectorización final en la base de datos.
       </Typography>
 
       {/* Alertas de Error y Éxito */}
