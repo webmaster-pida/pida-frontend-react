@@ -160,7 +160,7 @@ export default function Ingesta() {
         }
         
         // AQUÍ CAMBIAMOS EL TIEMPO: 300000 milisegundos = 5 minutos
-        setStatusText(`Gemini procesando... Por favor, no cierres esta ventana, puede durar unos minutos.`);
+        setStatusText(`PIDA está procesando página por página.`);
         pollingRef.current = setTimeout(() => pollForMarkdown(mdFileName, attempt + 1), 300000);
       } else {
         setWaitingForMd(false);
@@ -286,7 +286,7 @@ export default function Ingesta() {
               {statusText}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
-              PIDA está procesando el documento página por página.
+              (Aproximadamente 5 minutos por cada 40 páginas, dependiendo de la complejidad del PDF)
             </Typography>
             <LinearProgress sx={{ height: 6, borderRadius: 3 }} />
             <style>
