@@ -191,7 +191,7 @@ export default function Biblioteca() {
       
       let booksFound = 0;
       Object.keys(catalog).forEach(title => {
-        const safeId = title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
+        const safeId = title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 150);
         const docRef = doc(registryRef, safeId);
         batch.set(docRef, catalog[title]);
         booksFound++;
