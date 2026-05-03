@@ -228,7 +228,7 @@ export default function Estadisticas() {
       
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight="bold" color="primary">
-          Panel de Estadísticas
+          Panel de Estadísticas - {timeRange === 'hoy' ? 'Hoy' : (timeRange === 'semana' ? 'Últimos 7 Días' : (timeRange === 'mes' ? 'Últimos 30 Días' : 'Histórico'))}
         </Typography>
         
         {/* SELECTOR DE TIEMPO */}
@@ -239,7 +239,6 @@ export default function Estadisticas() {
           onChange={handleRangeChange}
           size="small"
           sx={{ bgcolor: '#fff' }}
-          alignItems="left"
         >
           <ToggleButton value="hoy">Hoy</ToggleButton>
           <ToggleButton value="semana">7 Días</ToggleButton>
