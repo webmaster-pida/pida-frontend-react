@@ -33,13 +33,100 @@ import {
   DialogTitle,
   CircularProgress,
   Alert,
-  TableSortLabel
+  Collapse,
+  TablePagination
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import BuildIcon from '@mui/icons-material/Build'; // Icono para la migración
+import BuildIcon from '@mui/icons-material/Build';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import FolderIcon from '@mui/icons-material/Folder';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import { useAuth } from '../AuthContext'; 
 
+// =========================================================================
+// SUB-COMPONENTE: FILA DESPLEGABLE (CARPETA DE AUTOR)
+// =========================================================================
+function AuthorFolderRow({ authorData, confirmDelete, userRole }) {
+  const [open, setOpen] = useState(false);
+  const { author, books } = authorData;
+  
+  // Sumamos los chunks de todos los libros dentro de esta carpeta
+  const totalChunksInFolder = books.reduce((sum, book) => sum + (book.total_chunks || 0), 0);
+
+  // Ordenamos los libros alfabéticamente dentro de la carpeta
+  const sortedBooks = [...books].sort((a, b) => a.title.localeCompare(b.title));
+
+  return (
+    <React.Fragment>
+      <TableRow sx={{ '& > *': { borderBottom: 'unset' }, bgcolor: open ? '#f0f4f8' : 'inherit', transition: 'background-color 0.3s' }}>
+        <TableCell>
+          <IconButton aria-label="expand row" size="small" onClick={() => setOpen(!open)}>
+            {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+          </IconButton>
+        </TableCell>
+        <TableCell component="th" scope="row" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <FolderIcon color="primary" /> {author}
+        </TableCell>
+        <TableCell align="center">
+          <Chip label={`${books.length} documentos`} size="small" color="info" variant={open ? "filled" : "outlined"} />
+        </TableCell>
+        <TableCell align="center" sx={{ fontWeight: 'medium' }}>
+          {totalChunksInFolder.toLocaleString()}
+        </TableCell>
+      </TableRow>
+      
+      {/* CONTENIDO DESPLEGABLE DE LA CARPETA */}
+      <TableRow>
+        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={4}>
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            <Box sx={{ margin: 2, borderLeft: '3px solid #1976d2', pl: 2 }}>
+              <Typography variant="subtitle2" gutterBottom component="div" color="text.secondary">
+                Documentos en esta carpeta:
+              </Typography>
+              <Table size="small" aria-label="documentos">
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Título de la Sentencia / Documento</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>Vectores</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {sortedBooks.map((book) => (
+                    <TableRow key={book.id} hover>
+                      <TableCell sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                         <InsertDriveFileIcon fontSize="small" color="action" />
+                         {book.title}
+                      </TableCell>
+                      <TableCell align="center">{book.total_chunks || 0}</TableCell>
+                      <TableCell align="center">
+                        <IconButton 
+                          color="error" 
+                          size="small"
+                          onClick={() => confirmDelete(book)}
+                          disabled={userRole === 'lector'} 
+                          title={userRole === 'lector' ? 'No tienes permisos' : 'Eliminar documento'}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </React.Fragment>
+  );
+}
+
+// =========================================================================
+// COMPONENTE PRINCIPAL
+// =========================================================================
 export default function Biblioteca() {
   const { userRole } = useAuth(); 
 
@@ -48,9 +135,9 @@ export default function Biblioteca() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState({ type: '', message: '' });
 
-  // Estados para el ordenamiento
-  const [order, setOrder] = useState('asc');
-  const [orderBy, setOrderBy] = useState('title');
+  // Estados para la paginación
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Estados para el Modal de Eliminación
   const [openDialog, setOpenDialog] = useState(false);
@@ -82,39 +169,45 @@ export default function Biblioteca() {
     fetchBooks();
   }, []);
 
-  // Función para manejar el clic en los encabezados
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-  };
-
-  // Función para ordenar y filtrar
-  const getSortedAndFilteredBooks = () => {
+  // Lógica de filtrado y AGRUPACIÓN por Autor
+  const getGroupedAndFilteredBooks = () => {
+    // 1. Filtrar por la búsqueda global
     const filtered = books.filter(book => 
       (book.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (book.author || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    return filtered.sort((a, b) => {
-      let valueA = a[orderBy] || '';
-      let valueB = b[orderBy] || '';
-      
-      // Convertir a minúsculas para ordenar correctamente
-      if (typeof valueA === 'string') valueA = valueA.toLowerCase();
-      if (typeof valueB === 'string') valueB = valueB.toLowerCase();
-
-      if (valueA < valueB) {
-        return order === 'asc' ? -1 : 1;
+    // 2. Agrupar en formato Carpeta { "Corte IDH": [libro1, libro2], "Otro Autor": [libro3] }
+    const grouped = {};
+    filtered.forEach(book => {
+      const author = book.author || 'Autor Desconocido';
+      if (!grouped[author]) {
+        grouped[author] = [];
       }
-      if (valueA > valueB) {
-        return order === 'asc' ? 1 : -1;
-      }
-      return 0;
+      grouped[author].push(book);
     });
+
+    // 3. Convertir el objeto a un arreglo para poder mapearlo y paginarlo
+    const groupedArray = Object.keys(grouped).map(author => ({
+      author: author,
+      books: grouped[author]
+    }));
+
+    // 4. Ordenar las carpetas alfabéticamente
+    return groupedArray.sort((a, b) => a.author.localeCompare(b.author));
   };
 
-  const sortedAndFilteredBooks = getSortedAndFilteredBooks();
+  const groupedAuthors = getGroupedAndFilteredBooks();
+
+  // Controladores de paginación
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const confirmDelete = (book) => {
     if (userRole === 'lector') return; 
@@ -158,9 +251,6 @@ export default function Biblioteca() {
     }
   };
 
-  // =========================================================================
-  // SCRIPT DE MIGRACIÓN/SINCRONIZACIÓN
-  // =========================================================================
   const runMigration = async () => {
     if (userRole === 'lector') return;
     if (!window.confirm("Esto sincronizará el catálogo leyendo todos los vectores actuales. ¿Continuar?")) return;
@@ -191,7 +281,7 @@ export default function Biblioteca() {
       
       let booksFound = 0;
       Object.keys(catalog).forEach(title => {
-        const safeId = title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 150);
+        const safeId = title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 150); // Mantenemos el límite seguro de 150
         const docRef = doc(registryRef, safeId);
         batch.set(docRef, catalog[title]);
         booksFound++;
@@ -225,9 +315,12 @@ export default function Biblioteca() {
       <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
         <TextField 
           variant="outlined"
-          placeholder="Buscar por título o autor..."
+          placeholder="Buscar por título de sentencia o autor..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setPage(0); // Reiniciar paginación al buscar
+          }}
           sx={{ flexGrow: 1, bgcolor: 'white', borderRadius: 1 }}
           size="small"
         />
@@ -240,7 +333,6 @@ export default function Biblioteca() {
           REFRESCAR LISTA
         </Button>
         
-        {/* BOTÓN DE SINCRONIZACIÓN (Siempre visible para admins) */}
         {userRole !== 'lector' && (
           <Button 
             variant="contained" 
@@ -254,78 +346,59 @@ export default function Biblioteca() {
         )}
       </Box>
 
-      {/* TABLA PRINCIPAL */}
+      {/* TABLA PRINCIPAL ESTILO CARPETAS */}
       <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
             <CircularProgress />
           </Box>
         ) : (
-          <Table sx={{ minWidth: 650 }}>
-            <TableHead sx={{ bgcolor: '#f8fafc' }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 'bold' }}>
-                  <TableSortLabel
-                    active={orderBy === 'title'}
-                    direction={orderBy === 'title' ? order : 'asc'}
-                    onClick={() => handleRequestSort('title')}
-                  >
-                    Título del Libro
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>
-                  <TableSortLabel
-                    active={orderBy === 'author'}
-                    direction={orderBy === 'author' ? order : 'asc'}
-                    onClick={() => handleRequestSort('author')}
-                  >
-                    Autor
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell align="center" sx={{ fontWeight: 'bold' }}>Total Chunks</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {sortedAndFilteredBooks.length === 0 ? (
+          <>
+            <Table aria-label="collapsible table">
+              <TableHead sx={{ bgcolor: '#f8fafc' }}>
                 <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 5 }}>
-                    <Typography color="text.secondary">No se encontraron documentos en la biblioteca.</Typography>
-                  </TableCell>
+                  <TableCell sx={{ width: 50 }} /> {/* Columna vacía para la flechita */}
+                  <TableCell sx={{ fontWeight: 'bold' }}>Autor (Carpeta)</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>Total de Documentos</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>Total Chunks</TableCell>
                 </TableRow>
-              ) : (
-                sortedAndFilteredBooks.map((book) => (
-                  <TableRow key={book.id} hover>
-                    <TableCell sx={{ maxWidth: 400 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                        {book.title}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>{book.author}</TableCell>
-                    <TableCell align="center">
-                      <Chip 
-                        label={book.total_chunks || 0} 
-                        size="small" 
-                        variant="outlined"
-                        color="primary"
-                        sx={{ fontWeight: 'bold' }}
-                      />
-                    </TableCell>
-                    <TableCell align="center">
-                      <IconButton 
-                        color="error" 
-                        onClick={() => confirmDelete(book)}
-                        disabled={userRole === 'lector'} 
-                        title={userRole === 'lector' ? 'No tienes permisos' : 'Eliminar documento'}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+              </TableHead>
+              <TableBody>
+                {groupedAuthors.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} align="center" sx={{ py: 5 }}>
+                      <Typography color="text.secondary">No se encontraron documentos.</Typography>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  // Aplicamos la paginación cortando el arreglo de carpetas
+                  groupedAuthors
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((authorFolder) => (
+                      <AuthorFolderRow 
+                        key={authorFolder.author} 
+                        authorData={authorFolder} 
+                        confirmDelete={confirmDelete}
+                        userRole={userRole}
+                      />
+                  ))
+                )}
+              </TableBody>
+            </Table>
+            
+            {/* CONTROLES DE PAGINACIÓN */}
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50]}
+              component="div"
+              count={groupedAuthors.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Carpetas por página:"
+              labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+            />
+          </>
         )}
       </TableContainer>
 
@@ -336,7 +409,7 @@ export default function Biblioteca() {
         </DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
-            Estás a punto de eliminar el libro <strong>{bookToDelete?.title}</strong> de la base de conocimientos.
+            Estás a punto de eliminar el documento <strong>{bookToDelete?.title}</strong> de la base de conocimientos.
           </DialogContentText>
           <DialogContentText color="text.secondary">
             Esta acción buscará y destruirá los <strong>{bookToDelete?.total_chunks} vectores/chunks</strong> asociados en la base de datos (pida_kb_genai-v20). La Inteligencia Artificial perderá este conocimiento de forma irreversible.
@@ -354,7 +427,7 @@ export default function Biblioteca() {
             disabled={isDeleting}
             startIcon={isDeleting ? <CircularProgress size={20} color="inherit" /> : <DeleteIcon />}
           >
-            {isDeleting ? 'Destruyendo Vectores...' : 'Sí, Eliminar Libro'}
+            {isDeleting ? 'Destruyendo...' : 'Sí, Eliminar'}
           </Button>
         </DialogActions>
       </Dialog>
