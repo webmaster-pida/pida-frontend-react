@@ -226,7 +226,7 @@ export default function Estadisticas() {
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', p: 2 }}>
       
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
+      <Stack direction="column" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight="bold" color="primary">
           Panel de Estadísticas - {timeRange === 'hoy' ? 'Hoy' : (timeRange === 'semana' ? 'Últimos 7 Días' : (timeRange === 'mes' ? 'Últimos 30 Días' : 'Histórico'))}
         </Typography>
