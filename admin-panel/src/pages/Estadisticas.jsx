@@ -238,7 +238,6 @@ export default function Estadisticas() {
           exclusive
           onChange={handleRangeChange}
           size="small"
-          sx={{ bgcolor: '#fff' }}
         >
           <ToggleButton value="hoy">Hoy</ToggleButton>
           <ToggleButton value="semana">7 Días</ToggleButton>
