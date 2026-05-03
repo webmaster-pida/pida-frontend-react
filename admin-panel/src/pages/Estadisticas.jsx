@@ -284,7 +284,7 @@ export default function Estadisticas() {
           <StatCard title="Documentos en Biblioteca" value={stats.globales.docs} icon={<LibraryBooksIcon fontSize="large" />} color="success" subtitle="Total actual en plataforma" />
         </Grid>
         <Grid item xs={12} sm={6} md={6}>
-          <StatCard title="Total Chunks (Vectores)" value={stats.globales.chunks} icon={<StorageIcon fontSize="large" />} color="primary" subtitle="Base de conocimiento IA" />
+          <StatCard title="Total Vectores" value={stats.globales.chunks} icon={<StorageIcon fontSize="large" />} color="primary" subtitle="Base de conocimiento IA" />
         </Grid>
       </Grid>
 

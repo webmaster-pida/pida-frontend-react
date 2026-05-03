@@ -364,7 +364,7 @@ export default function Biblioteca() {
                   <TableCell sx={{ width: 50 }} /> {/* Columna vacía para la flechita */}
                   <TableCell sx={{ fontWeight: 'bold' }}>Autor (Carpeta)</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 'bold' }}>Total de Documentos</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>Total Chunks</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>Total Vectores</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

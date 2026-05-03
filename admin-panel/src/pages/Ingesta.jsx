@@ -149,7 +149,7 @@ export default function Ingesta() {
       // =========================================================================
 
       setWaitingForMd(false);
-      setSuccess('¡Texto extraído exitosamente! Gemini ha sugerido el Título y Autor (verifícalos abajo).');
+      setSuccess('¡Texto extraído exitosamente! PIDA ha sugerido el Título y Autor (verifícalos abajo).');
       setStatusText('');
     } catch (err) {
       if (err.code === 'storage/object-not-found') {
