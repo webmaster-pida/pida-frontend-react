@@ -89,19 +89,23 @@ function AuthorFolderRow({ authorData, confirmDelete, userRole }) {
                 <TableHead>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 'bold' }}>Título de la Sentencia / Documento</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>Vectores</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
+                    {/* ANCHOS FIJOS PARA LAS COLUMNAS */}
+                    <TableCell align="center" sx={{ fontWeight: 'bold', width: 100, minWidth: 100 }}>Vectores</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 'bold', width: 100, minWidth: 100 }}>Acciones</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {sortedBooks.map((book) => (
                     <TableRow key={book.id} hover>
-                      <TableCell sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                         <InsertDriveFileIcon fontSize="small" color="action" />
-                         {book.title}
+                      <TableCell>
+                        {/* ENCAPSULADO CORRECTO PARA EVITAR QUE SE ROMPA LA FILA */}
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                          <InsertDriveFileIcon fontSize="small" color="action" sx={{ mt: 0.3, flexShrink: 0 }} />
+                          <Typography variant="body2">{book.title}</Typography>
+                        </Box>
                       </TableCell>
-                      <TableCell align="center">{book.total_chunks || 0}</TableCell>
-                      <TableCell align="center">
+                      <TableCell align="center" sx={{ width: 100 }}>{book.total_chunks || 0}</TableCell>
+                      <TableCell align="center" sx={{ width: 100 }}>
                         <IconButton 
                           color="error" 
                           size="small"
