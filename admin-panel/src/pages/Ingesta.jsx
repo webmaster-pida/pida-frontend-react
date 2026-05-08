@@ -98,7 +98,7 @@ export default function Ingesta() {
   };
 
   const pollForMarkdown = async (docId, mdFileName, attempt = 1) => {
-    const maxAttempts = 60; // 5 mins x 60 intentos = hasta 5 horas (útil para PDFs inmensos en paralelo)
+    const maxAttempts = 120; // 120 intentos x 15 segundos = 30 minutos de espera máxima
     const storage = getStorage();
     const mdRef = ref(storage, `${import.meta.env.VITE_BUCKET_PENDIENTES}/${mdFileName}`);
 
@@ -140,7 +140,7 @@ export default function Ingesta() {
           return;
         }
         updateDoc(docId, { statusText: `Procesando... (Intento ${attempt}/${maxAttempts})` });
-        pollingRefs.current[docId] = setTimeout(() => pollForMarkdown(docId, mdFileName, attempt + 1), 300000);
+        pollingRefs.current[docId] = setTimeout(() => pollForMarkdown(docId, mdFileName, attempt + 1), 15000);
       } else {
         updateDoc(docId, { status: 'error', statusText: 'Error', error: err.message });
       }
