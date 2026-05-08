@@ -1,20 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Box, 
-  Typography, 
-  Button, 
-  TextField, 
-  Paper, 
-  CircularProgress, 
-  Alert, 
-  Stack, 
-  Divider, 
-  LinearProgress,
-  Tooltip
+  Box, Typography, Button, TextField, Paper, CircularProgress, 
+  Alert, Stack, Divider, LinearProgress, Tooltip, Chip 
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SendIcon from '@mui/icons-material/Send';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
 
 // Importaciones de Firebase Storage
 import { getStorage, ref, uploadBytes, getDownloadURL, StringFormat, uploadString } from 'firebase/storage';
@@ -23,89 +16,89 @@ import { useAuth } from '../AuthContext';
 export default function Ingesta() {
   const { userRole } = useAuth();
   
-  const [file, setFile] = useState(null);
-  const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
-  const [markdownContent, setMarkdownContent] = useState('');
+  // Estado que almacena la lista de documentos y sus ciclos de vida individuales
+  const [docs, setDocs] = useState([]);
+  // Índice del documento que estamos viendo actualmente en el editor
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  // Estados de la Interfaz (UI)
-  const [statusText, setStatusText] = useState('');
-  const [loadingPdf, setLoadingPdf] = useState(false);
-  const [waitingForMd, setWaitingForMd] = useState(false);
-  const [loadingIdx, setLoadingIdx] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const [globalError, setGlobalError] = useState(null);
+  const [globalSuccess, setGlobalSuccess] = useState(null);
 
-  // Referencia para controlar y limpiar el polling (preguntas al servidor)
-  const pollingRef = useRef(null);
+  // Referencia para controlar múltiples pollings simultáneos
+  const pollingRefs = useRef({});
 
-  // Limpiar el temporizador si el usuario desmonta/cierra el componente
   useEffect(() => {
+    // Limpieza de todos los temporizadores al desmontar
     return () => {
-      if (pollingRef.current) clearTimeout(pollingRef.current);
+      Object.values(pollingRefs.current).forEach(clearTimeout);
     };
   }, []);
 
-  // Manejo del selector de archivos
+  // Función para actualizar una propiedad específica de un documento en el arreglo
+  const updateDoc = (id, updates) => {
+    setDocs(prev => prev.map(doc => doc.id === id ? { ...doc, ...updates } : doc));
+  };
+
   const handleFileChange = (e) => {
-    if (userRole === 'lector') return; // Bloqueo de seguridad
+    if (userRole === 'lector') return;
 
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-      // Reiniciamos los estados si elige un nuevo archivo
-      setMarkdownContent('');
-      setTitle('');
-      setAuthor('');
-      setError(null);
-      setSuccess(null);
-      setStatusText('');
+    if (e.target.files && e.target.files.length > 0) {
+      // Limitamos a 5 documentos por lote
+      const selectedFiles = Array.from(e.target.files).slice(0, 5);
+      
+      const newDocs = selectedFiles.map(file => ({
+        id: file.name,
+        file: file,
+        status: 'idle', // idle, uploading, processing, ready, indexed, error
+        statusText: 'Pendiente de subida',
+        markdownContent: '',
+        title: '',
+        author: '',
+        error: null
+      }));
+
+      // Cancelamos cualquier polling anterior
+      Object.values(pollingRefs.current).forEach(clearTimeout);
+      pollingRefs.current = {};
+
+      setDocs(newDocs);
+      setActiveIndex(0);
+      setGlobalError(null);
+      setGlobalSuccess(null);
     }
   };
 
   // =========================================================================
-  // PASO 1: SUBIR PDF Y ESPERAR EL MARKDOWN DEL EXTRACTOR
+  // PASO 1: SUBIR TODOS LOS PDFS EN PARALELO
   // =========================================================================
-  const handleUploadAndListen = async () => {
-    if (userRole === 'lector') return; // Bloqueo de seguridad a nivel función
+  const handleUploadAll = async () => {
+    if (userRole === 'lector') return;
+    setGlobalError(null);
 
-    if (!file) {
-      setError('Por favor, selecciona un PDF primero.');
-      return;
-    }
-    setError(null);
-    setSuccess(null);
-    setLoadingPdf(true);
+    const docsToUpload = docs.filter(d => d.status === 'idle' || d.status === 'error');
+    if (docsToUpload.length === 0) return;
 
-    // Conectamos al bucket de entrada
     const storagePdfs = getStorage(undefined, import.meta.env.VITE_BUCKET_PDFS);
-    const pdfRef = ref(storagePdfs, file.name);
 
-    try {
-      setStatusText('Subiendo PDF a la plataforma...');
-      await uploadBytes(pdfRef, file);
-      
-      setLoadingPdf(false);
-      setWaitingForMd(true);
-      setStatusText('PDF subido. PIDA está extrayendo el texto (esto puede tardar varios minutos)...');
-      
-      // Predecimos el nombre del archivo Markdown resultante (reemplaza .pdf o .PDF por .md)
-      const expectedMdName = file.name.replace(/\.[^/.]+$/, "") + ".md";
-      
-      // Iniciamos el proceso de búsqueda en la sala de espera
-      pollForMarkdown(expectedMdName);
+    // Iteramos e iniciamos la subida de todos al mismo tiempo
+    docsToUpload.forEach(async (doc) => {
+      const pdfRef = ref(storagePdfs, doc.file.name);
+      updateDoc(doc.id, { status: 'uploading', statusText: 'Subiendo PDF...', error: null });
 
-    } catch (err) {
-      console.error("Error subiendo PDF:", err);
-      setError('Error al subir el PDF: ' + err.message);
-      setLoadingPdf(false);
-    }
+      try {
+        await uploadBytes(pdfRef, doc.file);
+        updateDoc(doc.id, { status: 'processing', statusText: 'Extrayendo texto (PIDA trabajando)...' });
+
+        const expectedMdName = doc.file.name.replace(/\.[^/.]+$/, "") + ".md";
+        pollForMarkdown(doc.id, expectedMdName);
+      } catch (err) {
+        updateDoc(doc.id, { status: 'error', statusText: 'Fallo al subir', error: err.message });
+      }
+    });
   };
 
-  // Polling: Preguntar al bucket "pendientes" si ya está el archivo
-  const pollForMarkdown = async (mdFileName, attempt = 1) => {
-    const maxAttempts = 60; // 60 intentos x 30 segundos = 30 minutos de espera máxima
-    
-    // NOTA: Asegúrate de usar la inicialización correcta de tu storage según tu código actual
+  const pollForMarkdown = async (docId, mdFileName, attempt = 1) => {
+    const maxAttempts = 60; // 5 mins x 60 intentos = hasta 5 horas (útil para PDFs inmensos en paralelo)
     const storage = getStorage();
     const mdRef = ref(storage, `${import.meta.env.VITE_BUCKET_PENDIENTES}/${mdFileName}`);
 
@@ -114,262 +107,251 @@ export default function Ingesta() {
       const response = await fetch(url);
       const text = await response.text();
       
-      // =========================================================================
-      // LÓGICA NUEVA: AUTO-LLENADO DE METADATOS MEDIANTE REGEX
-      // =========================================================================
       let extractedTitle = '';
       let extractedAuthor = '';
       let cleanText = text;
 
-      // 1. Extraer Título (Línea que empieza con un "#" seguido de un espacio)
       const titleMatch = cleanText.match(/^#\s+(.+)$/m);
       if (titleMatch) {
         extractedTitle = titleMatch[1].trim();
-        // Borramos esa línea del editor para evitar duplicarla al indexar
         cleanText = cleanText.replace(/^#\s+.+$/m, '');
       }
 
-      // 2. Extraer Autor (Línea que contiene "**Autor:**")
       const authorMatch = cleanText.match(/\*\*Autor:\*\*\s*(.+)$/m);
       if (authorMatch) {
         extractedAuthor = authorMatch[1].trim();
-        // Borramos esa línea del editor
         cleanText = cleanText.replace(/\*\*Autor:\*\*\s*.+$/m, '');
       }
 
-      // Limpiamos los saltos de línea en blanco que quedaron al inicio
       cleanText = cleanText.trimStart();
 
-      // Rellenamos las cajas automáticamente si encontramos datos
-      if (extractedTitle) setTitle(extractedTitle);
-      if (extractedAuthor) setAuthor(extractedAuthor);
-      
-      // Colocamos el texto limpio en el editor
-      setMarkdownContent(cleanText);
-      // =========================================================================
+      updateDoc(docId, { 
+        status: 'ready', 
+        statusText: '¡Listo para revisión!',
+        title: extractedTitle, 
+        author: extractedAuthor, 
+        markdownContent: cleanText 
+      });
 
-      setWaitingForMd(false);
-      setSuccess('¡Texto extraído exitosamente! PIDA ha sugerido el Título y Autor (verifícalos abajo).');
-      setStatusText('');
     } catch (err) {
       if (err.code === 'storage/object-not-found') {
         if (attempt >= maxAttempts) {
-          setWaitingForMd(false);
-          setError('Tiempo de espera agotado. El archivo tardó demasiado en procesarse.');
+          updateDoc(docId, { status: 'error', statusText: 'Timeout', error: 'Tardó demasiado.' });
           return;
         }
-        
-        // AQUÍ CAMBIAMOS EL TIEMPO: 300000 milisegundos = 5 minutos
-        setStatusText(`PIDA está procesando página por página.`);
-        pollingRef.current = setTimeout(() => pollForMarkdown(mdFileName, attempt + 1), 300000);
+        updateDoc(docId, { statusText: `Procesando... (Intento ${attempt}/${maxAttempts})` });
+        pollingRefs.current[docId] = setTimeout(() => pollForMarkdown(docId, mdFileName, attempt + 1), 300000);
       } else {
-        setWaitingForMd(false);
-        setError('Error buscando el Markdown: ' + err.message);
+        updateDoc(docId, { status: 'error', statusText: 'Error', error: err.message });
       }
     }
   };
 
   // =========================================================================
-  // PASO 2: INYECTAR METADATOS Y ENVIAR AL VECTORIZADOR (FLASK)
+  // PASO 2: INYECTAR METADATOS Y ENVIAR AL VECTORIZADOR
   // =========================================================================
   const handleIndex = async () => {
-    if (userRole === 'lector') return; // Bloqueo de seguridad a nivel función
+    if (userRole === 'lector') return;
+    const activeDoc = docs[activeIndex];
 
-    if (!title.trim() || !author.trim() || !markdownContent.trim()) {
-      setError('Faltan metadatos (Título/Autor) o el texto Markdown está vacío.');
+    if (!activeDoc.title.trim() || !activeDoc.author.trim() || !activeDoc.markdownContent.trim()) {
+      setGlobalError(`Faltan metadatos o texto para el documento: ${activeDoc.id}`);
       return;
     }
     
-    setLoadingIdx(true);
-    setError(null);
-    setStatusText('Enviando documento al servicio vectorizador...');
+    updateDoc(activeDoc.id, { status: 'indexing', statusText: 'Enviando al vectorizador...' });
+    setGlobalError(null);
 
-    // Inyectamos Título y Autor al inicio exacto del documento para que
-    // el prompt del "Bibliotecario" en tu backend Flask lo extraiga 100% bien.
-    const finalMarkdown = `# ${title.trim()}\n**Autor:** ${author.trim()}\n\n${markdownContent}`;
-    
-    // Generamos un nombre de archivo seguro para el bucket final
-    const safeTitle = title.replace(/[^a-zA-Z0-9]/g, '_');
+    const finalMarkdown = `# ${activeDoc.title.trim()}\n**Autor:** ${activeDoc.author.trim()}\n\n${activeDoc.markdownContent}`;
+    const safeTitle = activeDoc.title.replace(/[^a-zA-Z0-9]/g, '_');
     const finalFileName = `${safeTitle}_${Date.now()}.md`;
 
-    // Conectamos al bucket que dispara el Servicio 2 (Flask)
     const storageListos = getStorage(undefined, import.meta.env.VITE_BUCKET_LISTOS);
     const readyRef = ref(storageListos, finalFileName);
 
     try {
-      // Subimos el string directamente como un archivo de texto plano (.md)
-      await uploadString(readyRef, finalMarkdown, StringFormat.RAW, {
-        contentType: 'text/markdown',
-      });
+      await uploadString(readyRef, finalMarkdown, StringFormat.RAW, { contentType: 'text/markdown' });
+      updateDoc(activeDoc.id, { status: 'indexed', statusText: 'Indexado exitosamente' });
+      setGlobalSuccess(`¡"${activeDoc.title}" indexado!`);
 
-      setSuccess(`¡Éxito! El libro "${title}" ha sido enviado a la colección pida_kb_genai-v20.`);
-      
-      // Limpiamos el formulario para la siguiente ingesta
-      setFile(null);
-      setMarkdownContent('');
-      setTitle('');
-      setAuthor('');
-      setStatusText('');
+      // Pasar automáticamente al siguiente documento "listo" si lo hay
+      const nextIndex = docs.findIndex((d, idx) => idx !== activeIndex && d.status === 'ready');
+      if (nextIndex !== -1) setActiveIndex(nextIndex);
+
     } catch (err) {
-      console.error("Error en indexación:", err);
-      setError('Error al enviar a indexación: ' + err.message);
-    } finally {
-      setLoadingIdx(false);
+      updateDoc(activeDoc.id, { status: 'error', statusText: 'Fallo al indexar', error: err.message });
     }
   };
 
-  // =========================================================================
-  // INTERFAZ DE USUARIO (RENDER)
-  // =========================================================================
+  // Funciones de ayuda para UI
+  const getChipColor = (status) => {
+    switch(status) {
+      case 'ready': return 'success';
+      case 'indexed': return 'primary';
+      case 'processing': return 'warning';
+      case 'uploading': case 'indexing': return 'info';
+      case 'error': return 'error';
+      default: return 'default';
+    }
+  };
+
+  const getChipIcon = (status) => {
+    switch(status) {
+      case 'ready': return <CheckCircleIcon />;
+      case 'indexed': return <SendIcon />;
+      case 'processing': case 'uploading': case 'indexing': return <AutorenewIcon className="spin" />;
+      case 'error': return <ErrorIcon />;
+      default: return null;
+    }
+  };
+
+  const activeDoc = docs[activeIndex];
+  const allIdle = docs.every(d => d.status === 'idle' || d.status === 'error');
+
   return (
     <Box sx={{ maxWidth: 1000, mx: 'auto', p: 3 }}>
+      <style>
+        {`.spin { animation: spin 2s linear infinite; } @keyframes spin { 100% { transform: rotate(360deg); } }`}
+      </style>
+      
       <Typography variant="h4" gutterBottom fontWeight="bold" color="primary">
-        Ingesta de Documentos (Control Humano)
+        Ingesta de Documentos Lote (Máx. 5)
       </Typography>
       <Typography variant="body1" color="text.secondary" gutterBottom>
-        Sube un documento PDF, revisa el texto extraído por la IA para corregir errores, 
-        revisa los metadatos y envíalo para su vectorización final en la base de datos.
+        Sube hasta 5 PDFs simultáneamente. Navega entre ellos para revisar el texto extraído y aprueba su indexación uno por uno.
       </Typography>
 
-      {/* Alertas de Error y Éxito */}
-      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
+      {globalError && <Alert severity="error" sx={{ mb: 3 }}>{globalError}</Alert>}
+      {globalSuccess && <Alert severity="success" sx={{ mb: 3 }}>{globalSuccess}</Alert>}
 
       <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 2 }}>
         
-        {/* SECCIÓN 1: Subida de PDF */}
-        <Typography variant="h6" gutterBottom fontWeight="bold">
-          1. Subir PDF para Extracción
-        </Typography>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2}>
-          <Tooltip title={userRole === 'lector' ? "No tienes permisos para subir documentos" : ""}>
-            <span style={{ display: 'flex', flexGrow: 1 }}>
-              <Button 
-                variant="outlined" 
-                component="label" 
-                startIcon={<CloudUploadIcon />} 
-                sx={{ flexGrow: 1, textTransform: 'none', justifyContent: 'flex-start', px: 3 }}
-                color={file ? "success" : "primary"}
-                disabled={userRole === 'lector'}
-              >
-                {file ? file.name : 'Seleccionar archivo PDF'}
-                <input 
-                  type="file" 
-                  hidden 
-                  accept="application/pdf" 
-                  onChange={handleFileChange} 
-                  disabled={userRole === 'lector'} 
-                />
-              </Button>
-            </span>
-          </Tooltip>
+        {/* SECCIÓN 1: Selección y Subida */}
+        <Typography variant="h6" gutterBottom fontWeight="bold">1. Selección de Archivos</Typography>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={3}>
+          <Button 
+            variant="outlined" 
+            component="label" 
+            startIcon={<CloudUploadIcon />} 
+            sx={{ flexGrow: 1, textTransform: 'none' }}
+            disabled={userRole === 'lector'}
+          >
+            {docs.length > 0 ? `${docs.length} archivos seleccionados` : 'Seleccionar PDFs (Máx. 5)'}
+            <input 
+              type="file" 
+              hidden 
+              multiple
+              accept="application/pdf" 
+              onChange={handleFileChange} 
+              disabled={userRole === 'lector'} 
+            />
+          </Button>
           
-          <Tooltip title={userRole === 'lector' ? "No tienes permisos para extraer texto" : ""}>
-            <span>
-              <Button 
-                variant="contained" 
-                onClick={handleUploadAndListen} 
-                disabled={!file || loadingPdf || waitingForMd || userRole === 'lector'}
-                sx={{ minWidth: 200, height: '100%' }}
-              >
-                {loadingPdf ? <CircularProgress size={24} color="inherit" /> : 'Extraer a Markdown'}
-              </Button>
-            </span>
-          </Tooltip>
+          <Button 
+            variant="contained" 
+            onClick={handleUploadAll} 
+            disabled={docs.length === 0 || !allIdle || userRole === 'lector'}
+            sx={{ minWidth: 200 }}
+          >
+            Procesar Lote
+          </Button>
         </Stack>
 
-        {/* Indicadores Visuales de Polling (Espera del Servidor) */}
-        {waitingForMd && (
-          <Box sx={{ my: 4, textAlign: 'center', p: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
-            <AutorenewIcon sx={{ animation: 'spin 2s linear infinite', fontSize: 48, color: 'primary.main', mb: 1 }} />
-            <Typography variant="body1" fontWeight="medium" color="text.primary">
-              {statusText}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
-              (Aproximadamente 5 minutos por cada 40 páginas, dependiendo de la complejidad del PDF)
-            </Typography>
-            <LinearProgress sx={{ height: 6, borderRadius: 3 }} />
-            <style>
-              {`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}
-            </style>
+        {/* Navegador de Documentos */}
+        {docs.length > 0 && (
+          <Box sx={{ mb: 4, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+            <Typography variant="subtitle2" color="text.secondary" mb={1}>Documentos en cola:</Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {docs.map((doc, idx) => (
+                <Chip 
+                  key={doc.id}
+                  label={doc.id}
+                  color={getChipColor(doc.status)}
+                  variant={activeIndex === idx ? "filled" : "outlined"}
+                  onClick={() => setActiveIndex(idx)}
+                  icon={getChipIcon(doc.status)}
+                  sx={{ mb: 1, fontWeight: activeIndex === idx ? 'bold' : 'normal' }}
+                />
+              ))}
+            </Stack>
           </Box>
         )}
 
         <Divider sx={{ my: 4 }} />
 
-        {/* SECCIÓN 2: Editor (Human-in-the-loop) */}
-        <Typography variant="h6" gutterBottom fontWeight="bold">
-          2. Intervención Humana (Limpieza de Formato)
-        </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          Revisa el texto extraído. Corrige saltos de línea erróneos, caracteres extraños o elimina texto basura antes de indexar.
-        </Typography>
-        <TextField
-          label="Editor Markdown"
-          multiline
-          rows={15}
-          fullWidth
-          variant="outlined"
-          value={markdownContent}
-          onChange={(e) => setMarkdownContent(e.target.value)}
-          disabled={loadingPdf || waitingForMd || userRole === 'lector'}
-          sx={{ mb: 4, fontFamily: 'monospace' }}
-          InputProps={{
-            sx: { fontFamily: 'monospace', fontSize: '0.9rem' }
-          }}
-          placeholder="El texto extraído aparecerá aquí..."
-        />
-
-        <Divider sx={{ my: 4 }} />
-
-        {/* SECCIÓN 3: Metadatos y Envío Final */}
-        <Typography variant="h6" gutterBottom fontWeight="bold">
-          3. Metadatos e Indexación
-        </Typography>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} mb={4}>
-          <TextField
-            label="Título del Documento"
-            fullWidth
-            required
-            variant="outlined"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            disabled={loadingIdx || userRole === 'lector'}
-          />
-          <TextField
-            label="Autor Principal"
-            fullWidth
-            required
-            variant="outlined"
-            value={author}
-            onChange={(e) => setAuthor(e.target.value)}
-            disabled={loadingIdx || userRole === 'lector'}
-          />
-        </Stack>
-
-        <Box display="flex" justifyContent="flex-end" alignItems="center">
-          {loadingIdx && (
-            <Typography variant="body2" sx={{ mr: 3 }} color="text.secondary">
-              {statusText}
+        {/* ÁREA DE TRABAJO DEL DOCUMENTO ACTIVO */}
+        {activeDoc && (
+          <Box>
+            <Typography variant="h6" gutterBottom color="primary">
+              Trabajando en: {activeDoc.id}
             </Typography>
-          )}
-          <Tooltip title={userRole === 'lector' ? "Modo de solo lectura activado" : ""}>
-            <span>
+            
+            {/* Estado particular del archivo activo */}
+            {['processing', 'uploading', 'indexing'].includes(activeDoc.status) && (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="body2" color="text.secondary" mb={1}>
+                  Estado: {activeDoc.statusText}
+                </Typography>
+                <LinearProgress />
+              </Box>
+            )}
+            
+            {activeDoc.error && (
+              <Alert severity="error" sx={{ mb: 3 }}>{activeDoc.error}</Alert>
+            )}
+
+            {/* SECCIÓN 2: Editor */}
+            <Typography variant="subtitle1" gutterBottom fontWeight="bold">2. Intervención Humana</Typography>
+            <TextField
+              label={`Editor Markdown - ${activeDoc.id}`}
+              multiline
+              rows={12}
+              fullWidth
+              variant="outlined"
+              value={activeDoc.markdownContent}
+              onChange={(e) => updateDoc(activeDoc.id, { markdownContent: e.target.value })}
+              disabled={activeDoc.status !== 'ready' || userRole === 'lector'}
+              sx={{ mb: 4 }}
+              InputProps={{ sx: { fontFamily: 'monospace', fontSize: '0.9rem' } }}
+              placeholder={activeDoc.status === 'ready' ? "El texto extraído está vacío..." : "Esperando extracción..."}
+            />
+
+            {/* SECCIÓN 3: Metadatos y Envío */}
+            <Typography variant="subtitle1" gutterBottom fontWeight="bold">3. Metadatos e Indexación</Typography>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} mb={3}>
+              <TextField
+                label="Título del Documento"
+                fullWidth
+                required
+                value={activeDoc.title}
+                onChange={(e) => updateDoc(activeDoc.id, { title: e.target.value })}
+                disabled={activeDoc.status !== 'ready' || userRole === 'lector'}
+              />
+              <TextField
+                label="Autor Principal"
+                fullWidth
+                required
+                value={activeDoc.author}
+                onChange={(e) => updateDoc(activeDoc.id, { author: e.target.value })}
+                disabled={activeDoc.status !== 'ready' || userRole === 'lector'}
+              />
+            </Stack>
+
+            <Box display="flex" justifyContent="flex-end">
               <Button
                 variant="contained"
                 color="success"
                 size="large"
                 endIcon={<SendIcon />}
                 onClick={handleIndex}
-                disabled={!markdownContent || !title || !author || loadingIdx || userRole === 'lector'}
+                disabled={activeDoc.status !== 'ready' || userRole === 'lector'}
                 sx={{ px: 4, py: 1.5 }}
               >
-                {loadingIdx ? <CircularProgress size={24} color="inherit" /> : 'Aprobar e Indexar Libro'}
+                Aprobar e Indexar
               </Button>
-            </span>
-          </Tooltip>
-        </Box>
-
+            </Box>
+          </Box>
+        )}
       </Paper>
     </Box>
   );
