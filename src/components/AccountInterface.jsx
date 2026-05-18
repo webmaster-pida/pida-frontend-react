@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from '../config/firebase';
+import { PIDA_CONFIG } from '../config/constants';
 
 // Importamos los componentes de Material-UI (eliminamos Paper)
 import { 
@@ -12,7 +13,7 @@ import {
   Alert 
 } from '@mui/material';
 
-const API_CHAT = "https://chat-v20-perplexity-465781488910.us-central1.run.app";
+// const API_CHAT = "https://chat-v20-perplexity-465781488910.us-central1.run.app";
 
 export default function AccountInterface({ user, isVip }) {
   const [firstName, setFirstName] = useState('');
@@ -52,7 +53,7 @@ export default function AccountInterface({ user, isVip }) {
 
     try {
       const token = await user.getIdToken();
-      const res = await fetch(`${API_CHAT}/create-portal-session`, {
+      const res = await fetch(`${PIDA_CONFIG.API_CHAT}/create-portal-session`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,
