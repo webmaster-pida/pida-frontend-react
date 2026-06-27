@@ -1,7 +1,8 @@
 export const PIDA_CONFIG = {
-    API_CHAT: "https://chat-v20-genai-465781488910.us-central1.run.app",
-    API_ANA: "https://analize-v20-genai-465781488910.us-central1.run.app",
-    API_PRE: "https://precalifier-v20-genai-465781488910.us-central1.run.app"
+    // Usamos import.meta.env para que Vite asigne la URL correcta según el entorno
+    API_CHAT: import.meta.env.VITE_API_CHAT,
+    API_ANA: import.meta.env.VITE_API_ANA,
+    API_PRE: import.meta.env.VITE_API_PRE
 };
 
 export const STRIPE_PRICES = {
