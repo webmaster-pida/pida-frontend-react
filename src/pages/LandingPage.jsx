@@ -436,7 +436,7 @@ export default function LandingPage({ onOpenAuth }) {
             <div className="hero-content">
               <h1 style={{ fontSize: '3.0rem', lineHeight: '1.15', marginBottom: '15px', marginTop: '15px' }}>
                 Inteligencia Aumentada para la Defensa de los <br />
-                <span className="text-gradient">Derechos Humanos</span>
+                <span className="text-gradient">Derechos Humanos..</span>
               </h1>
               <p className="hero-desc">
                 Los asistentes de Inteligencia Artificial genéricos son un océano de información, pero sin un ancla, pueden llevarte a la deriva con datos imprecisos.
