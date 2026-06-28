@@ -33,8 +33,7 @@ import {
   Drawer,
   FormControl,
   InputLabel,
-  Select,
-  Close as CloseIcon
+  Select
 } from '@mui/material';
 
 import { 
@@ -42,7 +41,8 @@ import {
   History as HistoryIcon, 
   Delete as DeleteIcon,
   KeyboardArrowDown as ArrowDownIcon,
-  Stars as VipIcon
+  Stars as VipIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 
 import { loadStripe } from '@stripe/stripe-js';
