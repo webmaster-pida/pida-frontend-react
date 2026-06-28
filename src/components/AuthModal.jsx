@@ -150,6 +150,7 @@ function AuthFormContent({ onClose, initialMode }) {
         return;
       }
 
+      // --- PASO 1: REGISTRO CON REDIRECCIÓN MANUAL FORZADA ---
       if (mode === 'register') {
         setLoadingText('Creando cuenta...');
         const cred = await auth.createUserWithEmailAndPassword(email, password);
@@ -157,7 +158,18 @@ function AuthFormContent({ onClose, initialMode }) {
         const fullName = `${firstName} ${lastName}`.trim();
         
         await user.updateProfile({ displayName: fullName });
-        await user.sendEmailVerification();
+
+        setLoadingText('Enviando correo de activación...');
+
+        // 👇 ESTO OBLIGA A FIREBASE A IGNORAR SU PÁGINA GRIS Y ENVIAR AL USUARIO A TU RUTA LIMPIA
+        const actionCodeSettings = {
+          // Apunta directamente a tu ruta de React, añadiendo el parámetro de éxito
+          url: `${window.location.origin}/auth-action?pida_callback=verified`, 
+          handleCodeInApp: true // <-- Crucial: Le dice a Firebase que tu app de React tomará el control del código
+        };
+        
+        // Le pasamos los ajustes como argumento al método nativo
+        await user.sendEmailVerification(actionCodeSettings);
         
         setMode('verify-email');
         setIsLoading(false);
