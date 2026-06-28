@@ -7,6 +7,7 @@ import AccountInterface from '../components/AccountInterface';
 import { db, auth } from '../config/firebase'; 
 import { PIDA_CONFIG, STRIPE_PRICES } from '../config/constants';
 
+// Se agregaron FormControl, InputLabel, Select y Drawer de manera limpia
 import { 
   Box, 
   Typography, 
@@ -29,7 +30,11 @@ import {
   useMediaQuery,
   useTheme,
   Backdrop,
-  TextField
+  TextField,
+  Drawer,
+  FormControl,
+  InputLabel,
+  Select
 } from '@mui/material';
 
 import { 
@@ -142,8 +147,6 @@ const InAppCheckout = ({ user }) => {
   return (
     <Paper elevation={4} sx={{ maxWidth: 600, background: 'white', padding: '40px', borderRadius: '16px', textAlign: 'center', margin: '0 auto', width: '95%', position: 'relative' }}>
       
-      {/* 1. SE ELIMINÓ EL BOTÓN ROJO DE LA ESQUINA SUPERIOR */}
-
       <Stepper activeStep={1} alternativeLabel sx={{ mb: 4 }}>
         {['Cuenta', 'Activación', 'Acceso'].map((label) => (
           <Step key={label}><StepLabel>{label}</StepLabel></Step>
@@ -219,7 +222,6 @@ const InAppCheckout = ({ user }) => {
 
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         
-        {/* Botón adaptado a la estética del AuthModal */}
         <Button 
           type="submit" 
           variant="contained" 
@@ -239,7 +241,6 @@ const InAppCheckout = ({ user }) => {
           {loading ? <CircularProgress size={24} color="inherit" /> : 'Confirmar y empezar prueba gratuita'}
         </Button>
 
-        {/* 2. NUEVO ENLACE INFERIOR ESTILO AUTHMODAL */}
         <div className="bottom-link" style={{ textAlign: 'center', marginTop: '22px' }}>
           <span 
             style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '600', transition: 'color 0.2s' }} 
@@ -284,6 +285,12 @@ export default function Dashboard({ user }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const [resetSignals, setResetSignals] = useState({ chat: 0, ana: 0, pre: 0 });
   const [loadData, setLoadData] = useState({ chat: null, ana: null, pre: null });
+
+  // === ESTADOS NUEVOS PARA EL SISTEMA DE SOPORTE TÉCNICO ===
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [supportForm, setSupportForm] = useState({ subject: '', category: 'Pregunta general', message: '' });
+  const [supportStatus, setSupportStatus] = useState({ type: '', text: '' });
 
   useEffect(() => {
     if (!user) return;
@@ -378,6 +385,39 @@ export default function Dashboard({ user }) {
       await fetch(`${baseUrl}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }}); 
     }
     fetchHistories();
+  };
+
+  // === FUNCIÓN PARA ENVIAR TICKET DE SOPORTE A FIRESTORE ===
+  const handleSendTicket = async (e) => {
+    e.preventDefault();
+    if (!supportForm.subject.trim() || !supportForm.message.trim()) {
+      setSupportStatus({ type: 'error', text: 'Por favor complete todos los campos obligatorios.' });
+      return;
+    }
+
+    setIsSending(true);
+    setSupportStatus({ type: '', text: '' });
+
+    try {
+      await db.collection('support_tickets').add({
+        userId: user.uid,
+        userEmail: user.email,
+        userName: user.displayName || 'Usuario PIDA',
+        subject: supportForm.subject.trim(),
+        category: supportForm.category,
+        message: supportForm.message.trim(),
+        status: "open",
+        created_at: db.app.internal_from_config ? db.app.firebase_.firestore.FieldValue.serverTimestamp() : new Date() 
+      });
+
+      setSupportStatus({ type: 'success', text: 'Ticket enviado con éxito. Te responderemos en un plazo de 24 a 48 horas.' });
+      setSupportForm({ subject: '', category: 'Pregunta general', message: '' });
+    } catch (err) {
+      console.error("Error al enviar ticket de soporte:", err);
+      setSupportStatus({ type: 'error', text: 'Ocurrió un error al enviar el mensaje. Inténtalo de nuevo.' });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   if (isCheckingAccess || isOnboarding) {
@@ -482,11 +522,10 @@ export default function Dashboard({ user }) {
               sx={{ fontWeight: 700, borderRadius: 2, height: 32, bgcolor: isVip ? '#FFFBEB' : '#EEF2FF', color: isVip ? '#92400E' : '#1D3557' }} 
             />
             
-            {/* NUEVO VÍNCULO DE AYUDA */}
+            {/* BOTÓN DE AYUDA ACTUALIZADO CON SEÑALIZACIÓN ONCLICK PARA EL DRAWER */}
             <Button 
-              href="AQUI_PON_TU_URL_DE_AYUDA" 
-              target="_blank" 
               variant="text" 
+              onClick={() => setIsSupportOpen(true)}
               sx={{ 
                 color: 'var(--pida-primary)', 
                 fontWeight: 700, 
@@ -507,6 +546,94 @@ export default function Dashboard({ user }) {
           {currentView === 'cuenta' && <AccountInterface user={user} isVip={isVip} />}
         </Box>
       </Box>
+
+      {/* === COMPONENTE DRAWER: CONTENEDOR FLUIDO Y RESPONSIVO DE SOPORTE TÉCNICO === */}
+      <Drawer
+        anchor="right"
+        open={isSupportOpen}
+        onClose={() => {
+          setIsSupportOpen(false);
+          setSupportStatus({ type: '', text: '' });
+        }}
+        PaperProps={{
+          sx: { width: { xs: '100%', sm: 400 }, padding: '30px', display: 'flex', flexDirection: 'column', gap: 3 }
+        }}
+      >
+        <Box>
+          <Typography variant="h5" sx={{ color: 'var(--pida-primary)', fontWeight: 800, mb: 1 }}>
+            Soporte Técnico PIDA
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#64748B', lineHeight: 1.5 }}>
+            Déjanos tu duda o reporte. Nuestro equipo te responderá vía correo electrónico en un plazo de 24 a 48 horas.
+          </Typography>
+        </Box>
+
+        <Divider />
+
+        <Box component="form" onSubmit={handleSendTicket} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, flexGrow: 1 }}>
+          <TextField
+            label="Asunto"
+            required
+            fullWidth
+            size="small"
+            value={supportForm.subject}
+            onChange={(e) => setSupportForm({ ...supportForm, subject: e.target.value })}
+            disabled={isSending}
+          />
+
+          <FormControl fullWidth size="small">
+            <InputLabel id="support-category-label">Categoría / Tipo de problema</InputLabel>
+            <Select
+              labelId="support-category-label"
+              label="Categoría / Tipo de problema"
+              value={supportForm.category}
+              onChange={(e) => setSupportForm({ ...supportForm, category: e.target.value })}
+              disabled={isSending}
+            >
+              <MenuItem value="Pregunta general">Pregunta general</MenuItem>
+              <MenuItem value="Problema con el Chat">Problema con el Chat</MenuItem>
+              <MenuItem value="Error en Análisis">Error en Análisis</MenuItem>
+              <MenuItem value="Facturación/Stripe">Facturación/Stripe</MenuItem>
+              <MenuItem value="Otro">Otro</MenuItem>
+            </Select>
+          </FormControl>
+
+          <TextField
+            label="Mensaje / Descripción detallada"
+            required
+            fullWidth
+            multiline
+            rows={5}
+            placeholder="Describe detalladamente tu inconveniente o duda para ayudarte mejor..."
+            value={supportForm.message}
+            onChange={(e) => setSupportForm({ ...supportForm, message: e.target.value })}
+            disabled={isSending}
+          />
+
+          {supportStatus.text && (
+            <Alert severity={supportStatus.type} sx={{ width: '100%' }}>
+              {supportStatus.text}
+            </Alert>
+          )}
+
+          <Button
+            type="submit"
+            variant="contained"
+            fullWidth
+            disabled={isSending}
+            sx={{
+              mt: 'auto',
+              py: 1.2,
+              fontWeight: 700,
+              textTransform: 'none',
+              bgcolor: 'var(--pida-primary)',
+              '&:hover': { bgcolor: 'var(--pida-accent)' }
+            }}
+          >
+            {isSending ? <CircularProgress size={24} color="inherit" /> : 'Enviar mensaje de soporte'}
+          </Button>
+        </Box>
+      </Drawer>
     </Box>
   );
 }
