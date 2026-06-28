@@ -5,7 +5,6 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 import { STRIPE_PRICES, PIDA_CONFIG } from '../config/constants';
 import { Box, TextField, Button, CircularProgress, Backdrop, Typography } from '@mui/material';
 
-// Asegúrate de usar la llave pública correcta para tu entorno
 const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3kjrZGFGln3bhwEQKnpoNXf2MnLXGHylM1OQ6SvWJmNVCNqhCxg6x000l605E1B');
 
 const cardStyle = {
@@ -20,7 +19,7 @@ function AuthFormContent({ onClose, initialMode }) {
   const stripe = useStripe();
   const elements = useElements();
 
-  const [mode, setMode] = useState(initialMode || 'login'); // Modos: login, register, verify-email, checkout, reset
+  const [mode, setMode] = useState(initialMode || 'login'); 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -43,20 +42,20 @@ function AuthFormContent({ onClose, initialMode }) {
   
   const planDetails = STRIPE_PRICES[plan]?.[interval]?.[currency] || STRIPE_PRICES['basico']['monthly']['USD'];
 
-  // 👇 NUEVO: RASTREADOR EN SEGUNDO PLANO (Detecta la verificación hecha en la otra pestaña)
+  // 👇 RASTREADOR EN TIEMPO REAL: Escucha la activación hecha en la pestaña secundaria
   useEffect(() => {
     let pollingInterval = null;
 
     if (mode === 'verify-email') {
       pollingInterval = setInterval(async () => {
         if (auth.currentUser) {
-          await auth.currentUser.reload(); // Consulta a Firebase en tiempo real
+          await auth.currentUser.reload(); 
           if (auth.currentUser.emailVerified) {
-            setMode('checkout'); // Avanza al checkout automáticamente si detecta la confirmación
+            setMode('checkout'); // Avanza solo al formulario de cobro
             clearInterval(pollingInterval);
           }
         }
-      }, 3000); // Revisa cada 3 segundos
+      }, 2500); // Revisa cada 3 segundos de forma segura
     }
 
     return () => {
@@ -70,7 +69,6 @@ function AuthFormContent({ onClose, initialMode }) {
     }
   }, [initialMode]);
 
-  // --- LÓGICA DE GOOGLE LOGIN (INTACTA) ---
   const handleGoogleLogin = async () => {
     setError('');
     setIsLoading(true);
@@ -108,11 +106,7 @@ function AuthFormContent({ onClose, initialMode }) {
     setError('');
     try {
       if (auth.currentUser) {
-        const actionCodeSettings = {
-          url: `${window.location.origin}?pida_callback=verified`,
-          handleCodeInApp: false
-        };
-        await auth.currentUser.sendEmailVerification(actionCodeSettings);
+        await auth.currentUser.sendEmailVerification();
         setError('✅ Enlace de verificación reenviado. Revisa tu bandeja de entrada.');
       }
     } catch (err) {
@@ -120,7 +114,6 @@ function AuthFormContent({ onClose, initialMode }) {
     }
   };
 
-  // --- CONTROLADOR GENERAL DE SUBMIT ---
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -140,8 +133,7 @@ function AuthFormContent({ onClose, initialMode }) {
         const cred = await auth.signInWithEmailAndPassword(email, password);
         
         if (!cred.user.emailVerified) {
-          const actionCodeSettings = { url: `${window.location.origin}?pida_callback=verified`, handleCodeInApp: false };
-          await cred.user.sendEmailVerification(actionCodeSettings);
+          await cred.user.sendEmailVerification();
           setMode('verify-email');
           setError('⚠️ Tu correo electrónico no está verificado. Te hemos enviado un enlace de activación.');
           setIsLoading(false);
@@ -165,13 +157,7 @@ function AuthFormContent({ onClose, initialMode }) {
         const fullName = `${firstName} ${lastName}`.trim();
         
         await user.updateProfile({ displayName: fullName });
-
-        const actionCodeSettings = {
-          url: `${window.location.origin}?pida_callback=verified`, 
-          handleCodeInApp: false
-        };
-        
-        await user.sendEmailVerification(actionCodeSettings);
+        await user.sendEmailVerification();
         
         setMode('verify-email');
         setIsLoading(false);
@@ -388,7 +374,7 @@ function AuthFormContent({ onClose, initialMode }) {
             </Typography>
             <Typography variant="caption" sx={{ display: 'block', mt: 2, color: '#0284C7', fontSize: '0.8rem', lineHeight: 1.5 }}>
               Por favor, abre el mensaje en tu bandeja y haz clic en <strong>Complete Verification</strong>.<br />
-              <span style={{ color: '#0369A1', fontWeight: 'bold' }}>⚡ ¡Esta pantalla avanzará sola automáticamente cuando hagas clic!</span>
+              <span style={{ color: '#0369A1', fontWeight: 'bold' }}>⚡ ¡Esta pantalla avanzará sola automáticamente cuando hagas clic en tu correo!</span>
             </Typography>
             <Button size="small" variant="text" onClick={handleResendVerification} sx={{ mt: 2, textTransform: 'none', fontWeight: '600', color: '#0369A1', '&:hover': { textDecoration: 'underline' } }}>
               Reenviar enlace de verificación
@@ -475,7 +461,7 @@ function AuthFormContent({ onClose, initialMode }) {
 
         {error && <div className="status-msg error" style={{ color: '#EF4444', fontSize: '0.85rem', background: '#FEF2F2', padding: '10px', borderRadius: '6px', marginBottom: '15px', border: '1px solid #FECACA', textAlign: 'center' }}>{error}</div>}
 
-        <button type="submit" className="form-submit-btn pida-button-primary" style={{ width: '100%', padding: '14px', fontSize: '1rem', cursor: 'pointer', border: 'none', borderRadius: '8px', background: 'var(--pida-primary)', color: 'white', fontWeight: '600' }} disabled={isLoading}>
+        <button type="submit" className="form-submit-btn pida-button-primary" style={{ width: '100%', padding: '14px', fontSize: '1rem', cursor: 'pointer', border: 'none', borderRadius: '8px', background: 'var(--pida-primary)', color: 'white', fontWeight: '600' }} disabled={isLoading || (!stripe && mode === 'checkout')}>
           {isLoading ? loadingText : (
             mode === 'login' ? 'Ingresar' : 
             mode === 'register' ? 'Registrar mi cuenta' : 
