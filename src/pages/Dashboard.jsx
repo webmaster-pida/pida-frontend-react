@@ -7,7 +7,6 @@ import AccountInterface from '../components/AccountInterface';
 import { db, auth } from '../config/firebase'; 
 import { PIDA_CONFIG, STRIPE_PRICES } from '../config/constants';
 
-// Se agregaron FormControl, InputLabel, Select y Drawer de manera limpia
 import { 
   Box, 
   Typography, 
@@ -286,7 +285,7 @@ export default function Dashboard({ user }) {
   const [resetSignals, setResetSignals] = useState({ chat: 0, ana: 0, pre: 0 });
   const [loadData, setLoadData] = useState({ chat: null, ana: null, pre: null });
 
-  // === ESTADOS NUEVOS PARA EL SISTEMA DE SOPORTE TÉCNICO ===
+  // === ESTADOS PARA EL SISTEMA DE SOPORTE TÉCNICO ===
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [supportForm, setSupportForm] = useState({ subject: '', category: 'Pregunta general', message: '' });
@@ -522,7 +521,7 @@ export default function Dashboard({ user }) {
               sx={{ fontWeight: 700, borderRadius: 2, height: 32, bgcolor: isVip ? '#FFFBEB' : '#EEF2FF', color: isVip ? '#92400E' : '#1D3557' }} 
             />
             
-            {/* BOTÓN DE AYUDA ACTUALIZADO CON SEÑALIZACIÓN ONCLICK PARA EL DRAWER */}
+            {/* BOTÓN DE AYUDA CORREGIDO */}
             <Button 
               variant="text" 
               onClick={() => setIsSupportOpen(true)}
@@ -530,7 +529,11 @@ export default function Dashboard({ user }) {
                 color: 'var(--pida-primary)', 
                 fontWeight: 700, 
                 textTransform: 'none',
-                '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' }
+                px: 2,
+                '&:hover': { 
+                  backgroundColor: 'rgba(29, 53, 87, 0.08)',
+                  textDecoration: 'none' 
+                }
               }}
             >
               Ayuda
@@ -547,7 +550,7 @@ export default function Dashboard({ user }) {
         </Box>
       </Box>
 
-      {/* === COMPONENTE DRAWER: CONTENEDOR FLUIDO Y RESPONSIVO DE SOPORTE TÉCNICO === */}
+      {/* COMPONENTE DRAWER: CONTENEDOR DE SOPORTE TÉCNICO */}
       <Drawer
         anchor="right"
         open={isSupportOpen}
