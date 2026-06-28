@@ -33,7 +33,8 @@ import {
   Drawer,
   FormControl,
   InputLabel,
-  Select
+  Select,
+  Close as CloseIcon
 } from '@mui/material';
 
 import { 
@@ -583,21 +584,34 @@ export default function Dashboard({ user }) {
         }}
         sx={{ zIndex: 999999 }} 
         ModalProps={{
-          disableEnforceFocus: true, // Permite escribir libremente sin que el chat robe el teclado
+          disableEnforceFocus: true, 
           disableAutoFocus: true,
         }}
         PaperProps={{
           sx: { width: { xs: '100%', sm: 400 }, padding: '30px', display: 'flex', flexDirection: 'column', gap: 3 }
         }}
       >
-        <Box>
-          <Typography variant="h5" sx={{ color: 'var(--pida-primary)', fontWeight: 800, mb: 1 }}>
-            Soporte Técnico PIDA
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#64748B', lineHeight: 1.5 }}>
-            Déjanos tu duda o reporte. Nuestro equipo te responderá vía correo electrónico en un plazo de 24 a 48 horas.
-          </Typography>
+        {/* --- NUEVO ENCABEZADO CON BOTÓN DE CERRAR --- */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box pr={2}>
+            <Typography variant="h5" sx={{ color: 'var(--pida-primary)', fontWeight: 800, mb: 1 }}>
+              Soporte Técnico PIDA
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#64748B', lineHeight: 1.5 }}>
+              Déjanos tu duda o reporte. Nuestro equipo te responderá vía correo electrónico en un plazo de 24 a 48 horas.
+            </Typography>
+          </Box>
+          <IconButton 
+            onClick={() => {
+              setIsSupportOpen(false);
+              setSupportStatus({ type: '', text: '' });
+            }}
+            sx={{ bgcolor: '#F1F5F9', '&:hover': { bgcolor: '#E2E8F0' } }}
+          >
+            <CloseIcon />
+          </IconButton>
         </Box>
+        {/* ------------------------------------------- */}
 
         <Divider />
 
