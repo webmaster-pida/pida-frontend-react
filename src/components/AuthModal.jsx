@@ -20,7 +20,7 @@ function AuthFormContent({ onClose, initialMode }) {
   const stripe = useStripe();
   const elements = useElements();
 
-  const [mode, setMode] = useState(initialMode || 'login');
+  const [mode, setMode] = useState(initialMode || 'login'); // Modos: login, register, verify-email, checkout, reset
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -77,6 +77,20 @@ function AuthFormContent({ onClose, initialMode }) {
     }
   };
 
+  const handleResendVerification = async () => {
+    setError('');
+    try {
+      if (auth.currentUser) {
+        await auth.currentUser.sendEmailVerification();
+        setError('✅ Enlace de verificación reenviado. Revisa tu bandeja de entrada.');
+      } else {
+        setError('No hay una sesión de usuario activa para reenviar el correo. Intenta de nuevo.');
+      }
+    } catch (err) {
+      setError('Error al intentar reenviar el correo de verificación.');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -91,42 +105,89 @@ function AuthFormContent({ onClose, initialMode }) {
         return;
       } 
       
-      // --- LÓGICA DE LOGIN NORMAL (INTACTA) ---
+      // --- LÓGICA DE LOGIN NORMAL CON VERIFICACIÓN ---
       if (mode === 'login') {
         setLoadingText('Ingresando...');
-        await auth.signInWithEmailAndPassword(email, password);
+        const cred = await auth.signInWithEmailAndPassword(email, password);
+        
+        if (!cred.user.emailVerified) {
+          await cred.user.sendEmailVerification();
+          setMode('verify-email');
+          setError('⚠️ Tu correo electrónico no ha sido verificado todavía. Te hemos enviado un nuevo enlace de activación.');
+          setIsLoading(false);
+          return;
+        }
+
+        if (sessionStorage.getItem('pida_pending_plan')) {
+          setMode('checkout');
+          setIsLoading(false);
+          return;
+        }
+
         onClose();
         return;
       }
 
-      // --- LÓGICA DE REGISTRO (CON VALIDACIÓN PREVIA DE STRIPE) ---
+      // --- PASO 1: REGISTRO E INICIO DE VERIFICACIÓN ---
       if (mode === 'register') {
+        setLoadingText('Creando cuenta...');
+        const cred = await auth.createUserWithEmailAndPassword(email, password);
+        const user = cred.user;
+        const fullName = `${firstName} ${lastName}`.trim();
+        
+        await user.updateProfile({ displayName: fullName });
+        await user.sendEmailVerification();
+        
+        setMode('verify-email');
+        setIsLoading(false);
+        return;
+      }
+
+      // --- PASO 2: CONTROLADOR DE PANTALLA DE VERIFICACIÓN (CHECK IN-HOUSE) ---
+      if (mode === 'verify-email') {
+        setLoadingText('Sincronizando estado...');
+        if (auth.currentUser) {
+          await auth.currentUser.reload();
+          if (auth.currentUser.emailVerified) {
+            setMode('checkout');
+            setError('');
+          } else {
+            throw new Error("Tu correo electrónico aún no figura como verificado. Por favor, haz clic en el enlace enviado a tu bandeja.");
+          }
+        } else {
+          setMode('login');
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // --- PASO 3: PASARELA DE STRIPE SÓLO PARA USUARIOS AUTÉNTICOS ---
+      if (mode === 'checkout') {
         if (!termsAccepted) throw new Error("Debes aceptar los términos y condiciones.");
         if (!stripe || !elements) throw new Error("Stripe no ha cargado aún.");
 
-        const fullName = `${firstName} ${lastName}`.trim();
+        const user = auth.currentUser;
+        if (!user) throw new Error("Sesión expirada. Por favor, inicia sesión nuevamente.");
+        
+        await user.reload();
+        if (!user.emailVerified) {
+          setMode('verify-email');
+          throw new Error("Acceso denegado. Tu dirección de correo electrónico debe estar verificada.");
+        }
+
+        const fullName = user.displayName || `${firstName} ${lastName}`.trim();
         const cardElement = elements.getElement(CardElement);
 
         setLoadingText('Validando tarjeta...');
         
-        // PASO 1: CREAR EL MÉTODO DE PAGO
         const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
           type: 'card',
           card: cardElement,
-          billing_details: { name: fullName, email: email }
+          billing_details: { name: fullName, email: user.email }
         });
 
         if (stripeError) {
           throw new Error(stripeError.message || "Por favor, ingresa los datos de tu tarjeta correctamente.");
-        }
-
-        // PASO 2: CREAR USUARIO EN FIREBASE (Si la tarjeta pasó)
-        let user = auth.currentUser;
-        if (!user) {
-          setLoadingText('Creando cuenta...');
-          const cred = await auth.createUserWithEmailAndPassword(email, password);
-          user = cred.user;
-          await user.updateProfile({ displayName: fullName });
         }
 
         setLoadingText('Iniciando prueba gratis...');
@@ -142,8 +203,7 @@ function AuthFormContent({ onClose, initialMode }) {
           });
         }
 
-        // PASO 3: COBRAR VÍA BACKEND
-        const token = await user.getIdToken();
+        const token = await user.getIdToken(true); // Forzamos actualización de claims con la bandera de verificación
         const intentRes = await fetch(`${PIDA_CONFIG.API_CHAT}/create-payment-intent`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -163,7 +223,6 @@ function AuthFormContent({ onClose, initialMode }) {
 
         let transactionId = data.subscriptionId || "sub_unknown";
 
-        // PASO 4: CONFIRMAR CON SEGURIDAD (ANTI PANTALLA BLANCA)
         if (data.requiresAction && data.clientSecret) {
           setLoadingText('Confirmando seguridad bancaria...');
           let result;
@@ -194,7 +253,6 @@ function AuthFormContent({ onClose, initialMode }) {
         setLoadingText('¡Suscripción activada!');
         sessionStorage.setItem('pida_is_onboarding', 'true');
         
-        // CIERRE SUAVE EN LUGAR DE REDIRECCIÓN BRUSCA PARA EVITAR PANTALLA BLANCA
         setTimeout(() => {
           setIsLoading(false);
           onClose(); 
@@ -203,17 +261,14 @@ function AuthFormContent({ onClose, initialMode }) {
 
     } catch (err) {
       console.error("AuthModal Error:", err);
-      
       let msg = err.message || "Ocurrió un error inesperado al procesar la solicitud.";
-      
       if (err.code === 'auth/user-not-found') {
           msg = "No encontramos una cuenta con este correo. Recuerda que PIDA es premium, debes adquirir un plan primero.";
       } else if (err.code === 'auth/email-already-in-use') {
-          msg = "Este correo ya está registrado. Haz clic en 'Volver al login' (abajo), ingresa tu correo y contraseña, y completa tu pago.";
+          msg = "Este correo ya está registrado. Haz clic en 'Iniciar sesión' abajo e ingresa tus datos procesando tu plan.";
       } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
           msg = "Datos incorrectos. Revisa tu correo y contraseña.";
       }
-      
       setError(msg);
       setIsLoading(false);
     }
@@ -221,21 +276,26 @@ function AuthFormContent({ onClose, initialMode }) {
 
   return (
     <>
-      <h2 className="modal-title">
-        {mode === 'login' && ''}
-        {mode === 'register' && ''} 
+      <h2 className="modal-title" style={{ textAlign: 'center', fontWeight: '700', color: 'var(--navy)' }}>
+        {mode === 'login' && 'Iniciar Sesión'}
+        {mode === 'register' && 'Crear tu Cuenta'} 
+        {mode === 'verify-email' && 'Verifica tu Correo'}
+        {mode === 'checkout' && 'Configura tu Suscripción'}
         {mode === 'reset' && 'Recuperar Contraseña'}
       </h2>
-      <p className="modal-subtitle">
-        {mode === 'register' ? 'Ingresa tus datos y elige tu plan para comenzar tu prueba de 5 días.' : 'Accede para continuar tu investigación.'}
+      <p className="modal-subtitle" style={{ textAlign: 'center', color: '#64748B', marginBottom: '20px', fontSize: '0.9rem' }}>
+        {mode === 'register' && 'Ingresa tus datos iniciales de acceso para comenzar el asistente.'}
+        {mode === 'verify-email' && 'PIDA requiere una dirección de correo real para mantener contacto institucional seguro.'}
+        {mode === 'checkout' && 'Estás a un paso de activar tu prueba gratuita de 5 días.'}
+        {mode === 'login' && 'Accede para continuar tu investigación.'}
       </p>
 
       {mode === 'login' && (
-        <div className="modal-info-banner">
-          <span className="modal-info-title">¿Aún no tienes cuenta?</span>
-          <p className="modal-info-text">
+        <div className="modal-info-banner" style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px', marginBottom: '15px', border: '1px solid #E2E8F0' }}>
+          <span className="modal-info-title" style={{ fontWeight: '700', fontSize: '0.85rem', color: 'var(--navy)' }}>¿Aún no tienes cuenta?</span>
+          <p className="modal-info-text" style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0 0' }}>
             PIDA es una plataforma premium. Para registrarte, primero debes seleccionar un plan.<br/>
-            <button type="button" className="modal-link-btn" onClick={() => { onClose(); window.location.href = '/#planes'; }}>
+            <button type="button" className="modal-link-btn" onClick={() => { onClose(); window.location.href = '/#planes'; }} style={{ background: 'none', border: 'none', color: 'var(--pida-primary)', fontWeight: '600', cursor: 'pointer', padding: 0, marginTop: '4px' }}>
               Explorar planes y pruebas gratis →
             </button>
           </p>
@@ -244,11 +304,11 @@ function AuthFormContent({ onClose, initialMode }) {
 
       {mode === 'login' && (
         <>
-          <button className="login-btn google-btn" onClick={handleGoogleLogin} disabled={isLoading}>
+          <button className="login-btn google-btn" onClick={handleGoogleLogin} disabled={isLoading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', padding: '10px', border: '1px solid #CBD5E1', borderRadius: '8px', background: 'white', fontWeight: '600', cursor: 'pointer' }}>
             <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style={{width: '18px'}}/> 
-            <span>{isLoading ? loadingText : 'Entrar con Google'}</span>
+            <span>Entrar con Google</span>
           </button>
-          <div className="login-divider"><span>O usa tu correo</span></div>
+          <div className="login-divider" style={{ textAlign: 'center', margin: '15px 0', position: 'relative' }}><span style={{ background: 'white', padding: '0 10px', fontSize: '0.8rem', color: '#94A3B8' }}>O usa tu correo</span></div>
         </>
       )}
 
@@ -261,24 +321,40 @@ function AuthFormContent({ onClose, initialMode }) {
           </Box>
         )}
 
-        <TextField type="email" label="Correo electrónico" variant="outlined" size="small" fullWidth required value={email} onChange={e => setEmail(e.target.value)} sx={{ bgcolor: '#FAFAFA', mb: 2 }} />
+        {(mode === 'login' || mode === 'register' || mode === 'reset') && (
+          <TextField type="email" label="Correo electrónico" variant="outlined" size="small" fullWidth required value={email} onChange={e => setEmail(e.target.value)} sx={{ bgcolor: '#FAFAFA', mb: 2 }} />
+        )}
         
-        {mode !== 'reset' && (
+        {(mode === 'login' || mode === 'register') && (
           <Box sx={{ position: 'relative', mb: 2 }}>
             <TextField type="password" label="Contraseña" variant="outlined" size="small" fullWidth required value={password} onChange={e => setPassword(e.target.value)} sx={{ bgcolor: '#FAFAFA' }} />
             {mode === 'login' && (
-              <div style={{ textAlign: 'right', marginTop: '8px', marginBottom: '8px' }}>
+              <div style={{ textAlign: 'right', marginTop: '8px' }}>
                 <span onClick={() => { setMode('reset'); setError(''); }} style={{ fontSize: '0.85rem', color: 'var(--pida-accent)', cursor: 'pointer', fontWeight: '500' }}>¿Olvidaste tu contraseña?</span>
               </div>
             )}
           </Box>
         )}
 
-        {mode === 'register' && (
+        {mode === 'verify-email' && (
+          <Box sx={{ textAlign: 'center', py: 2, px: 1, bgcolor: '#F0F9FF', borderRadius: '12px', border: '1px solid #BAE6FD', mb: 3 }}>
+            <Typography variant="body2" sx={{ color: '#0369A1', fontWeight: '500', lineHeight: 1.6 }}>
+              Hemos enviado un enlace de activación al correo electrónico: <br />
+              <strong>{email || (auth.currentUser && auth.currentUser.email)}</strong>
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block', mt: 2, color: '#0284C7' }}>
+              Por favor, haz clic en el enlace recibido. Si no lo ves, revisa tu carpeta de <strong>Correo no deseado o Spam</strong>.
+            </Typography>
+            <Button size="small" variant="text" onClick={handleResendVerification} sx={{ mt: 2, textTransform: 'none', fontWeight: '600', color: '#0369A1', '&:hover': { textDecoration: 'underline' } }}>
+              Reenviar enlace de verificación
+            </Button>
+          </Box>
+        )}
+
+        {mode === 'checkout' && (
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
-            
-            <div style={{ marginBottom: '20px', paddingTop: '10px', borderTop: '1px solid #E2E8F0' }}>
-              <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '8px', display: 'block' }}>Elige tu Plan</label>
+            <div style={{ marginBottom: '20px', paddingTop: '10px' }}>
+              <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '8px', display: 'block' }}>Confirma tu Plan</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '15px' }}>
                 {['basico', 'avanzado', 'premium'].map((p) => (
                   <button key={p} type="button" onClick={() => { setPlan(p); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }} style={{
@@ -352,16 +428,25 @@ function AuthFormContent({ onClose, initialMode }) {
           </div>
         )}
 
-        {error && <div className="status-msg error" style={{ color: '#EF4444', fontSize: '0.85rem', background: '#FEF2F2', padding: '10px', borderRadius: '6px', marginBottom: '15px', border: '1px solid #FECACA' }}>{error}</div>}
+        {error && <div className="status-msg error" style={{ color: '#EF4444', fontSize: '0.85rem', background: '#FEF2F2', padding: '10px', borderRadius: '6px', marginBottom: '15px', border: '1px solid #FECACA', textAlign: 'center' }}>{error}</div>}
 
-        <button type="submit" className="form-submit-btn pida-button-primary" style={{ width: '100%', padding: '14px', fontSize: '1rem' }} disabled={isLoading || (!stripe && mode === 'register')}>
-          {isLoading ? loadingText : (mode === 'login' ? 'Ingresar' : mode === 'register' ? 'Activar cuenta y probar 5 días' : 'Enviar enlace')}
+        <button type="submit" className="form-submit-btn pida-button-primary" style={{ width: '100%', padding: '14px', fontSize: '1rem', cursor: 'pointer', border: 'none', borderRadius: '8px', background: 'var(--pida-primary)', color: 'white', fontWeight: '600' }} disabled={isLoading || (!stripe && mode === 'checkout')}>
+          {isLoading ? loadingText : (
+            mode === 'login' ? 'Ingresar' : 
+            mode === 'register' ? 'Registrar mi cuenta' : 
+            mode === 'verify-email' ? 'Ya lo verifiqué, continuar' :
+            mode === 'checkout' ? 'Activar cuenta y probar 5 días' : 'Enviar enlace'
+          )}
         </button>
       </form>
 
       <div className="bottom-link" style={{ textAlign: 'center', marginTop: '20px' }}>
-        {mode === 'reset' && <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); }}>← Volver al login</span>}
-        {mode === 'register' && <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); }}>← Ya tengo cuenta, iniciar sesión</span>}
+        {(mode === 'reset' || mode === 'register' || mode === 'verify-email' || mode === 'checkout') && (
+          <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }}>← Volver al login</span>
+        )}
+        {mode === 'login' && (
+          <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('register'); setError(''); }}>← No tengo cuenta, registrarme</span>
+        )}
       </div>
 
       <Backdrop
@@ -392,8 +477,8 @@ function AuthFormContent({ onClose, initialMode }) {
 export default function AuthModal({ isOpen, initialMode = 'login', onClose }) {
   if (!isOpen) return null;
   return (
-    <div className="modal-backdrop" onClick={onClose} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-      <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px', width: '90%', padding: '30px', background: 'white', borderRadius: '16px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+    <div className="modal-backdrop" onClick={onClose} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 2000 }}>
+      <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px', width: '90%', padding: '30px', background: 'white', borderRadius: '16px', position: 'relative', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748B' }}>×</button>
         <img src="/img/PIDA_logo-100-blue-red.webp" alt="PIDA Logo" style={{ width: '140px', marginBottom: '25px', display: 'block', margin: '0 auto' }} />
         <Elements stripe={stripePromise}>
