@@ -553,7 +553,7 @@ export default function Dashboard({ user }) {
         </Box>
       </Box>
 
-      {/* COMPONENTE DRAWER: CONTENEDOR DE SOPORTE TÉCNICO */}
+      {/* COMPONENTE DRAWER FORZADO AL FRENTE */}
       <Drawer
         anchor="right"
         open={isSupportOpen}
@@ -561,6 +561,7 @@ export default function Dashboard({ user }) {
           setIsSupportOpen(false);
           setSupportStatus({ type: '', text: '' });
         }}
+        sx={{ zIndex: 999999 }} /* <-- Forzamos que esté por encima de toda la app */
         PaperProps={{
           sx: { width: { xs: '100%', sm: 400 }, padding: '30px', display: 'flex', flexDirection: 'column', gap: 3 }
         }}
