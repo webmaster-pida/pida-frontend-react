@@ -81,17 +81,20 @@ function AuthFormContent({ onClose, initialMode }) {
     setError('');
     try {
       if (auth.currentUser) {
-        await auth.currentUser.sendEmailVerification();
+        const actionCodeSettings = {
+          url: window.location.origin, 
+          handleCodeInApp: false
+        };
+        await auth.currentUser.sendEmailVerification(actionCodeSettings);
         setError('✅ Enlace de verificación reenviado. Revisa tu bandeja de entrada.');
-      } else {
-        setError('No hay una sesión de usuario activa para reenviar el correo. Intenta de nuevo.');
       }
     } catch (err) {
       setError('Error al intentar reenviar el correo de verificación.');
     }
   };
 
-  const handleSubmit = async (e) => {
+  // --- CONTROLADOR GENERAL DE SUBMIT ---
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
@@ -105,15 +108,16 @@ function AuthFormContent({ onClose, initialMode }) {
         return;
       } 
       
-      // --- LÓGICA DE LOGIN NORMAL CON VERIFICACIÓN ---
       if (mode === 'login') {
         setLoadingText('Ingresando...');
         const cred = await auth.signInWithEmailAndPassword(email, password);
         
+        // Si es un usuario de correo/contraseña que nunca se verificó, lo mandamos a verificar
         if (!cred.user.emailVerified) {
-          await cred.user.sendEmailVerification();
+          const actionCodeSettings = { url: window.location.origin, handleCodeInApp: false };
+          await cred.user.sendEmailVerification(actionCodeSettings);
           setMode('verify-email');
-          setError('⚠️ Tu correo electrónico no ha sido verificado todavía. Te hemos enviado un nuevo enlace de activación.');
+          setError('⚠️ Tu correo electrónico no está verificado. Te hemos enviado un enlace de activación.');
           setIsLoading(false);
           return;
         }
@@ -128,7 +132,7 @@ function AuthFormContent({ onClose, initialMode }) {
         return;
       }
 
-      // --- PASO 1: REGISTRO E INICIO DE VERIFICACIÓN ---
+      // --- PASO 1: REGISTRO E INICIO DE VERIFICACIÓN DINÁMICA ---
       if (mode === 'register') {
         setLoadingText('Creando cuenta...');
         const cred = await auth.createUserWithEmailAndPassword(email, password);
@@ -136,140 +140,158 @@ function AuthFormContent({ onClose, initialMode }) {
         const fullName = `${firstName} ${lastName}`.trim();
         
         await user.updateProfile({ displayName: fullName });
-        await user.sendEmailVerification();
+
+        // Configuración dinámica de retorno automático para el enlace
+        const actionCodeSettings = {
+          url: window.location.origin, 
+          handleCodeInApp: false
+        };
+        
+        await user.sendEmailVerification(actionCodeSettings);
         
         setMode('verify-email');
         setIsLoading(false);
         return;
       }
-
-      // --- PASO 2: CONTROLADOR DE PANTALLA DE VERIFICACIÓN (CHECK IN-HOUSE) ---
-      if (mode === 'verify-email') {
-        setLoadingText('Sincronizando estado...');
-        if (auth.currentUser) {
-          await auth.currentUser.reload();
-          if (auth.currentUser.emailVerified) {
-            setMode('checkout');
-            setError('');
-          } else {
-            throw new Error("Tu correo electrónico aún no figura como verificado. Por favor, haz clic en el enlace enviado a tu bandeja.");
-          }
-        } else {
-          setMode('login');
-        }
-        setIsLoading(false);
-        return;
-      }
-
-      // --- PASO 3: PASARELA DE STRIPE SÓLO PARA USUARIOS AUTÉNTICOS ---
-      if (mode === 'checkout') {
-        if (!termsAccepted) throw new Error("Debes aceptar los términos y condiciones.");
-        if (!stripe || !elements) throw new Error("Stripe no ha cargado aún.");
-
-        const user = auth.currentUser;
-        if (!user) throw new Error("Sesión expirada. Por favor, inicia sesión nuevamente.");
-        
-        await user.reload();
-        if (!user.emailVerified) {
-          setMode('verify-email');
-          throw new Error("Acceso denegado. Tu dirección de correo electrónico debe estar verificada.");
-        }
-
-        const fullName = user.displayName || `${firstName} ${lastName}`.trim();
-        const cardElement = elements.getElement(CardElement);
-
-        setLoadingText('Validando tarjeta...');
-        
-        const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
-          type: 'card',
-          card: cardElement,
-          billing_details: { name: fullName, email: user.email }
-        });
-
-        if (stripeError) {
-          throw new Error(stripeError.message || "Por favor, ingresa los datos de tu tarjeta correctamente.");
-        }
-
-        setLoadingText('Iniciando prueba gratis...');
-
-        const numericValue = discountData ? (discountData.final_amount / 100) : parseFloat(planDetails.text.replace(/[^0-9.-]+/g,""));
-        const itemName = `Plan ${plan.toUpperCase()} - ${interval.toUpperCase()}`;
-
-        if (typeof window !== 'undefined' && window.gtag) {
-          window.gtag('event', 'begin_checkout', {
-            currency: currency,
-            value: numericValue,
-            items: [{ item_id: planDetails.id, item_name: itemName, price: numericValue, quantity: 1 }]
-          });
-        }
-
-        const token = await user.getIdToken(true); // Forzamos actualización de claims con la bandera de verificación
-        const intentRes = await fetch(`${PIDA_CONFIG.API_CHAT}/create-payment-intent`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            priceId: planDetails.id, 
-            currency: currency.toLowerCase(),
-            plan_key: plan,
-            trial_period_days: 5,
-            name: fullName,
-            promotion_code: discountData ? promoCode : "",
-            paymentMethodId: paymentMethod.id 
-          })
-        });
-
-        const data = await intentRes.json();
-        if (!intentRes.ok) throw new Error(data.detail || "Error al procesar el pago");
-
-        let transactionId = data.subscriptionId || "sub_unknown";
-
-        if (data.requiresAction && data.clientSecret) {
-          setLoadingText('Confirmando seguridad bancaria...');
-          let result;
-          if (data.clientSecret.startsWith('seti_')) {
-            result = await stripe.confirmCardSetup(data.clientSecret, {
-              payment_method: paymentMethod.id
-            });
-            if (result.error) throw new Error(result.error.message);
-            transactionId = result.setupIntent.id;
-          } else {
-            result = await stripe.confirmCardPayment(data.clientSecret, {
-              payment_method: paymentMethod.id
-            });
-            if (result.error) throw new Error(result.error.message);
-            transactionId = result.paymentIntent.id;
-          }
-        }
-
-        if (typeof window !== 'undefined' && window.gtag) {
-          window.gtag('event', 'purchase', {
-            transaction_id: transactionId,
-            currency: currency,
-            value: numericValue,
-            items: [{ item_id: planDetails.id, item_name: itemName, price: numericValue, quantity: 1 }]
-          });
-        }
-
-        setLoadingText('¡Suscripción activada!');
-        sessionStorage.setItem('pida_is_onboarding', 'true');
-        
-        setTimeout(() => {
-          setIsLoading(false);
-          onClose(); 
-        }, 1500);
-      }
-
     } catch (err) {
       console.error("AuthModal Error:", err);
       let msg = err.message || "Ocurrió un error inesperado al procesar la solicitud.";
       if (err.code === 'auth/user-not-found') {
           msg = "No encontramos una cuenta con este correo. Recuerda que PIDA es premium, debes adquirir un plan primero.";
       } else if (err.code === 'auth/email-already-in-use') {
-          msg = "Este correo ya está registrado. Haz clic en 'Iniciar sesión' abajo e ingresa tus datos procesando tu plan.";
+          msg = "Este correo ya está registrado. Haz clic en 'Iniciar sesión' abajo e ingresa tus datos.";
       } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
           msg = "Datos incorrectos. Revisa tu correo y contraseña.";
       }
       setError(msg);
+      setIsLoading(false);
+    }
+  };
+
+  // --- PASO 2: ACCIÓN AL PULSAR "YA LO VERIFIQUÉ" ---
+  const handleCheckVerification = async (e) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+    setLoadingText('Sincronizando estado...');
+    try {
+      if (auth.currentUser) {
+        await auth.currentUser.reload();
+        if (auth.currentUser.emailVerified) {
+          setMode('checkout');
+          setError('');
+        } else {
+          throw new Error("Tu correo electrónico aún no figura como verificado. Por favor, haz clic en el enlace enviado a tu bandeja.");
+        }
+      } else {
+        setMode('login');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- PASO 3: PROCESAMIENTO FINAL EN STRIPE ---
+  const handleProcessPayment = async (e) => {
+    e.preventDefault();
+    if (!termsAccepted) { setError("Debes aceptar los términos y condiciones."); return; }
+    if (!stripe || !elements) { setError("Stripe no ha cargado aún."); return; }
+
+    setError('');
+    setIsLoading(true);
+    setLoadingText('Validando tarjeta...');
+
+    try {
+      const user = auth.currentUser;
+      if (!user) throw new Error("Sesión expirada. Por favor, inicia sesión nuevamente.");
+      
+      await user.reload();
+      if (!user.emailVerified) {
+        setMode('verify-email');
+        throw new Error("Acceso denegado. Tu dirección de correo debe estar verificada.");
+      }
+
+      const fullName = user.displayName || `${firstName} ${lastName}`.trim();
+      const cardElement = elements.getElement(CardElement);
+
+      const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement,
+        billing_details: { name: fullName, email: user.email }
+      });
+
+      if (stripeError) {
+        throw new Error(stripeError.message || "Por favor, ingresa los datos de tu tarjeta correctamente.");
+      }
+
+      setLoadingText('Iniciando prueba gratis...');
+
+      const numericValue = discountData ? (discountData.final_amount / 100) : parseFloat(planDetails.text.replace(/[^0-9.-]+/g,""));
+      const itemName = `Plan ${plan.toUpperCase()} - ${interval.toUpperCase()}`;
+
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'begin_checkout', {
+          currency: currency,
+          value: numericValue,
+          items: [{ item_id: planDetails.id, item_name: itemName, price: numericValue, quantity: 1 }]
+        });
+      }
+
+      const token = await user.getIdToken(true);
+      const intentRes = await fetch(`${PIDA_CONFIG.API_CHAT}/create-payment-intent`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          priceId: planDetails.id, 
+          currency: currency.toLowerCase(),
+          plan_key: plan,
+          trial_period_days: 5,
+          name: fullName,
+          promotion_code: discountData ? promoCode.trim() : "",
+          paymentMethodId: paymentMethod.id 
+        })
+      });
+
+      const data = await intentRes.json();
+      if (!intentRes.ok) throw new Error(data.detail || "Error al procesar el pago");
+
+      let transactionId = data.subscriptionId || "sub_unknown";
+
+      if (data.requiresAction && data.clientSecret) {
+        setLoadingText('Confirmando seguridad bancaria...');
+        let result;
+        if (data.clientSecret.startsWith('seti_')) {
+          result = await stripe.confirmCardSetup(data.clientSecret, { payment_method: paymentMethod.id });
+          if (result.error) throw new Error(result.error.message);
+          transactionId = result.setupIntent.id;
+        } else {
+          result = await stripe.confirmCardPayment(data.clientSecret, { payment_method: paymentMethod.id });
+          if (result.error) throw new Error(result.error.message);
+          transactionId = result.paymentIntent.id;
+        }
+      }
+
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'purchase', {
+          transaction_id: transactionId,
+          currency: currency,
+          value: numericValue,
+          items: [{ item_id: planDetails.id, item_name: itemName, price: numericValue, quantity: 1 }]
+        });
+      }
+
+      setLoadingText('¡Suscripción activada!');
+      sessionStorage.setItem('pida_is_onboarding', 'true');
+      
+      setTimeout(() => {
+        setIsLoading(false);
+        onClose(); 
+      }, 1500);
+
+    } catch (err) {
+      setError(err.message || "Error procesando la transacción.");
       setIsLoading(false);
     }
   };
@@ -284,7 +306,7 @@ function AuthFormContent({ onClose, initialMode }) {
         {mode === 'reset' && 'Recuperar Contraseña'}
       </h2>
       <p className="modal-subtitle" style={{ textAlign: 'center', color: '#64748B', marginBottom: '20px', fontSize: '0.9rem' }}>
-        {mode === 'register' && 'Ingresa tus datos iniciales de acceso para comenzar el proceso.'}
+        {mode === 'register' && 'Ingresa tus datos iniciales de acceso para comenzar el asistente.'}
         {mode === 'verify-email' && 'PIDA requiere una dirección de correo real para mantener contacto institucional seguro.'}
         {mode === 'checkout' && 'Estás a un paso de activar tu prueba gratuita de 5 días.'}
         {mode === 'login' && 'Accede para continuar tu investigación.'}
@@ -312,7 +334,7 @@ function AuthFormContent({ onClose, initialMode }) {
         </>
       )}
 
-      <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
+      <form onSubmit={mode === 'verify-email' ? handleCheckVerification : mode === 'checkout' ? handleProcessPayment : handleFormSubmit} style={{ textAlign: 'left' }}>
         
         {mode === 'register' && (
           <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
@@ -343,7 +365,7 @@ function AuthFormContent({ onClose, initialMode }) {
               <strong>{email || (auth.currentUser && auth.currentUser.email)}</strong>
             </Typography>
             <Typography variant="caption" sx={{ display: 'block', mt: 2, color: '#0284C7' }}>
-              Por favor, haz clic en el enlace recibido. Si no lo ves, revisa tu carpeta de <strong>Correo no deseado o Spam</strong>.
+              Por favor, abre el mensaje en tu bandeja y haz clic en <strong>Complete Verification</strong>. Al finalizar, regresa aquí y pulsa el botón inferior.
             </Typography>
             <Button size="small" variant="text" onClick={handleResendVerification} sx={{ mt: 2, textTransform: 'none', fontWeight: '600', color: '#0369A1', '&:hover': { textDecoration: 'underline' } }}>
               Reenviar enlace de verificación
