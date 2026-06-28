@@ -399,6 +399,9 @@ export default function Dashboard({ user }) {
     setSupportStatus({ type: '', text: '' });
 
     try {
+      const timestamp = db.app.internal_from_config ? db.app.firebase_.firestore.FieldValue.serverTimestamp() : new Date();
+
+      // 1. Guardar el ticket en la base de datos (Historial)
       await db.collection('support_tickets').add({
         userId: user.uid,
         userEmail: user.email,
@@ -407,11 +410,26 @@ export default function Dashboard({ user }) {
         category: supportForm.category,
         message: supportForm.message.trim(),
         status: "open",
-        created_at: db.app.internal_from_config ? db.app.firebase_.firestore.FieldValue.serverTimestamp() : new Date() 
+        created_at: timestamp
+      });
+
+      // 2. Disparar el Email a través de la colección "mail" usando el Template
+      await db.collection('mail').add({
+        to: 'contacto@pida-ai.com',
+        template: {
+          name: 'support-ticket', // El nombre exacto del documento que creaste en el Paso 1
+          data: {
+            userName: user.displayName || 'Usuario PIDA',
+            userEmail: user.email,
+            subject: supportForm.subject.trim(),
+            category: supportForm.category,
+            message: supportForm.message.trim()
+          }
+        },
+        created_at: timestamp
       });
 
       setSupportStatus({ type: 'success', text: 'Ticket enviado con éxito. Te responderemos en un plazo de 24 a 48 horas.' });
-      // Corrección 2: Reseteo de formulario con el valor correcto
       setSupportForm({ subject: '', category: 'Otra consulta', message: '' });
     } catch (err) {
       console.error("Error al enviar ticket de soporte:", err);
