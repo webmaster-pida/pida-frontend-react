@@ -20,6 +20,19 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  // 👇 ¡SÍ, ES AQUÍ! NUEVO CAPTURADOR PARA LA REDIRECCIÓN INTELIGENTE POST-VERIFICACIÓN
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    
+    if (queryParams.get('pida_callback') === 'verified') {
+      // 1. Limpiamos la URL de forma elegante quitando el parámetro para el usuario
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // 2. Forzamos la apertura del modal en modo 'checkout' (Pantalla de Stripe)
+      setAuthModalConfig({ isOpen: true, mode: 'checkout' });
+    }
+  }, []);
+
   if (loading) {
     return (
       <div id="pida-global-loader">

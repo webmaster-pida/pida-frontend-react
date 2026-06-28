@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { auth, googleProvider } from '../config/firebase';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -43,6 +43,13 @@ function AuthFormContent({ onClose, initialMode }) {
   
   const planDetails = STRIPE_PRICES[plan]?.[interval]?.[currency] || STRIPE_PRICES['basico']['monthly']['USD'];
 
+  // Sincronizar modo si el componente padre cambia el initialMode en caliente
+  useEffect(() => {
+    if (initialMode) {
+      setMode(initialMode);
+    }
+  }, [initialMode]);
+
   // --- LÓGICA DE GOOGLE LOGIN (INTACTA) ---
   const handleGoogleLogin = async () => {
     setError('');
@@ -82,7 +89,7 @@ function AuthFormContent({ onClose, initialMode }) {
     try {
       if (auth.currentUser) {
         const actionCodeSettings = {
-          url: window.location.origin, 
+          url: `${window.location.origin}?pida_callback=verified`,
           handleCodeInApp: false
         };
         await auth.currentUser.sendEmailVerification(actionCodeSettings);
@@ -112,9 +119,8 @@ function AuthFormContent({ onClose, initialMode }) {
         setLoadingText('Ingresando...');
         const cred = await auth.signInWithEmailAndPassword(email, password);
         
-        // Si es un usuario de correo/contraseña que nunca se verificó, lo mandamos a verificar
         if (!cred.user.emailVerified) {
-          const actionCodeSettings = { url: window.location.origin, handleCodeInApp: false };
+          const actionCodeSettings = { url: `${window.location.origin}?pida_callback=verified`, handleCodeInApp: false };
           await cred.user.sendEmailVerification(actionCodeSettings);
           setMode('verify-email');
           setError('⚠️ Tu correo electrónico no está verificado. Te hemos enviado un enlace de activación.');
@@ -132,7 +138,7 @@ function AuthFormContent({ onClose, initialMode }) {
         return;
       }
 
-      // --- PASO 1: REGISTRO E INICIO DE VERIFICACIÓN DINÁMICA ---
+      // --- PASO 1: REGISTRO CON ENLACE DE RETORNO INTELIGENTE ---
       if (mode === 'register') {
         setLoadingText('Creando cuenta...');
         const cred = await auth.createUserWithEmailAndPassword(email, password);
@@ -141,9 +147,9 @@ function AuthFormContent({ onClose, initialMode }) {
         
         await user.updateProfile({ displayName: fullName });
 
-        // Configuración dinámica de retorno automático para el enlace
+        // Inyectamos el query parameter para que el sitio web sepa reabrir el modal al volver
         const actionCodeSettings = {
-          url: window.location.origin, 
+          url: `${window.location.origin}?pida_callback=verified`, 
           handleCodeInApp: false
         };
         
@@ -168,7 +174,7 @@ function AuthFormContent({ onClose, initialMode }) {
     }
   };
 
-  // --- PASO 2: ACCIÓN AL PULSAR "YA LO VERIFIQUÉ" ---
+  // --- PASO 2: ACCIÓN AL PULSAR "YA LO VERIFIQUÉ" (Pestaña original) ---
   const handleCheckVerification = async (e) => {
     e.preventDefault();
     setError('');
@@ -308,7 +314,7 @@ function AuthFormContent({ onClose, initialMode }) {
       <p className="modal-subtitle" style={{ textAlign: 'center', color: '#64748B', marginBottom: '20px', fontSize: '0.9rem' }}>
         {mode === 'register' && 'Ingresa tus datos iniciales de acceso para comenzar el asistente.'}
         {mode === 'verify-email' && 'PIDA requiere una dirección de correo real para mantener contacto institucional seguro.'}
-        {mode === 'checkout' && 'Estás a un paso de activar tu prueba gratuita de 5 días.'}
+        {mode === 'checkout' && '¡Correo verificado con éxito! Estás a un paso de activar tus 5 días gratis.'}
         {mode === 'login' && 'Accede para continuar tu investigación.'}
       </p>
 
@@ -452,7 +458,7 @@ function AuthFormContent({ onClose, initialMode }) {
 
         {error && <div className="status-msg error" style={{ color: '#EF4444', fontSize: '0.85rem', background: '#FEF2F2', padding: '10px', borderRadius: '6px', marginBottom: '15px', border: '1px solid #FECACA', textAlign: 'center' }}>{error}</div>}
 
-        <button type="submit" className="form-submit-btn pida-button-primary" style={{ width: '100%', padding: '14px', fontSize: '1rem', cursor: 'pointer', border: 'none', borderRadius: '8px', background: 'var(--pida-primary)', color: 'white', fontWeight: '600' }} disabled={isLoading || (!stripe && mode === 'checkout')}>
+        <button type="submit" className="form-submit-btn pida-button-primary" style={{ width: '100%', padding: '14px', fontSize: '1rem', cursor: 'pointer', border: 'none', borderRadius: '8px', background: 'var(--pida-primary)', color: 'white', fontWeight: '600' }} disabled={isLoading}>
           {isLoading ? loadingText : (
             mode === 'login' ? 'Ingresar' : 
             mode === 'register' ? 'Registrar mi cuenta' : 
@@ -487,9 +493,6 @@ function AuthFormContent({ onClose, initialMode }) {
         <CircularProgress size={70} thickness={4} sx={{ color: 'white', mb: 3 }} />
         <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, textAlign: 'center' }}>
           {loadingText || 'Procesando...'}
-        </Typography>
-        <Typography variant="body1" sx={{ opacity: 0.9, textAlign: 'center', maxWidth: '80%' }}>
-          Configurando tu acceso legal de forma segura.<br/>Por favor, no cierres esta ventana.
         </Typography>
       </Backdrop>
     </>
