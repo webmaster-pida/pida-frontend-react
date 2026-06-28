@@ -288,7 +288,8 @@ export default function Dashboard({ user }) {
   // === ESTADOS PARA EL SISTEMA DE SOPORTE TÉCNICO ===
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [supportForm, setSupportForm] = useState({ subject: '', category: 'Pregunta general', message: '' });
+  // Corrección 1: Valor inicial alineado con las opciones reales del menú
+  const [supportForm, setSupportForm] = useState({ subject: '', category: 'Otra consulta', message: '' });
   const [supportStatus, setSupportStatus] = useState({ type: '', text: '' });
 
   useEffect(() => {
@@ -410,7 +411,8 @@ export default function Dashboard({ user }) {
       });
 
       setSupportStatus({ type: 'success', text: 'Ticket enviado con éxito. Te responderemos en un plazo de 24 a 48 horas.' });
-      setSupportForm({ subject: '', category: 'Pregunta general', message: '' });
+      // Corrección 2: Reseteo de formulario con el valor correcto
+      setSupportForm({ subject: '', category: 'Otra consulta', message: '' });
     } catch (err) {
       console.error("Error al enviar ticket de soporte:", err);
       setSupportStatus({ type: 'error', text: 'Ocurrió un error al enviar el mensaje. Inténtalo de nuevo.' });
@@ -602,6 +604,7 @@ export default function Dashboard({ user }) {
               value={supportForm.category}
               onChange={(e) => setSupportForm({ ...supportForm, category: e.target.value })}
               disabled={isSending}
+              MenuProps={{ disablePortal: true }} // Corrección 3: Evita que el menú flote fuera y congele el componente
             >
               <MenuItem value="Problema técnico o error en la plataforma">Problema técnico o error en la plataforma</MenuItem>
               <MenuItem value="Duda sobre una respuesta de la IA">Duda sobre una respuesta de la IA</MenuItem>
