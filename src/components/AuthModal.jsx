@@ -161,6 +161,8 @@ function AuthFormContent({ onClose, initialMode }) {
         const token = await user.getIdToken();
 
         // 👇 ENVIAMOS EL ORIGEN DINÁMICO AL BACKEND
+        const fullName = `${firstName} ${lastName}`.trim();
+
         await fetch(`${PIDA_CONFIG.API_CHAT}/send-verification-email`, {
           method: 'POST',
           headers: { 
@@ -168,7 +170,8 @@ function AuthFormContent({ onClose, initialMode }) {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ 
-            frontend_url: window.location.origin // <-- Esto captura localhost, el web.app de pruebas o producción automáticamente
+            frontend_url: window.location.origin,
+            display_name: fullName  // 👈 LE PASAMOS EL NOMBRE EN TIEMPO REAL
           })
         });
         
