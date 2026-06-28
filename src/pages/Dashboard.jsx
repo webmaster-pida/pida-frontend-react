@@ -521,10 +521,13 @@ export default function Dashboard({ user }) {
               sx={{ fontWeight: 700, borderRadius: 2, height: 32, bgcolor: isVip ? '#FFFBEB' : '#EEF2FF', color: isVip ? '#92400E' : '#1D3557' }} 
             />
             
-            {/* BOTÓN DE AYUDA CORREGIDO */}
+            {/* BOTÓN DE AYUDA CON DEBUGGING */}
             <Button 
               variant="text" 
-              onClick={() => setIsSupportOpen(true)}
+              onClick={(e) => {
+                console.log("👉 Botón de ayuda clickeado. Estado anterior:", isSupportOpen);
+                setIsSupportOpen(true);
+              }}
               sx={{ 
                 color: 'var(--pida-primary)', 
                 fontWeight: 700, 
