@@ -553,7 +553,7 @@ export default function Dashboard({ user }) {
         </Box>
       </Box>
 
-      {/* COMPONENTE DRAWER FORZADO AL FRENTE */}
+      {/* COMPONENTE DRAWER FORZADO AL FRENTE Y CON FOCO LIBERADO */}
       <Drawer
         anchor="right"
         open={isSupportOpen}
@@ -561,7 +561,11 @@ export default function Dashboard({ user }) {
           setIsSupportOpen(false);
           setSupportStatus({ type: '', text: '' });
         }}
-        sx={{ zIndex: 999999 }} /* <-- Forzamos que esté por encima de toda la app */
+        sx={{ zIndex: 999999 }} 
+        ModalProps={{
+          disableEnforceFocus: true, // Permite escribir libremente sin que el chat robe el teclado
+          disableAutoFocus: true,
+        }}
         PaperProps={{
           sx: { width: { xs: '100%', sm: 400 }, padding: '30px', display: 'flex', flexDirection: 'column', gap: 3 }
         }}
