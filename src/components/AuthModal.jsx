@@ -284,7 +284,7 @@ function AuthFormContent({ onClose, initialMode }) {
         {mode === 'reset' && 'Recuperar Contraseña'}
       </h2>
       <p className="modal-subtitle" style={{ textAlign: 'center', color: '#64748B', marginBottom: '20px', fontSize: '0.9rem' }}>
-        {mode === 'register' && 'Ingresa tus datos iniciales de acceso para comenzar el asistente.'}
+        {mode === 'register' && 'Ingresa tus datos iniciales de acceso para comenzar el proceso.'}
         {mode === 'verify-email' && 'PIDA requiere una dirección de correo real para mantener contacto institucional seguro.'}
         {mode === 'checkout' && 'Estás a un paso de activar tu prueba gratuita de 5 días.'}
         {mode === 'login' && 'Accede para continuar tu investigación.'}
