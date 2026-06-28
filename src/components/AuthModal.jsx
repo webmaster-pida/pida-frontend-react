@@ -150,26 +150,27 @@ function AuthFormContent({ onClose, initialMode }) {
         return;
       }
 
-      // --- PASO 1: REGISTRO CON REDIRECCIÓN MANUAL FORZADA ---
       if (mode === 'register') {
         setLoadingText('Creando cuenta...');
         const cred = await auth.createUserWithEmailAndPassword(email, password);
         const user = cred.user;
-        const fullName = `${firstName} ${lastName}`.trim();
         
-        await user.updateProfile({ displayName: fullName });
+        await user.updateProfile({ displayName: `${firstName} ${lastName}`.trim() });
 
         setLoadingText('Enviando correo de activación...');
+        const token = await user.getIdToken();
 
-        // 👇 ESTO OBLIGA A FIREBASE A IGNORAR SU PÁGINA GRIS Y ENVIAR AL USUARIO A TU RUTA LIMPIA
-        const actionCodeSettings = {
-          // Apunta directamente a tu ruta de React, añadiendo el parámetro de éxito
-          url: `${window.location.origin}/auth-action?pida_callback=verified`, 
-          handleCodeInApp: true // <-- Crucial: Le dice a Firebase que tu app de React tomará el control del código
-        };
-        
-        // Le pasamos los ajustes como argumento al método nativo
-        await user.sendEmailVerification(actionCodeSettings);
+        // 👇 ENVIAMOS EL ORIGEN DINÁMICO AL BACKEND
+        await fetch(`${PIDA_CONFIG.API_CHAT}/send-verification-email`, {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            frontend_url: window.location.origin // <-- Esto captura localhost, el web.app de pruebas o producción automáticamente
+          })
+        });
         
         setMode('verify-email');
         setIsLoading(false);
