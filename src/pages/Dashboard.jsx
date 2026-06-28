@@ -584,6 +584,7 @@ export default function Dashboard({ user }) {
         <Box component="form" onSubmit={handleSendTicket} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, flexGrow: 1 }}>
           <TextField
             label="Asunto"
+            name="subject"
             required
             fullWidth
             size="small"
@@ -596,21 +597,23 @@ export default function Dashboard({ user }) {
             <InputLabel id="support-category-label">Categoría / Tipo de problema</InputLabel>
             <Select
               labelId="support-category-label"
+              name="category"
               label="Categoría / Tipo de problema"
               value={supportForm.category}
               onChange={(e) => setSupportForm({ ...supportForm, category: e.target.value })}
               disabled={isSending}
             >
-              <MenuItem value="Pregunta general">Pregunta general</MenuItem>
-              <MenuItem value="Problema con el Chat">Problema con el Chat</MenuItem>
-              <MenuItem value="Error en Análisis">Error en Análisis</MenuItem>
-              <MenuItem value="Facturación/Stripe">Facturación/Stripe</MenuItem>
-              <MenuItem value="Otro">Otro</MenuItem>
+              <MenuItem value="Problema técnico o error en la plataforma">Problema técnico o error en la plataforma</MenuItem>
+              <MenuItem value="Duda sobre una respuesta de la IA">Duda sobre una respuesta de la IA</MenuItem>
+              <MenuItem value="Facturación, suscripciones y pagos">Facturación, suscripciones y pagos</MenuItem>
+              <MenuItem value="Sugerencia de nueva funcionalidad">Sugerencia de nueva funcionalidad</MenuItem>
+              <MenuItem value="Otra consulta">Otra consulta</MenuItem>
             </Select>
           </FormControl>
 
           <TextField
             label="Mensaje / Descripción detallada"
+            name="message"
             required
             fullWidth
             multiline
