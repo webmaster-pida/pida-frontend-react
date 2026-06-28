@@ -43,7 +43,27 @@ function AuthFormContent({ onClose, initialMode }) {
   
   const planDetails = STRIPE_PRICES[plan]?.[interval]?.[currency] || STRIPE_PRICES['basico']['monthly']['USD'];
 
-  // Sincronizar modo si el componente padre cambia el initialMode en caliente
+  // 👇 NUEVO: RASTREADOR EN SEGUNDO PLANO (Detecta la verificación hecha en la otra pestaña)
+  useEffect(() => {
+    let pollingInterval = null;
+
+    if (mode === 'verify-email') {
+      pollingInterval = setInterval(async () => {
+        if (auth.currentUser) {
+          await auth.currentUser.reload(); // Consulta a Firebase en tiempo real
+          if (auth.currentUser.emailVerified) {
+            setMode('checkout'); // Avanza al checkout automáticamente si detecta la confirmación
+            clearInterval(pollingInterval);
+          }
+        }
+      }, 3000); // Revisa cada 3 segundos
+    }
+
+    return () => {
+      if (pollingInterval) clearInterval(pollingInterval);
+    };
+  }, [mode]);
+
   useEffect(() => {
     if (initialMode) {
       setMode(initialMode);
@@ -138,7 +158,6 @@ function AuthFormContent({ onClose, initialMode }) {
         return;
       }
 
-      // --- PASO 1: REGISTRO CON ENLACE DE RETORNO INTELIGENTE ---
       if (mode === 'register') {
         setLoadingText('Creando cuenta...');
         const cred = await auth.createUserWithEmailAndPassword(email, password);
@@ -147,7 +166,6 @@ function AuthFormContent({ onClose, initialMode }) {
         
         await user.updateProfile({ displayName: fullName });
 
-        // Inyectamos el query parameter para que el sitio web sepa reabrir el modal al volver
         const actionCodeSettings = {
           url: `${window.location.origin}?pida_callback=verified`, 
           handleCodeInApp: false
@@ -174,7 +192,6 @@ function AuthFormContent({ onClose, initialMode }) {
     }
   };
 
-  // --- PASO 2: ACCIÓN AL PULSAR "YA LO VERIFIQUÉ" (Pestaña original) ---
   const handleCheckVerification = async (e) => {
     e.preventDefault();
     setError('');
@@ -199,7 +216,6 @@ function AuthFormContent({ onClose, initialMode }) {
     }
   };
 
-  // --- PASO 3: PROCESAMIENTO FINAL EN STRIPE ---
   const handleProcessPayment = async (e) => {
     e.preventDefault();
     if (!termsAccepted) { setError("Debes aceptar los términos y condiciones."); return; }
@@ -365,13 +381,14 @@ function AuthFormContent({ onClose, initialMode }) {
         )}
 
         {mode === 'verify-email' && (
-          <Box sx={{ textAlign: 'center', py: 2, px: 1, bgcolor: '#F0F9FF', borderRadius: '12px', border: '1px solid #BAE6FD', mb: 3 }}>
-            <Typography variant="body2" sx={{ color: '#0369A1', fontWeight: '500', lineHeight: 1.6 }}>
+          <Box sx={{ textAlign: 'center', py: 3, px: 2, bgcolor: '#F0F9FF', borderRadius: '12px', border: '1px solid #BAE6FD', mb: 3 }}>
+            <Typography variant="body2" sx={{ color: '#0369A1', fontWeight: '600', lineHeight: 1.6 }}>
               Hemos enviado un enlace de activación al correo electrónico: <br />
-              <strong>{email || (auth.currentUser && auth.currentUser.email)}</strong>
+              <strong style={{ fontSize: '1rem', color: 'var(--navy)' }}>{email || (auth.currentUser && auth.currentUser.email)}</strong>
             </Typography>
-            <Typography variant="caption" sx={{ display: 'block', mt: 2, color: '#0284C7' }}>
-              Por favor, abre el mensaje en tu bandeja y haz clic en <strong>Complete Verification</strong>. Al finalizar, regresa aquí y pulsa el botón inferior.
+            <Typography variant="caption" sx={{ display: 'block', mt: 2, color: '#0284C7', fontSize: '0.8rem', lineHeight: 1.5 }}>
+              Por favor, abre el mensaje en tu bandeja y haz clic en <strong>Complete Verification</strong>.<br />
+              <span style={{ color: '#0369A1', fontWeight: 'bold' }}>⚡ ¡Esta pantalla avanzará sola automáticamente cuando hagas clic!</span>
             </Typography>
             <Button size="small" variant="text" onClick={handleResendVerification} sx={{ mt: 2, textTransform: 'none', fontWeight: '600', color: '#0369A1', '&:hover': { textDecoration: 'underline' } }}>
               Reenviar enlace de verificación
