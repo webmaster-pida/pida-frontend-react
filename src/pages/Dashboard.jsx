@@ -481,10 +481,25 @@ export default function Dashboard({ user }) {
               color={isVip ? "warning" : "primary"} 
               sx={{ fontWeight: 700, borderRadius: 2, height: 32, bgcolor: isVip ? '#FFFBEB' : '#EEF2FF', color: isVip ? '#92400E' : '#1D3557' }} 
             />
+            
+            {/* NUEVO VÍNCULO DE AYUDA */}
+            <Button 
+              href="AQUI_PON_TU_URL_DE_AYUDA" 
+              target="_blank" 
+              variant="text" 
+              sx={{ 
+                color: 'var(--pida-primary)', 
+                fontWeight: 700, 
+                textTransform: 'none',
+                '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' }
+              }}
+            >
+              Ayuda
+            </Button>
+
             {!isMobile && <Box component="img" src="/img/PIDA-MASCOTA-menu.png" sx={{ height: 45 }} />}
           </Box>
         </Box>
-        
         <Box sx={{ flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
           {currentView === 'investigador' && <ChatInterface user={user} resetSignal={resetSignals.chat} loadChatId={loadData.chat} refreshHistory={fetchHistories} />}
           {currentView === 'analizador' && <AnalyzerInterface user={user} resetSignal={resetSignals.ana} loadAnaId={loadData.ana} />}
