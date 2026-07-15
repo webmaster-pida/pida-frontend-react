@@ -532,12 +532,21 @@ export default function ChatInterface({ user, resetSignal, loadChatId, refreshHi
         qString = subParts[0]; 
         textAfterTags = subParts.slice(1).join(tagEnd); 
       } else {
-        qString = textInsideAndAfter;
+        // 👇 CAMBIO 1: Si estamos en pleno stream y la etiqueta no se ha cerrado, 
+        // mantenemos los strings vacíos para ocultar el código basura.
+        qString = "";
+        textAfterTags = "";
       }
 
       displayContent = textBeforeTags + "\n" + textAfterTags;
 
-      questions = qString.split('|').map(q => q.trim()).filter(q => q.length > 0);
+      // 👇 CAMBIO 2: Solo procesamos y dibujamos los botones si el bot YA TERMINÓ
+      // de escribir, o si la etiqueta ya llegó completa.
+      if (!isCurrentlyTypingThis || textInsideAndAfter.includes(tagEnd)) {
+        questions = qString.split('|').map(q => q.trim()).filter(q => q.length > 0);
+      } else {
+        questions = []; // Mantenemos oculta la botonera
+      }
     }
 
     displayContent = displayContent.replace(/["']br["']/g, '<br />');
