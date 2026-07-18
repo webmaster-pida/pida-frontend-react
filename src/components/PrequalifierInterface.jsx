@@ -7,7 +7,7 @@ import { Exporter, getTimestampedName } from '../utils/exporter';
 // Importaciones de Material-UI
 import { Box, TextField, Button, ButtonGroup, Fab, MenuItem, Tooltip, CircularProgress, Typography } from '@mui/material';
 
-const API_PRE = "https://precalifier-v20-genai-465781488910.us-central1.run.app";
+const API_PRE = import.meta.env.VITE_API_PRE;
 
 // =========================================================================
 // COMPONENTE DE VISTA PREVIA (MICROLINK) CON FILTRO DE ERRORES
@@ -370,7 +370,7 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
             <div className="pida-bubble pida-message-bubble">
               <div className="pida-welcome-content">
                 <div className="pida-welcome-text">
-                  <h3>Precalificador Penal y de Derechos Humanos</h3>
+                  <h3>Evaluador Penal y de Derechos Humanos</h3>
                   <p style={{ color: 'var(--text)'}}>Ingresa los hechos de tu caso. PIDA realizará un análisis preliminar para identificar <strong style={{ color: 'var(--pida-primary)' }}>posibles delitos penales</strong> y <strong style={{ color: 'var(--pida-primary)' }}>violaciones a derechos humanos</strong> conforme a estándares nacionales e internacionales.</p>
                 </div>
               </div>
@@ -441,9 +441,9 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
         {resultText && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5, mt: -1.5, position: 'relative', zIndex: 1 }}>
             <ButtonGroup size="small" variant="outlined" color="inherit" sx={{ borderColor: '#e2e8f0', bgcolor: 'white' }}>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Precalificador-PIDA"), "Precalificación de Caso", resultText)}>TXT</Button>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Precalificador-PIDA"), "Precalificación de Caso", resultText)}>DOCX</Button>
-              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Precalificador-PIDA"), "Precalificación de Caso", resultText)}>PDF</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadTXT(getTimestampedName("Evaluador-Legal-PIDA"), "Evaluación de Caso", resultText)}>TXT</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadDOCX(getTimestampedName("Evaluador-Legal-PIDA"), "Evaluación de Caso", resultText)}>DOCX</Button>
+              <Button sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }} onClick={() => Exporter.downloadPDF(getTimestampedName("Evaluador-Legal-PIDA"), "Evaluación de Caso", resultText)}>PDF</Button>
             </ButtonGroup>
           </Box>
         )}
@@ -540,7 +540,7 @@ export default function PrequalifierInterface({ user, resetSignal, loadPreData }
             disabled={isAnalyzing}
             sx={{ width: 220, py: 1.2, borderRadius: 2, fontWeight: 600, bgcolor: 'var(--pida-primary)', '&:hover': { bgcolor: 'var(--pida-accent)' } }}
           >
-            Precalificar Caso
+            EVALUAR CASO
           </Button>
         </Box>
       </div>

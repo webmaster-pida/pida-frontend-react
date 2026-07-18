@@ -436,7 +436,7 @@ export default function LandingPage({ onOpenAuth }) {
             <div className="hero-content">
               <h1 style={{ fontSize: '3.0rem', lineHeight: '1.15', marginBottom: '15px', marginTop: '15px' }}>
                 Inteligencia Aumentada para la Defensa de los <br />
-                <span className="text-gradient">Derechos Humanos</span>
+                <span className="text-gradient">Derechos Humanos..</span>
               </h1>
               <p className="hero-desc">
                 Los asistentes de Inteligencia Artificial genéricos son un océano de información, pero sin un ancla, pueden llevarte a la deriva con datos imprecisos.
@@ -541,11 +541,11 @@ export default function LandingPage({ onOpenAuth }) {
                 <div className="bento-grid">
                     <div className="bento-card" style={{ backgroundColor: '#ffffff' }}>
                         <h3 className="bento-title">Respuestas Ancladas, no Adivinanzas</h3>
-                        <p style={{color: '#555555' }}>Cada respuesta está fundamentada y prioriza el conocimiento del IIRESODH. Esto le da un nivel de fiabilidad y precisión que las IAs genéricas no pueden ofrecer, minimizando el riesgo de información incorrecta.</p>
+                        <p style={{color: '#555555' }}>Cada respuesta está fundamentada y prioriza el conocimiento alojado en nuestra biblioteca privada y curada. Esto le da un nivel de fiabilidad y precisión que las IAs genéricas no pueden ofrecer, minimizando el riesgo de información incorrecta.</p>
                     </div>
                     <div className="bento-card" style={{ backgroundColor: '#ffffff' }}>
                         <h3 className="bento-title">Lo Mejor de Dos Mundos</h3>
-                        <p style={{color: '#555555' }}>Combina la sabiduría especializada del IIRESODH con la capacidad de razonamiento y redacción de un modelo de IA de vanguardia. Obtienes respuestas con calidad de experto, no solo texto genérico.</p>
+                        <p style={{color: '#555555' }}>Combina el conocimiento especializado con la capacidad de razonamiento y redacción de un modelo la Inteligencia Artificial de frontera. Obtienes respuestas con calidad de experto, no solo texto genérico.</p>
                     </div>
                     <div className="bento-card" style={{ backgroundColor: '#ffffff' }}>
                         <h3 className="bento-title">Eficiencia Acelerada</h3>
@@ -560,7 +560,7 @@ export default function LandingPage({ onOpenAuth }) {
                 <div className="section-intro" style={{ marginBottom: '60px' }}>
                     <h2 style={{ color: '#FFFFFF', fontSize: '2.8rem', marginBottom: '15px' }}>El Ecosistema PIDA</h2>
                     <p style={{ fontSize: '1.2rem', color: 'var(--white)', maxWidth: '900px', margin: '0 auto' }}>
-                        PIDA integra tres motores especializados que trabajan en conjunto para cubrir el ciclo completo de la defensa legal: investigación, análisis documental y diagnóstico de casos.
+                        PIDA integra tres motores especializados que trabajan en conjunto para cubrir el ciclo completo de la defensa legal: investigación, análisis documental y evaluación de casos.
                     </p>
                 </div>
 
@@ -594,7 +594,7 @@ export default function LandingPage({ onOpenAuth }) {
 
                     <div className="glass-card">
                         <h3 style={{ color: '#FFFFFF', fontSize: '1.5rem', marginBottom: '10px' }}>
-                            3. Precalificador de Conductas
+                            3. Evaluador Legal
                             <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--red)', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU DIAGNÓSTICO INMEDIATO</span>
                         </h3>
                         <p style={{ fontSize: '1.05rem', color: '#E2E8F0', lineHeight: '1.7', marginBottom: '15px' }}>
@@ -650,12 +650,10 @@ export default function LandingPage({ onOpenAuth }) {
                     </div>
                     <ul className="plan-features">
                       <li>✅ <strong>¡5 días de prueba Gratis!</strong></li>
-                      <li>✅ Newsletter mensual</li>
-                      <li>✅ 5 consultas diarias</li>
-                      <li>✅ 3 análisis de documentos</li>
-                      <li>✅ 1 archivo por análisis</li>
+                      <li>✅ Consultas con chat experto</li>
+                      <li>✅ Análisis de documentos</li>
                       <li>✅ 30 Mb por archivo</li>
-                      <li>❌ Sin precalificador</li>
+                      <li>❌ Sin evaluador legal</li>
                     </ul>
                     <Button 
                       onClick={() => handleSelectPlan('basico')}
@@ -674,13 +672,11 @@ export default function LandingPage({ onOpenAuth }) {
                     </div>
                     <ul className="plan-features">
                       <li>✅ <strong>¡5 días de prueba Gratis!</strong></li>
-                      <li>✅ Newsletter mensual</li>
-                      <li>✅ 20 consultas diarias</li>
-                      <li>✅ 15 análisis de documentos</li>
+                      <li>✅ Consultas con chat experto</li>
+                      <li>✅ Análisis de documentos</li>
                       <li>✅ 3 archivos por análisis</li>
                       <li>✅ 100 Mb por archivo</li>
-                      <li>✅ 20 precalificaciones diarias</li>
-                      <li>✅ Descuentos en productos IIRESODH</li>
+                      <li>✅ Evaluaciones legales</li>
                     </ul>
                     <Button 
                       onClick={() => handleSelectPlan('avanzado')}
@@ -698,13 +694,11 @@ export default function LandingPage({ onOpenAuth }) {
                     </div>
                     <ul className="plan-features">
                       <li>✅ <strong>¡5 días de prueba Gratis!</strong></li>
-                      <li>✅ Newsletter mensual</li>
-                      <li>✅ 100 consultas diarias</li>
-                      <li>✅ 25 análisis de documentos</li>
+                      <li>✅ Consultas con chat experto</li>
+                      <li>✅ Más análisis de documentos</li>
                       <li>✅ 5 archivos por análisis</li>
                       <li>✅ 100 Mb por archivo</li>
-                      <li>✅ 100 precalificaciones diarias</li>
-                      <li>✅ Descuentos en productos IIRESODH</li>
+                      <li>✅ Evaluaciones legales</li>
                     </ul>
                     <Button 
                       onClick={() => handleSelectPlan('premium')}
