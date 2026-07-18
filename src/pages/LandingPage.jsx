@@ -541,11 +541,11 @@ export default function LandingPage({ onOpenAuth }) {
                 <div className="bento-grid">
                     <div className="bento-card" style={{ backgroundColor: '#ffffff' }}>
                         <h3 className="bento-title">Respuestas Ancladas, no Adivinanzas</h3>
-                        <p style={{color: '#555555' }}>Cada respuesta está fundamentada y prioriza el conocimiento del IIRESODH. Esto le da un nivel de fiabilidad y precisión que las IAs genéricas no pueden ofrecer, minimizando el riesgo de información incorrecta.</p>
+                        <p style={{color: '#555555' }}>Cada respuesta está fundamentada y prioriza el conocimiento alojado en nuestra biblioteca privada y curada. Esto le da un nivel de fiabilidad y precisión que las IAs genéricas no pueden ofrecer, minimizando el riesgo de información incorrecta.</p>
                     </div>
                     <div className="bento-card" style={{ backgroundColor: '#ffffff' }}>
                         <h3 className="bento-title">Lo Mejor de Dos Mundos</h3>
-                        <p style={{color: '#555555' }}>Combina la sabiduría especializada del IIRESODH con la capacidad de razonamiento y redacción de un modelo de IA de vanguardia. Obtienes respuestas con calidad de experto, no solo texto genérico.</p>
+                        <p style={{color: '#555555' }}>Combina el conocimiento especializado con la capacidad de razonamiento y redacción de un modelo la Inteligencia Artificial de frontera. Obtienes respuestas con calidad de experto, no solo texto genérico.</p>
                     </div>
                     <div className="bento-card" style={{ backgroundColor: '#ffffff' }}>
                         <h3 className="bento-title">Eficiencia Acelerada</h3>
@@ -560,7 +560,7 @@ export default function LandingPage({ onOpenAuth }) {
                 <div className="section-intro" style={{ marginBottom: '60px' }}>
                     <h2 style={{ color: '#FFFFFF', fontSize: '2.8rem', marginBottom: '15px' }}>El Ecosistema PIDA</h2>
                     <p style={{ fontSize: '1.2rem', color: 'var(--white)', maxWidth: '900px', margin: '0 auto' }}>
-                        PIDA integra tres motores especializados que trabajan en conjunto para cubrir el ciclo completo de la defensa legal: investigación, análisis documental y diagnóstico de casos.
+                        PIDA integra tres motores especializados que trabajan en conjunto para cubrir el ciclo completo de la defensa legal: investigación, análisis documental y evaluación de casos.
                     </p>
                 </div>
 
