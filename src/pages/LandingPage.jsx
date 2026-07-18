@@ -594,7 +594,7 @@ export default function LandingPage({ onOpenAuth }) {
 
                     <div className="glass-card">
                         <h3 style={{ color: '#FFFFFF', fontSize: '1.5rem', marginBottom: '10px' }}>
-                            3. Precalificador de Conductas
+                            3. Evaluador Legal
                             <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--red)', fontWeight: '700', marginTop: '8px', letterSpacing: '1px' }}>TU DIAGNÓSTICO INMEDIATO</span>
                         </h3>
                         <p style={{ fontSize: '1.05rem', color: '#E2E8F0', lineHeight: '1.7', marginBottom: '15px' }}>
@@ -650,12 +650,10 @@ export default function LandingPage({ onOpenAuth }) {
                     </div>
                     <ul className="plan-features">
                       <li>✅ <strong>¡5 días de prueba Gratis!</strong></li>
-                      <li>✅ Newsletter mensual</li>
-                      <li>✅ 5 consultas diarias</li>
-                      <li>✅ 3 análisis de documentos</li>
-                      <li>✅ 1 archivo por análisis</li>
+                      <li>✅ Consultas con chat experto</li>
+                      <li>✅ Análisis de documentos</li>
                       <li>✅ 30 Mb por archivo</li>
-                      <li>❌ Sin precalificador</li>
+                      <li>❌ Sin evaluador legal</li>
                     </ul>
                     <Button 
                       onClick={() => handleSelectPlan('basico')}
@@ -674,13 +672,11 @@ export default function LandingPage({ onOpenAuth }) {
                     </div>
                     <ul className="plan-features">
                       <li>✅ <strong>¡5 días de prueba Gratis!</strong></li>
-                      <li>✅ Newsletter mensual</li>
-                      <li>✅ 20 consultas diarias</li>
-                      <li>✅ 15 análisis de documentos</li>
+                      <li>✅ Consultas con chat experto</li>
+                      <li>✅ Análisis de documentos</li>
                       <li>✅ 3 archivos por análisis</li>
                       <li>✅ 100 Mb por archivo</li>
-                      <li>✅ 20 precalificaciones diarias</li>
-                      <li>✅ Descuentos en productos IIRESODH</li>
+                      <li>✅ Evaluaciones legales</li>
                     </ul>
                     <Button 
                       onClick={() => handleSelectPlan('avanzado')}
@@ -698,13 +694,11 @@ export default function LandingPage({ onOpenAuth }) {
                     </div>
                     <ul className="plan-features">
                       <li>✅ <strong>¡5 días de prueba Gratis!</strong></li>
-                      <li>✅ Newsletter mensual</li>
-                      <li>✅ 100 consultas diarias</li>
-                      <li>✅ 25 análisis de documentos</li>
+                      <li>✅ Consultas con chat experto</li>
+                      <li>✅ Más análisis de documentos</li>
                       <li>✅ 5 archivos por análisis</li>
                       <li>✅ 100 Mb por archivo</li>
-                      <li>✅ 100 precalificaciones diarias</li>
-                      <li>✅ Descuentos en productos IIRESODH</li>
+                      <li>✅ Evaluaciones legales</li>
                     </ul>
                     <Button 
                       onClick={() => handleSelectPlan('premium')}
