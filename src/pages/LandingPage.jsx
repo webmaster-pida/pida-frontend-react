@@ -361,7 +361,7 @@ export default function LandingPage({ onOpenAuth }) {
                   ml: { xs: '0', sm: '15px' },
                 }}
               >
-                Login
+                Iniciar Sesión
               </Button>
             </nav>
           </div>
