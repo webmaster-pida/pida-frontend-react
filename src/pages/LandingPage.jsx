@@ -672,7 +672,7 @@ export default function LandingPage({ onOpenAuth }) {
                     </div>
                     <ul className="plan-features">
                       <li>✅ <strong>¡5 días de prueba Gratis!</strong></li>
-                      <li>✅ Consultas con chat experto</li>
+                      <li>✅ 4x más consultas con chat experto</li>
                       <li>✅ Análisis de documentos</li>
                       <li>✅ 3 archivos por análisis</li>
                       <li>✅ 100 Mb por archivo</li>
@@ -694,7 +694,7 @@ export default function LandingPage({ onOpenAuth }) {
                     </div>
                     <ul className="plan-features">
                       <li>✅ <strong>¡5 días de prueba Gratis!</strong></li>
-                      <li>✅ Consultas con chat experto</li>
+                      <li>✅ 20x más consultas con chat experto</li>
                       <li>✅ Más análisis de documentos</li>
                       <li>✅ 5 archivos por análisis</li>
                       <li>✅ 100 Mb por archivo</li>
