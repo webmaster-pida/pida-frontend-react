@@ -768,9 +768,10 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
     if (!text) return null;
     
     const isCurrentlyTypingThis = isAnalyzing && idx === messages.length - 1; 
-    const separatorRegex = /(?:---PREGUNTAS---|(?:\n|^)(?:#{2,4}\s*|\*\*\s*)?(?:Preguntas de Seguimiento|¿Quieres profundizar en este documento\?)(?:\s*\*\*|:)?\s*\n?)/i;
     
-    // REEMPLAZO EN TIEMPO REAL: Transformamos tus etiquetas al vuelo.
+    // Regex infalible: Atrapa "Preguntas de Seguimiento" sin importar si tiene ###, **, o :
+    const separatorRegex = /(?:\n|^)\s*#*\s*\**(?:Preguntas de [Ss]eguimiento|¿Quieres profundizar en este documento\?)\**\s*:*\s*(?:\n|$)/i;
+    
     let processedText = text.replace(/\[TIMELINE_START\]([\s\S]*?)(?:\[TIMELINE_END\]|$)/gi, (match, jsonContent) => {
         const cleanContent = jsonContent.replace(/\x60{3}(?:json)?/gi, '').replace(/\x60{3}/g, '').trim();
         return `\n\x60\x60\x60json-timeline\n${cleanContent}\n\x60\x60\x60\n`;
@@ -781,9 +782,11 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         return `\n\x60\x60\x60json-flow\n${cleanContent}\n\x60\x60\x60\n`;
     });
 
+    // Dividimos el texto usando la nueva expresión regular
     const parts = processedText.split(separatorRegex);
-    let mainContent = parts[0];
+    const mainContent = parts[0];
 
+    // Si encontró el separador y YA TERMINÓ de escribir, crea los botones
     if (parts.length > 1 && !isCurrentlyTypingThis) {
       const questionsPart = parts.slice(1).join('\n');
       const lines = questionsPart.split('\n');
@@ -843,6 +846,8 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
       );
     }
 
+    // Si está escribiendo o si no hay preguntas, renderizamos SOLO mainContent
+    // Esto asegura que las preguntas no se vean como texto mientras se redactan.
     return (
         <div className="markdown-content" style={{ display: 'block', width: '100%', maxWidth: '100%', overflowX: 'hidden', wordBreak: 'break-word', boxSizing: 'border-box' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
