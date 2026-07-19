@@ -653,7 +653,7 @@ export default function LandingPage({ onOpenAuth }) {
                       <li>✅ Consultas con chat experto</li>
                       <li>✅ Análisis de documentos</li>
                       <li>✅ 30 Mb por archivo</li>
-                      <li>❌ Sin evaluador legal</li>
+                      <li>✅ Evaluador legal</li>
                     </ul>
                     <Button 
                       onClick={() => handleSelectPlan('basico')}
@@ -698,7 +698,7 @@ export default function LandingPage({ onOpenAuth }) {
                       <li>✅ Aún más análisis de documentos</li>
                       <li>✅ 5 archivos por análisis</li>
                       <li>✅ 100 Mb por archivo</li>
-                      <li>✅ Evaluaciones legales</li>
+                      <li>✅ Más evaluaciones legales</li>
                     </ul>
                     <Button 
                       onClick={() => handleSelectPlan('premium')}
