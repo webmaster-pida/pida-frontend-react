@@ -89,58 +89,107 @@ export default function Ingesta() {
         await uploadBytes(pdfRef, doc.file);
         updateDoc(doc.id, { status: 'processing', statusText: 'Extrayendo texto (PIDA trabajando)...' });
 
-        const expectedMdName = doc.file.name.replace(/\.[^/.]+$/, "") + ".md";
-        pollForMarkdown(doc.id, expectedMdName);
+        // const expectedMdName = doc.file.name.replace(/\.[^/.]+$/, "") + ".md";
+        // pollForMarkdown(doc.id, expectedMdName);
+
+        const expectedJsonName = doc.file.name.replace(/\.[^/.]+$/, "") + ".json";
+        pollForJson(doc.id, expectedJsonName);
       } catch (err) {
         updateDoc(doc.id, { status: 'error', statusText: 'Fallo al subir', error: err.message });
       }
     });
   };
 
-  const pollForMarkdown = async (docId, mdFileName, attempt = 1) => {
-    const maxAttempts = 120; // 120 intentos x 15 segundos = 30 minutos de espera máxima
+  // =========================================================================
+  //const pollForMarkdown = async (docId, mdFileName, attempt = 1) => {
+  //  const maxAttempts = 120; // 120 intentos x 15 segundos = 30 minutos de espera máxima
+  //  const storage = getStorage();
+  //  const mdRef = ref(storage, `${import.meta.env.VITE_BUCKET_PENDIENTES}/${mdFileName}`);
+  //
+  //  try {
+  //    const url = await getDownloadURL(mdRef);
+  //    const response = await fetch(url);
+  //    const text = await response.text();
+  //    
+  //    let extractedTitle = '';
+  //    let extractedAuthor = '';
+  //    let cleanText = text;
+  //
+  //    const titleMatch = cleanText.match(/^#\s+(.+)$/m);
+  //    if (titleMatch) {
+  //      extractedTitle = titleMatch[1].trim();
+  //      cleanText = cleanText.replace(/^#\s+.+$/m, '');
+  //    }
+  //
+  //    const authorMatch = cleanText.match(/\*\*Autor:\*\*\s*(.+)$/m);
+  //    if (authorMatch) {
+  //      extractedAuthor = authorMatch[1].trim();
+  //      cleanText = cleanText.replace(/\*\*Autor:\*\*\s*.+$/m, '');
+  //    }
+  //
+  //    cleanText = cleanText.trimStart();
+  //
+  //    updateDoc(docId, { 
+  //      status: 'ready', 
+  //      statusText: '¡Listo para revisión!',
+  //      title: extractedTitle, 
+  //      author: extractedAuthor, 
+  //      markdownContent: cleanText 
+  //    });
+  //
+  //  } catch (err) {
+  //    if (err.code === 'storage/object-not-found') {
+  //      if (attempt >= maxAttempts) {
+  //        updateDoc(docId, { status: 'error', statusText: 'Timeout', error: 'Tardó demasiado.' });
+  //        return;
+  //      }
+  //      updateDoc(docId, { statusText: `Procesando... (Intento ${attempt}/${maxAttempts})` });
+  //      pollingRefs.current[docId] = setTimeout(() => pollForMarkdown(docId, mdFileName, attempt + 1), 15000);
+  //    } else {
+  //      updateDoc(docId, { status: 'error', statusText: 'Error', error: err.message });
+  //    }
+  //  }
+  //};
+  // =========================================================================
+
+  const pollForJson = async (docId, jsonFileName, attempt = 1) => {
+    const maxAttempts = 120;
     const storage = getStorage();
-    const mdRef = ref(storage, `${import.meta.env.VITE_BUCKET_PENDIENTES}/${mdFileName}`);
+    const jsonRef = ref(storage, `${import.meta.env.VITE_BUCKET_PENDIENTES}/${jsonFileName}`);
 
     try {
-      const url = await getDownloadURL(mdRef);
+      const url = await getDownloadURL(jsonRef);
       const response = await fetch(url);
-      const text = await response.text();
-      
-      let extractedTitle = '';
-      let extractedAuthor = '';
-      let cleanText = text;
+      const chunksData = await response.json(); // Recibe el JSON generado por main.py
 
-      const titleMatch = cleanText.match(/^#\s+(.+)$/m);
-      if (titleMatch) {
-        extractedTitle = titleMatch[1].trim();
-        cleanText = cleanText.replace(/^#\s+.+$/m, '');
+      // Reconstruimos el texto completo desde los fragmentos del JSON
+      let markdownText = "";
+      let extractedTitle = "";
+
+      if (Array.isArray(chunksData) && chunksData.length > 0) {
+        // Extraemos el título del primer fragmento
+        extractedTitle = chunksData[0].metadatos?.seccion_h1 || docId.replace(".pdf", "");
+        
+        // Unimos el texto de todos los fragmentos para mostralo en el editor
+        markdownText = chunksData.map(chunk => chunk.texto).join("\n\n");
       }
-
-      const authorMatch = cleanText.match(/\*\*Autor:\*\*\s*(.+)$/m);
-      if (authorMatch) {
-        extractedAuthor = authorMatch[1].trim();
-        cleanText = cleanText.replace(/\*\*Autor:\*\*\s*.+$/m, '');
-      }
-
-      cleanText = cleanText.trimStart();
 
       updateDoc(docId, { 
         status: 'ready', 
         statusText: '¡Listo para revisión!',
         title: extractedTitle, 
-        author: extractedAuthor, 
-        markdownContent: cleanText 
+        author: "Corte IDH", 
+        markdownContent: markdownText 
       });
 
     } catch (err) {
       if (err.code === 'storage/object-not-found') {
         if (attempt >= maxAttempts) {
-          updateDoc(docId, { status: 'error', statusText: 'Timeout', error: 'Tardó demasiado.' });
+          updateDoc(docId, { status: 'error', statusText: 'Timeout', error: 'El servidor tardó demasiado.' });
           return;
         }
         updateDoc(docId, { statusText: `Procesando... (Intento ${attempt}/${maxAttempts})` });
-        pollingRefs.current[docId] = setTimeout(() => pollForMarkdown(docId, mdFileName, attempt + 1), 15000);
+        pollingRefs.current[docId] = setTimeout(() => pollForJson(docId, jsonFileName, attempt + 1), 15000);
       } else {
         updateDoc(docId, { status: 'error', statusText: 'Error', error: err.message });
       }
