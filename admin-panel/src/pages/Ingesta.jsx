@@ -95,13 +95,20 @@ export default function Ingesta() {
       const response = await fetch(url);
       const docData = await response.json(); 
 
+      // Reconstrucción resiliente del Markdown
+      let markdownExtraido = docData.full_markdown || docData.markdown_limpio || "";
+      
+      if (!markdownExtraido && Array.isArray(docData.chunks) && docData.chunks.length > 0) {
+        markdownExtraido = docData.chunks.map(c => c.texto).join("\n\n");
+      }
+
       updateDoc(docId, { 
         status: 'ready', 
         statusText: '¡Listo para revisión!',
-        title: docData.titulo_extraido || docId.replace(".pdf", ""), 
-        author: docData.autor_extraido || "Desconocido", 
+        title: docData.titulo_extraido || docData.titulo || docId.replace(".pdf", ""), 
+        author: docData.autor_extraido || docData.autor || "Desconocido", 
         docType: docData.tipo_documento || "doctrina_general",
-        markdownContent: docData.full_markdown || "" 
+        markdownContent: markdownExtraido 
       });
 
     } catch (err) {
@@ -111,27 +118,26 @@ export default function Ingesta() {
           return;
         }
         updateDoc(docId, { statusText: `Procesando... (Intento ${attempt}/${maxAttempts})` });
-        pollingRefs.current[docId] = setTimeout(() => pollForJson(docId, jsonFileName, attempt + 1), 15000);
+        pollingRefs.current[docId] = setTimeout(() => pollForJson(docId, jsonFileName, attempt + 1), 10000);
       } else {
         updateDoc(docId, { status: 'error', statusText: 'Error', error: err.message });
       }
     }
   };
 
-  // Helper para re-segmentar el Markdown si el usuario hizo ediciones manuales
   const rechunkMarkdown = (markdownText, docId, docType) => {
     const secciones = markdownText.split(/\n(?=#+\s)/);
     return secciones.filter(s => s.trim()).map((sec, idx) => {
       const firstLine = sec.split('\n')[0] || '';
-      const h1Match = firstLine.match(/^#\s+(.+)$/);
+      const h1Match = firstLine.match(/^#+\s+(.+)$/);
       
       return {
-        chunk_id: `${docId.replace('.pdf', '')}_c${idx + 1}`,
+        chunk_id: `${docId.replace(/[^a-zA-Z0-9_]/g, '_')}_c${idx + 1}`,
         texto: sec.trim(),
         metadatos: {
           archivo_origen: docId,
           tipo_documento: docType,
-          seccion_h1: h1Match ? h1Match[1] : "Sección",
+          seccion_h1: h1Match ? h1Match[1] : "Sección Principal",
           orden_chunk: idx + 1
         }
       };
@@ -147,13 +153,11 @@ export default function Ingesta() {
       return;
     }
     
-    updateDoc(activeDoc.id, { status: 'indexing', statusText: 'Generando JSON para DB Vectorial...' });
+    updateDoc(activeDoc.id, { status: 'indexing', statusText: 'Indexando en DB Vectorial...' });
     setGlobalError(null);
 
-    // 1. Re-segmentar el Markdown editado
     const updatedChunks = rechunkMarkdown(activeDoc.markdownContent, activeDoc.id, activeDoc.docType);
 
-    // 2. Crear payload JSON que consumirá el Pipeline Vectorial
     const finalVectorPackage = {
       archivo_origen: activeDoc.id,
       titulo: activeDoc.title.trim(),
@@ -214,7 +218,7 @@ export default function Ingesta() {
   const allIdle = docs.every(d => d.status === 'idle' || d.status === 'error');
 
   return (
-    <Box sx={{ maxWidth: 1000, mx: 'auto', p: 3 }}>
+    <Box sx={{ maxWidth: 1100, mx: 'auto', p: 3 }}>
       <style>
         {`.spin { animation: spin 2s linear infinite; } @keyframes spin { 100% { transform: rotate(360deg); } }`}
       </style>
@@ -243,7 +247,7 @@ export default function Ingesta() {
             <input 
               type="file" 
               hidden 
-              multiple
+              multiple 
               accept="application/pdf" 
               onChange={handleFileChange} 
               disabled={userRole === 'lector'} 
@@ -253,7 +257,7 @@ export default function Ingesta() {
           <Button 
             variant="contained" 
             onClick={handleUploadAll} 
-            disabled={docs.length === 0 || !allIdle || userRole === 'lector'}
+            disabled={docs.length === 0 || !allIdle || userRole === 'lector'} 
             sx={{ minWidth: 200 }}
           >
             Procesar Lote
@@ -304,7 +308,7 @@ export default function Ingesta() {
             <TextField
               label={`Markdown Limpio - ${activeDoc.id}`}
               multiline
-              rows={14}
+              rows={16}
               fullWidth
               variant="outlined"
               value={activeDoc.markdownContent}
@@ -312,7 +316,7 @@ export default function Ingesta() {
               disabled={activeDoc.status !== 'ready' || userRole === 'lector'}
               sx={{ mb: 4 }}
               InputProps={{ sx: { fontFamily: 'monospace', fontSize: '0.9rem' } }}
-              placeholder={activeDoc.status === 'ready' ? "El texto extraído está vacío..." : "Esperando extracción..."}
+              placeholder={activeDoc.status === 'ready' ? "El texto extraído está vacío..." : "Esperando extracción y limpieza del documento..."}
             />
 
             <Typography variant="subtitle1" gutterBottom fontWeight="bold">3. Metadatos e Indexación</Typography>
