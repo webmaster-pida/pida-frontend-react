@@ -75,7 +75,7 @@ export default function Ingesta() {
 
       try {
         await uploadBytes(pdfRef, doc.file);
-        updateDoc(doc.id, { status: 'processing', statusText: 'Extrayendo y limpiando texto...' });
+        updateDoc(doc.id, { status: 'processing', statusText: 'Extrayendo y limpiando texto con Gemini...' });
 
         const expectedJsonName = doc.file.name.replace(/\.[^/.]+$/, "") + ".json";
         pollForJson(doc.id, expectedJsonName);
@@ -114,34 +114,15 @@ export default function Ingesta() {
     } catch (err) {
       if (err.code === 'storage/object-not-found') {
         if (attempt >= maxAttempts) {
-          updateDoc(docId, { status: 'error', statusText: 'Timeout', error: 'El servidor tardó demasiado.' });
+          updateDoc(docId, { status: 'error', statusText: 'Timeout', error: 'El servidor tardó demasiado en procesar el documento.' });
           return;
         }
-        updateDoc(docId, { statusText: `Procesando... (Intento ${attempt}/${maxAttempts})` });
+        updateDoc(docId, { statusText: `Procesando con Gemini... (${attempt}/${maxAttempts})` });
         pollingRefs.current[docId] = setTimeout(() => pollForJson(docId, jsonFileName, attempt + 1), 10000);
       } else {
         updateDoc(docId, { status: 'error', statusText: 'Error', error: err.message });
       }
     }
-  };
-
-  const rechunkMarkdown = (markdownText, docId, docType) => {
-    const secciones = markdownText.split(/\n(?=#+\s)/);
-    return secciones.filter(s => s.trim()).map((sec, idx) => {
-      const firstLine = sec.split('\n')[0] || '';
-      const h1Match = firstLine.match(/^#+\s+(.+)$/);
-      
-      return {
-        chunk_id: `${docId.replace(/[^a-zA-Z0-9_]/g, '_')}_c${idx + 1}`,
-        texto: sec.trim(),
-        metadatos: {
-          archivo_origen: docId,
-          tipo_documento: docType,
-          seccion_h1: h1Match ? h1Match[1] : "Sección Principal",
-          orden_chunk: idx + 1
-        }
-      };
-    });
   };
 
   const handleIndex = async () => {
@@ -153,23 +134,16 @@ export default function Ingesta() {
       return;
     }
     
-    updateDoc(activeDoc.id, { status: 'indexing', statusText: 'Indexando en DB Vectorial...' });
+    updateDoc(activeDoc.id, { status: 'indexing', statusText: 'Enviando a DB Vectorial...' });
     setGlobalError(null);
 
-    const updatedChunks = rechunkMarkdown(activeDoc.markdownContent, activeDoc.id, activeDoc.docType);
-
-    const finalVectorPackage = {
-      archivo_origen: activeDoc.id,
-      titulo: activeDoc.title.trim(),
-      autor: activeDoc.author.trim(),
-      tipo_documento: activeDoc.docType,
-      full_markdown: activeDoc.markdownContent,
-      total_chunks: updatedChunks.length,
-      chunks: updatedChunks
-    };
+    // Preparar el Markdown formal con sus metadatos integrados
+    const contenidoMarkdown = `# ${activeDoc.title.trim()}\n**Autor:** ${activeDoc.author.trim()}\n\n${activeDoc.markdownContent.trim()}`;
 
     const safeTitle = activeDoc.title.replace(/[^a-zA-Z0-9]/g, '_');
-    const finalFileName = `${safeTitle}_${Date.now()}.json`;
+    
+    // Subir como archivo Markdown (.md) para que rag-v20-genai lo procese automáticamente
+    const finalFileName = `${safeTitle}_${Date.now()}.md`;
 
     const storageListos = getStorage(undefined, import.meta.env.VITE_BUCKET_LISTOS);
     const readyRef = ref(storageListos, finalFileName);
@@ -177,13 +151,13 @@ export default function Ingesta() {
     try {
       await uploadString(
         readyRef, 
-        JSON.stringify(finalVectorPackage, null, 2), 
+        contenidoMarkdown, 
         StringFormat.RAW, 
-        { contentType: 'application/json; charset=utf-8' }
+        { contentType: 'text/markdown; charset=utf-8' }
       );
       
       updateDoc(activeDoc.id, { status: 'indexed', statusText: 'Indexado exitosamente' });
-      setGlobalSuccess(`¡"${activeDoc.title}" empaquetado para DB Vectorial!`);
+      setGlobalSuccess(`¡"${activeDoc.title}" enviado al pipeline de vectorización!`);
 
       const nextIndex = docs.findIndex((d, idx) => idx !== activeIndex && d.status === 'ready');
       if (nextIndex !== -1) setActiveIndex(nextIndex);
