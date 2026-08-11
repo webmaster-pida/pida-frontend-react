@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Box, Typography, Button, TextField, Paper, CircularProgress, 
-  Alert, Stack, Divider, LinearProgress, Tooltip, Chip 
+  Box, Typography, Button, TextField, Paper, 
+  Alert, Stack, Divider, LinearProgress, Chip 
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SendIcon from '@mui/icons-material/Send';
@@ -9,32 +9,25 @@ import AutorenewIcon from '@mui/icons-material/Autorenew';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 
-// Importaciones de Firebase Storage
-import { getStorage, ref, uploadBytes, getDownloadURL, StringFormat, uploadString } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL, uploadString, StringFormat } from 'firebase/storage';
 import { useAuth } from '../AuthContext';
 
 export default function Ingesta() {
   const { userRole } = useAuth();
   
-  // Estado que almacena la lista de documentos y sus ciclos de vida individuales
   const [docs, setDocs] = useState([]);
-  // Índice del documento que estamos viendo actualmente en el editor
   const [activeIndex, setActiveIndex] = useState(0);
-
   const [globalError, setGlobalError] = useState(null);
   const [globalSuccess, setGlobalSuccess] = useState(null);
 
-  // Referencia para controlar múltiples pollings simultáneos
   const pollingRefs = useRef({});
 
   useEffect(() => {
-    // Limpieza de todos los temporizadores al desmontar
     return () => {
       Object.values(pollingRefs.current).forEach(clearTimeout);
     };
   }, []);
 
-  // Función para actualizar una propiedad específica de un documento en el arreglo
   const updateDoc = (id, updates) => {
     setDocs(prev => prev.map(doc => doc.id === id ? { ...doc, ...updates } : doc));
   };
@@ -43,21 +36,20 @@ export default function Ingesta() {
     if (userRole === 'lector') return;
 
     if (e.target.files && e.target.files.length > 0) {
-      // Limitamos a 5 documentos por lote
       const selectedFiles = Array.from(e.target.files).slice(0, 5);
       
       const newDocs = selectedFiles.map(file => ({
         id: file.name,
         file: file,
-        status: 'idle', // idle, uploading, processing, ready, indexed, error
+        status: 'idle',
         statusText: 'Pendiente de subida',
         markdownContent: '',
         title: '',
         author: '',
+        docType: 'doctrina_general',
         error: null
       }));
 
-      // Cancelamos cualquier polling anterior
       Object.values(pollingRefs.current).forEach(clearTimeout);
       pollingRefs.current = {};
 
@@ -68,9 +60,6 @@ export default function Ingesta() {
     }
   };
 
-  // =========================================================================
-  // PASO 1: SUBIR TODOS LOS PDFS EN PARALELO
-  // =========================================================================
   const handleUploadAll = async () => {
     if (userRole === 'lector') return;
     setGlobalError(null);
@@ -80,17 +69,13 @@ export default function Ingesta() {
 
     const storagePdfs = getStorage(undefined, import.meta.env.VITE_BUCKET_PDFS);
 
-    // Iteramos e iniciamos la subida de todos al mismo tiempo
     docsToUpload.forEach(async (doc) => {
       const pdfRef = ref(storagePdfs, doc.file.name);
       updateDoc(doc.id, { status: 'uploading', statusText: 'Subiendo PDF...', error: null });
 
       try {
         await uploadBytes(pdfRef, doc.file);
-        updateDoc(doc.id, { status: 'processing', statusText: 'Extrayendo texto (PIDA trabajando)...' });
-
-        // const expectedMdName = doc.file.name.replace(/\.[^/.]+$/, "") + ".md";
-        // pollForMarkdown(doc.id, expectedMdName);
+        updateDoc(doc.id, { status: 'processing', statusText: 'Extrayendo y limpiando texto...' });
 
         const expectedJsonName = doc.file.name.replace(/\.[^/.]+$/, "") + ".json";
         pollForJson(doc.id, expectedJsonName);
@@ -100,58 +85,6 @@ export default function Ingesta() {
     });
   };
 
-  // =========================================================================
-  //const pollForMarkdown = async (docId, mdFileName, attempt = 1) => {
-  //  const maxAttempts = 120; // 120 intentos x 15 segundos = 30 minutos de espera máxima
-  //  const storage = getStorage();
-  //  const mdRef = ref(storage, `${import.meta.env.VITE_BUCKET_PENDIENTES}/${mdFileName}`);
-  //
-  //  try {
-  //    const url = await getDownloadURL(mdRef);
-  //    const response = await fetch(url);
-  //    const text = await response.text();
-  //    
-  //    let extractedTitle = '';
-  //    let extractedAuthor = '';
-  //    let cleanText = text;
-  //
-  //    const titleMatch = cleanText.match(/^#\s+(.+)$/m);
-  //    if (titleMatch) {
-  //      extractedTitle = titleMatch[1].trim();
-  //      cleanText = cleanText.replace(/^#\s+.+$/m, '');
-  //    }
-  //
-  //    const authorMatch = cleanText.match(/\*\*Autor:\*\*\s*(.+)$/m);
-  //    if (authorMatch) {
-  //      extractedAuthor = authorMatch[1].trim();
-  //      cleanText = cleanText.replace(/\*\*Autor:\*\*\s*.+$/m, '');
-  //    }
-  //
-  //    cleanText = cleanText.trimStart();
-  //
-  //    updateDoc(docId, { 
-  //      status: 'ready', 
-  //      statusText: '¡Listo para revisión!',
-  //      title: extractedTitle, 
-  //      author: extractedAuthor, 
-  //      markdownContent: cleanText 
-  //    });
-  //
-  //  } catch (err) {
-  //    if (err.code === 'storage/object-not-found') {
-  //      if (attempt >= maxAttempts) {
-  //        updateDoc(docId, { status: 'error', statusText: 'Timeout', error: 'Tardó demasiado.' });
-  //        return;
-  //      }
-  //      updateDoc(docId, { statusText: `Procesando... (Intento ${attempt}/${maxAttempts})` });
-  //      pollingRefs.current[docId] = setTimeout(() => pollForMarkdown(docId, mdFileName, attempt + 1), 15000);
-  //    } else {
-  //      updateDoc(docId, { status: 'error', statusText: 'Error', error: err.message });
-  //    }
-  //  }
-  //};
-  // =========================================================================
-
   const pollForJson = async (docId, jsonFileName, attempt = 1) => {
     const maxAttempts = 120;
     const storage = getStorage();
@@ -160,26 +93,15 @@ export default function Ingesta() {
     try {
       const url = await getDownloadURL(jsonRef);
       const response = await fetch(url);
-      const chunksData = await response.json(); // Recibe el JSON generado por main.py
-
-      // Reconstruimos el texto completo desde los fragmentos del JSON
-      let markdownText = "";
-      let extractedTitle = "";
-
-      if (Array.isArray(chunksData) && chunksData.length > 0) {
-        // Extraemos el título del primer fragmento
-        extractedTitle = chunksData[0].metadatos?.seccion_h1 || docId.replace(".pdf", "");
-        
-        // Unimos el texto de todos los fragmentos para mostralo en el editor
-        markdownText = chunksData.map(chunk => chunk.texto).join("\n\n");
-      }
+      const docData = await response.json(); 
 
       updateDoc(docId, { 
         status: 'ready', 
         statusText: '¡Listo para revisión!',
-        title: extractedTitle, 
-        author: "Corte IDH", 
-        markdownContent: markdownText 
+        title: docData.titulo_extraido || docId.replace(".pdf", ""), 
+        author: docData.autor_extraido || "Desconocido", 
+        docType: docData.tipo_documento || "doctrina_general",
+        markdownContent: docData.full_markdown || "" 
       });
 
     } catch (err) {
@@ -196,9 +118,26 @@ export default function Ingesta() {
     }
   };
 
-  // =========================================================================
-  // PASO 2: INYECTAR METADATOS Y ENVIAR AL VECTORIZADOR
-  // =========================================================================
+  // Helper para re-segmentar el Markdown si el usuario hizo ediciones manuales
+  const rechunkMarkdown = (markdownText, docId, docType) => {
+    const secciones = markdownText.split(/\n(?=#+\s)/);
+    return secciones.filter(s => s.trim()).map((sec, idx) => {
+      const firstLine = sec.split('\n')[0] || '';
+      const h1Match = firstLine.match(/^#\s+(.+)$/);
+      
+      return {
+        chunk_id: `${docId.replace('.pdf', '')}_c${idx + 1}`,
+        texto: sec.trim(),
+        metadatos: {
+          archivo_origen: docId,
+          tipo_documento: docType,
+          seccion_h1: h1Match ? h1Match[1] : "Sección",
+          orden_chunk: idx + 1
+        }
+      };
+    });
+  };
+
   const handleIndex = async () => {
     if (userRole === 'lector') return;
     const activeDoc = docs[activeIndex];
@@ -208,22 +147,40 @@ export default function Ingesta() {
       return;
     }
     
-    updateDoc(activeDoc.id, { status: 'indexing', statusText: 'Enviando al vectorizador...' });
+    updateDoc(activeDoc.id, { status: 'indexing', statusText: 'Generando JSON para DB Vectorial...' });
     setGlobalError(null);
 
-    const finalMarkdown = `# ${activeDoc.title.trim()}\n**Autor:** ${activeDoc.author.trim()}\n\n${activeDoc.markdownContent}`;
+    // 1. Re-segmentar el Markdown editado
+    const updatedChunks = rechunkMarkdown(activeDoc.markdownContent, activeDoc.id, activeDoc.docType);
+
+    // 2. Crear payload JSON que consumirá el Pipeline Vectorial
+    const finalVectorPackage = {
+      archivo_origen: activeDoc.id,
+      titulo: activeDoc.title.trim(),
+      autor: activeDoc.author.trim(),
+      tipo_documento: activeDoc.docType,
+      full_markdown: activeDoc.markdownContent,
+      total_chunks: updatedChunks.length,
+      chunks: updatedChunks
+    };
+
     const safeTitle = activeDoc.title.replace(/[^a-zA-Z0-9]/g, '_');
-    const finalFileName = `${safeTitle}_${Date.now()}.md`;
+    const finalFileName = `${safeTitle}_${Date.now()}.json`;
 
     const storageListos = getStorage(undefined, import.meta.env.VITE_BUCKET_LISTOS);
     const readyRef = ref(storageListos, finalFileName);
 
     try {
-      await uploadString(readyRef, finalMarkdown, StringFormat.RAW, { contentType: 'text/markdown' });
+      await uploadString(
+        readyRef, 
+        JSON.stringify(finalVectorPackage, null, 2), 
+        StringFormat.RAW, 
+        { contentType: 'application/json; charset=utf-8' }
+      );
+      
       updateDoc(activeDoc.id, { status: 'indexed', statusText: 'Indexado exitosamente' });
-      setGlobalSuccess(`¡"${activeDoc.title}" indexado!`);
+      setGlobalSuccess(`¡"${activeDoc.title}" empaquetado para DB Vectorial!`);
 
-      // Pasar automáticamente al siguiente documento "listo" si lo hay
       const nextIndex = docs.findIndex((d, idx) => idx !== activeIndex && d.status === 'ready');
       if (nextIndex !== -1) setActiveIndex(nextIndex);
 
@@ -232,7 +189,6 @@ export default function Ingesta() {
     }
   };
 
-  // Funciones de ayuda para UI
   const getChipColor = (status) => {
     switch(status) {
       case 'ready': return 'success';
@@ -267,15 +223,13 @@ export default function Ingesta() {
         Ingesta de Documentos Lote (Máx. 5)
       </Typography>
       <Typography variant="body1" color="text.secondary" gutterBottom>
-        Sube hasta 5 PDFs simultáneamente. Navega entre ellos para revisar el texto extraído y aprueba su indexación uno por uno.
+        Sube hasta 5 PDFs simultáneamente. Revisa el Markdown limpio y aprueba el empaquetado para la DB Vectorial.
       </Typography>
 
       {globalError && <Alert severity="error" sx={{ mb: 3 }}>{globalError}</Alert>}
       {globalSuccess && <Alert severity="success" sx={{ mb: 3 }}>{globalSuccess}</Alert>}
 
       <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 2 }}>
-        
-        {/* SECCIÓN 1: Selección y Subida */}
         <Typography variant="h6" gutterBottom fontWeight="bold">1. Selección de Archivos</Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={3}>
           <Button 
@@ -306,7 +260,6 @@ export default function Ingesta() {
           </Button>
         </Stack>
 
-        {/* Navegador de Documentos */}
         {docs.length > 0 && (
           <Box sx={{ mb: 4, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
             <Typography variant="subtitle2" color="text.secondary" mb={1}>Documentos en cola:</Typography>
@@ -328,14 +281,12 @@ export default function Ingesta() {
 
         <Divider sx={{ my: 4 }} />
 
-        {/* ÁREA DE TRABAJO DEL DOCUMENTO ACTIVO */}
         {activeDoc && (
           <Box>
             <Typography variant="h6" gutterBottom color="primary">
               Trabajando en: {activeDoc.id}
             </Typography>
             
-            {/* Estado particular del archivo activo */}
             {['processing', 'uploading', 'indexing'].includes(activeDoc.status) && (
               <Box sx={{ mb: 3 }}>
                 <Typography variant="body2" color="text.secondary" mb={1}>
@@ -349,12 +300,11 @@ export default function Ingesta() {
               <Alert severity="error" sx={{ mb: 3 }}>{activeDoc.error}</Alert>
             )}
 
-            {/* SECCIÓN 2: Editor */}
-            <Typography variant="subtitle1" gutterBottom fontWeight="bold">2. Intervención Humana</Typography>
+            <Typography variant="subtitle1" gutterBottom fontWeight="bold">2. Editor Markdown</Typography>
             <TextField
-              label={`Editor Markdown - ${activeDoc.id}`}
+              label={`Markdown Limpio - ${activeDoc.id}`}
               multiline
-              rows={12}
+              rows={14}
               fullWidth
               variant="outlined"
               value={activeDoc.markdownContent}
@@ -365,7 +315,6 @@ export default function Ingesta() {
               placeholder={activeDoc.status === 'ready' ? "El texto extraído está vacío..." : "Esperando extracción..."}
             />
 
-            {/* SECCIÓN 3: Metadatos y Envío */}
             <Typography variant="subtitle1" gutterBottom fontWeight="bold">3. Metadatos e Indexación</Typography>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} mb={3}>
               <TextField
@@ -396,7 +345,7 @@ export default function Ingesta() {
                 disabled={activeDoc.status !== 'ready' || userRole === 'lector'}
                 sx={{ px: 4, py: 1.5 }}
               >
-                Aprobar e Indexar
+                Aprobar e Indexar en DB Vectorial
               </Button>
             </Box>
           </Box>
