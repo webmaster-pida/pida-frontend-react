@@ -95,7 +95,6 @@ export default function Ingesta() {
       const response = await fetch(url);
       const docData = await response.json(); 
 
-      // Reconstrucción resiliente del Markdown
       let markdownExtraido = docData.full_markdown || docData.markdown_limpio || "";
       
       if (!markdownExtraido && Array.isArray(docData.chunks) && docData.chunks.length > 0) {
@@ -129,7 +128,10 @@ export default function Ingesta() {
     if (userRole === 'lector') return;
     const activeDoc = docs[activeIndex];
 
-    if (!activeDoc.title.trim() || !activeDoc.author.trim() || !activeDoc.markdownContent.trim()) {
+    const tituloManual = activeDoc.title.trim();
+    const autorManual = activeDoc.author.trim();
+
+    if (!tituloManual || !autorManual || !activeDoc.markdownContent.trim()) {
       setGlobalError(`Faltan metadatos o texto para el documento: ${activeDoc.id}`);
       return;
     }
@@ -137,12 +139,14 @@ export default function Ingesta() {
     updateDoc(activeDoc.id, { status: 'indexing', statusText: 'Enviando a DB Vectorial...' });
     setGlobalError(null);
 
-    // Preparar el Markdown formal con sus metadatos integrados
-    const contenidoMarkdown = `# ${activeDoc.title.trim()}\n**Autor:** ${activeDoc.author.trim()}\n\n${activeDoc.markdownContent.trim()}`;
+    // 1. Quitar el H1 previo si viene pegado al inicio del markdown para que no compita
+    let textoCuerpo = activeDoc.markdownContent.trim();
+    textoCuerpo = textoCuerpo.replace(/^#\s+[^\n]+\n*/, '').trim();
 
-    const safeTitle = activeDoc.title.replace(/[^a-zA-Z0-9]/g, '_');
-    
-    // Subir como archivo Markdown (.md) para que rag-v20-genai lo procese automáticamente
+    // 2. Armar el Markdown inyectando de forma forzada tu título y autor manuales arriba
+    const contenidoMarkdown = `# ${tituloManual}\n**Autor:** ${autorManual}\n\n${textoCuerpo}`;
+
+    const safeTitle = tituloManual.replace(/[^a-zA-Z0-9]/g, '_');
     const finalFileName = `${safeTitle}_${Date.now()}.md`;
 
     const storageListos = getStorage(undefined, import.meta.env.VITE_BUCKET_LISTOS);
@@ -157,7 +161,7 @@ export default function Ingesta() {
       );
       
       updateDoc(activeDoc.id, { status: 'indexed', statusText: 'Indexado exitosamente' });
-      setGlobalSuccess(`¡"${activeDoc.title}" enviado al pipeline de vectorización!`);
+      setGlobalSuccess(`¡"${tituloManual}" enviado y procesado para DB Vectorial!`);
 
       const nextIndex = docs.findIndex((d, idx) => idx !== activeIndex && d.status === 'ready');
       if (nextIndex !== -1) setActiveIndex(nextIndex);
