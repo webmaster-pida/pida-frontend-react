@@ -4,35 +4,29 @@ import { AuthProvider } from './AuthContext';
 import RequireAuth from './RequireAuth';
 import AdminLayout from './AdminLayout';
 
-// Tus páginas (Adiós Dashboard)
+// Tus páginas
 import Biblioteca from './pages/Biblioteca';
 import Ingesta from './pages/Ingesta';
 import Estadisticas from './pages/Estadisticas';
 import Login from './pages/Login';
 import Usuarios from './pages/Usuarios';
+import Configuracion from './pages/Configuracion';
 import { Typography } from '@mui/material';
 
 export default function App() {
   return (
     <AuthProvider>
-      {/* Cero rastro de BrowserRouter en este archivo */}
       <Routes>
-        {/* RUTAS PÚBLICAS */}
         <Route path="/login" element={<Login />} />
 
-        {/* RUTAS PROTEGIDAS */}
         <Route element={<RequireAuth><AdminLayout /></RequireAuth>}>
-          
-          {/* Redirigimos la raíz "/" directamente a Estadísticas */}
           <Route path="/" element={<Navigate to="/estadisticas" replace />} />
-          
           <Route path="/estadisticas" element={<Estadisticas />} />
           <Route path="/biblioteca" element={<Biblioteca />} />
           <Route path="/ingesta" element={<Ingesta />} />
           <Route path="/usuarios" element={<Usuarios />} />
-          <Route path="/configuracion" element={<Typography variant="h5" sx={{p:4}}>Módulo en construcción...</Typography>} />
+          <Route path="/configuracion" element={<Configuracion />} />
           
-          {/* Cualquier URL que no exista los devuelve a Estadísticas */}
           <Route path="*" element={<Navigate to="/estadisticas" replace />} />
         </Route>
       </Routes>
