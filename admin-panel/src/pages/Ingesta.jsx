@@ -246,7 +246,7 @@ export default function Ingesta() {
         {docs.length > 0 && (
           <Box sx={{ mb: 4, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
             <Typography variant="subtitle2" color="text.secondary" mb={1}>Documentos en cola:</Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Box display="flex" flexWrap="wrap" gap={1}>
               {docs.map((doc, idx) => (
                 <Chip 
                   key={doc.id}
@@ -255,10 +255,10 @@ export default function Ingesta() {
                   variant={activeIndex === idx ? "filled" : "outlined"}
                   onClick={() => setActiveIndex(idx)}
                   icon={getChipIcon(doc.status)}
-                  sx={{ mb: 1, fontWeight: activeIndex === idx ? 'bold' : 'normal' }}
+                  sx={{ fontWeight: activeIndex === idx ? 'bold' : 'normal', maxWidth: '100%' }}
                 />
               ))}
-            </Stack>
+            </Box>
           </Box>
         )}
 
