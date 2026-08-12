@@ -36,7 +36,8 @@ export default function Ingesta() {
     if (userRole === 'lector') return;
 
     if (e.target.files && e.target.files.length > 0) {
-      const selectedFiles = Array.from(e.target.files).slice(0, 5);
+      // INCREMENTADO A 10
+      const selectedFiles = Array.from(e.target.files).slice(0, 10);
       
       const newDocs = selectedFiles.map(file => ({
         id: file.name,
@@ -202,10 +203,10 @@ export default function Ingesta() {
       </style>
       
       <Typography variant="h4" gutterBottom fontWeight="bold" color="primary">
-        Ingesta de Documentos Lote (Máx. 5)
+        Ingesta de Documentos Lote (Máx. 10)
       </Typography>
       <Typography variant="body1" color="text.secondary" gutterBottom>
-        Sube hasta 5 PDFs simultáneamente. Revisa el Markdown limpio y aprueba el empaquetado para la DB Vectorial.
+        Sube hasta 10 PDFs simultáneamente. Revisa el Markdown limpio y aprueba el empaquetado para la DB Vectorial.
       </Typography>
 
       {globalError && <Alert severity="error" sx={{ mb: 3 }}>{globalError}</Alert>}
@@ -221,7 +222,7 @@ export default function Ingesta() {
             sx={{ flexGrow: 1, textTransform: 'none' }}
             disabled={userRole === 'lector'}
           >
-            {docs.length > 0 ? `${docs.length} archivos seleccionados` : 'Seleccionar PDFs (Máx. 5)'}
+            {docs.length > 0 ? `${docs.length} archivos seleccionados` : 'Seleccionar PDFs (Máx. 10)'}
             <input 
               type="file" 
               hidden 
