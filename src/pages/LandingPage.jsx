@@ -16,6 +16,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
   const [response, setResponse] = useState('');
   const [status, setStatus] = useState('idle'); // idle, loading, streaming, blurred
   const [statusText, setStatusText] = useState('');
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   const getAnonId = () => {
     let anonId = localStorage.getItem('pida_anon_id');
@@ -76,8 +77,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
         if (res.status === 429) {
            setStatus('idle');
            setStatusText('');
-           alert("Has alcanzado el límite de pruebas anónimas. ¡Crea tu cuenta para continuar!");
-           handleUnlock(); // Abre el modal de registro automáticamente
+           setShowLimitModal(true); // Mostramos el modal personalizado en lugar de la alerta
            return;
         }
         throw new Error('Error de conexión');
@@ -139,138 +139,173 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
   };
 
   return (
-    <Card elevation={0} sx={{ width: '100%', maxWidth: '600px', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--pida-border)', boxShadow: '0 20px 40px rgba(29, 53, 87, 0.1)' }}>
-      
-      {/* ENCABEZADO EXPLICATIVO */}
-      <Box sx={{ 
-        pt: 4, 
-        pb: 1, 
-        px: 3, 
-        textAlign: 'center',
-        bgcolor: 'white'
-      }}>
-        <Typography variant="h6" sx={{ color: 'var(--navy)', fontWeight: 800, mb: 0.5, fontSize: '1.35rem' }}>
-          Pruébalo gratis ahora
-        </Typography>
-        <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.95rem' }}>
-          Haz una pregunta jurídica y descubre la precisión de nuestras respuestas.
-        </Typography>
-      </Box>
-
-      {/* BARRA DE BÚSQUEDA */}
-      <Box component="form" onSubmit={handleSearch} sx={{ px: 3, pb: 4, pt: 1.5, borderBottom: '1px solid #E2E8F0', bgcolor: 'white' }}>
+    <>
+      <Card elevation={0} sx={{ width: '100%', maxWidth: '600px', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--pida-border)', boxShadow: '0 20px 40px rgba(29, 53, 87, 0.1)' }}>
+        
+        {/* ENCABEZADO EXPLICATIVO */}
         <Box sx={{ 
-          display: 'flex', 
-          gap: 1, 
-          position: 'relative', 
-          p: '6px', 
-          border: '1px solid #E2E8F0', 
-          borderRadius: '50px', 
-          bgcolor: 'white', 
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-          alignItems: 'center'
+          pt: 4, 
+          pb: 1, 
+          px: 3, 
+          textAlign: 'center',
+          bgcolor: 'white'
         }}>
-          <TextField
-            fullWidth
-            placeholder="Ej: ¿Cuáles son los estándares de prisión preventiva en la Corte IDH?"
-            variant="standard"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            disabled={status !== 'idle' && status !== 'blurred'}
-            sx={{ flex: 1, minWidth: 0 }}
-            InputProps={{ 
-              disableUnderline: true, 
-              sx: { ml: 2, mt: '2px', fontSize: '0.95rem', color: 'var(--navy)', pr: 2 } 
-            }}
-          />
-          <Button 
-            type="submit" 
-            variant="contained" 
-            disabled={!query.trim() || status === 'loading' || status === 'streaming'}
-            sx={{ 
-              borderRadius: '50px', 
-              minWidth: '60px', 
-              height: '46px', 
-              bgcolor: 'var(--pida-primary)', 
-              '&:hover': { bgcolor: 'var(--pida-accent)' }, 
-              p: 0, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
-            {status === 'loading' ? <CircularProgress size={24} color="inherit" /> : <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="Preguntar" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />}
-          </Button>
-        </Box>
-      </Box>
-
-      {/* ÁREA DE RESPUESTA */}
-      {(status !== 'idle' || response) && (
-        <Box sx={{ p: 3, position: 'relative', bgcolor: 'white', minHeight: '300px' }}>
-          
-          {/* Mensaje de estado al cargar */}
-          {(status === 'loading' || status === 'streaming') && statusText && (
-            <Typography variant="caption" sx={{ color: 'var(--pida-accent)', fontWeight: 600, display: 'block', mb: 1 }}>
-              ⚡ {statusText}
-            </Typography>
-          )}
-
-          {/* Texto de la respuesta (con efecto máscara cuando se difumina) */}
-          <Typography 
-            variant="body1" 
-            sx={{ 
-              color: '#334155', 
-              lineHeight: 1.7, 
-              whiteSpace: 'pre-line',
-              maskImage: status === 'blurred' ? 'linear-gradient(to bottom, black 40%, transparent 95%)' : 'none',
-              WebkitMaskImage: status === 'blurred' ? 'linear-gradient(to bottom, black 40%, transparent 95%)' : 'none',
-              filter: status === 'blurred' ? 'blur(1.2px)' : 'none',
-              transition: 'all 1.5s ease',
-              mb: status === 'blurred' ? 4 : 0
-            }}
-          >
-            {response}
-            {status === 'streaming' && <span style={{ borderRight: '2px solid var(--pida-primary)', animation: 'blink 1s step-end infinite' }}>&nbsp;</span>}
+          <Typography variant="h6" sx={{ color: 'var(--navy)', fontWeight: 800, mb: 0.5, fontSize: '1.35rem' }}>
+            Pruébalo gratis ahora
           </Typography>
-
-          {/* OVERLAY CALL TO ACTION (Aparece cuando el estado es 'blurred') */}
-          <Fade in={status === 'blurred'} timeout={1000}>
-            <Box sx={{ 
-              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 60%, rgba(255,255,255,1) 100%)',
-              pt: 15, pb: 3, px: 3, textAlign: 'center', zIndex: 10
-            }}>
-              <LockIcon sx={{ fontSize: 40, color: '#94A3B8', mb: 1 }} />
-              <Typography variant="h6" sx={{ color: 'var(--navy)', fontWeight: 'bold', mb: 1 }}>
-                Respuesta truncada
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#64748B', mb: 3 }}>
-                Para leer el análisis completo y la fundamentación jurídica, suscríbete a uno de nuestros planes.
-              </Typography>
-              <Button 
-                variant="contained" 
-                size="large"
-                onClick={handleUnlock}
-                sx={{ 
-                  bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.5, borderRadius: '30px',
-                  boxShadow: '0 10px 20px rgba(225, 29, 72, 0.3)',
-                  '&:hover': { bgcolor: '#be123c', transform: 'translateY(-2px)' },
-                  transition: 'all 0.2s'
-                }}
-              >
-                Iniciar prueba de 5 días y ver respuesta
-              </Button>
-            </Box>
-          </Fade>
-
+          <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.95rem' }}>
+            Haz una pregunta jurídica y descubre la precisión de nuestras respuestas.
+          </Typography>
         </Box>
+
+        {/* BARRA DE BÚSQUEDA */}
+        <Box component="form" onSubmit={handleSearch} sx={{ px: 3, pb: 4, pt: 1.5, borderBottom: '1px solid #E2E8F0', bgcolor: 'white' }}>
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 1, 
+            position: 'relative', 
+            p: '6px', 
+            border: '1px solid #E2E8F0', 
+            borderRadius: '50px', 
+            bgcolor: 'white', 
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+            alignItems: 'center'
+          }}>
+            <TextField
+              fullWidth
+              placeholder="Ej: ¿Cuáles son los estándares de prisión preventiva en la Corte IDH?"
+              variant="standard"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              disabled={status !== 'idle' && status !== 'blurred'}
+              sx={{ flex: 1, minWidth: 0 }}
+              InputProps={{ 
+                disableUnderline: true, 
+                sx: { ml: 2, mt: '2px', fontSize: '0.95rem', color: 'var(--navy)', pr: 2 } 
+              }}
+            />
+            <Button 
+              type="submit" 
+              variant="contained" 
+              disabled={!query.trim() || status === 'loading' || status === 'streaming'}
+              sx={{ 
+                borderRadius: '50px', 
+                minWidth: '60px', 
+                height: '46px', 
+                bgcolor: 'var(--pida-primary)', 
+                '&:hover': { bgcolor: 'var(--pida-accent)' }, 
+                p: 0, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                flexShrink: 0
+              }}
+            >
+              {status === 'loading' ? <CircularProgress size={24} color="inherit" /> : <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="Preguntar" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />}
+            </Button>
+          </Box>
+        </Box>
+
+        {/* ÁREA DE RESPUESTA */}
+        {(status !== 'idle' || response) && (
+          <Box sx={{ p: 3, position: 'relative', bgcolor: 'white', minHeight: '300px' }}>
+            
+            {/* Mensaje de estado al cargar */}
+            {(status === 'loading' || status === 'streaming') && statusText && (
+              <Typography variant="caption" sx={{ color: 'var(--pida-accent)', fontWeight: 600, display: 'block', mb: 1 }}>
+                ⚡ {statusText}
+              </Typography>
+            )}
+
+            {/* Texto de la respuesta (con efecto máscara cuando se difumina) */}
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                color: '#334155', 
+                lineHeight: 1.7, 
+                whiteSpace: 'pre-line',
+                maskImage: status === 'blurred' ? 'linear-gradient(to bottom, black 40%, transparent 95%)' : 'none',
+                WebkitMaskImage: status === 'blurred' ? 'linear-gradient(to bottom, black 40%, transparent 95%)' : 'none',
+                filter: status === 'blurred' ? 'blur(1.2px)' : 'none',
+                transition: 'all 1.5s ease',
+                mb: status === 'blurred' ? 4 : 0
+              }}
+            >
+              {response}
+              {status === 'streaming' && <span style={{ borderRight: '2px solid var(--pida-primary)', animation: 'blink 1s step-end infinite' }}>&nbsp;</span>}
+            </Typography>
+
+            {/* OVERLAY CALL TO ACTION (Aparece cuando el estado es 'blurred') */}
+            <Fade in={status === 'blurred'} timeout={1000}>
+              <Box sx={{ 
+                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 60%, rgba(255,255,255,1) 100%)',
+                pt: 15, pb: 3, px: 3, textAlign: 'center', zIndex: 10
+              }}>
+                <LockIcon sx={{ fontSize: 40, color: '#94A3B8', mb: 1 }} />
+                <Typography variant="h6" sx={{ color: 'var(--navy)', fontWeight: 'bold', mb: 1 }}>
+                  Respuesta truncada
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#64748B', mb: 3 }}>
+                  Para leer el análisis completo y la fundamentación jurídica, suscríbete a uno de nuestros planes.
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  size="large"
+                  onClick={handleUnlock}
+                  sx={{ 
+                    bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.5, borderRadius: '30px',
+                    boxShadow: '0 10px 20px rgba(225, 29, 72, 0.3)',
+                    '&:hover': { bgcolor: '#be123c', transform: 'translateY(-2px)' },
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Iniciar prueba de 5 días y ver respuesta
+                </Button>
+              </Box>
+            </Fade>
+
+          </Box>
+        )}
+        <style>{`
+          @keyframes blink { 50% { border-color: transparent; } }
+        `}</style>
+      </Card>
+
+      {/* MODAL DE LÍMITE DE PRUEBAS */}
+      {showLimitModal && (
+        <div className="modal-backdrop" style={{ zIndex: 9999 }}>
+          <div className="modal-card" style={{ maxWidth: '420px', textAlign: 'center', padding: '40px 30px' }}>
+            <button className="modal-close-btn" onClick={() => setShowLimitModal(false)}>×</button>
+            <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="Mascota PIDA" style={{ width: '90px', marginBottom: '20px', margin: '0 auto' }} />
+            <Typography variant="h5" sx={{ color: 'var(--navy)', fontWeight: 800, mb: 1.5, fontSize: '1.4rem' }}>
+              ¡Límite alcanzado!
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#475569', mb: 4, lineHeight: 1.6 }}>
+              Has utilizado todas tus consultas gratuitas anónimas. Crea tu cuenta ahora para descubrir la precisión de PIDA en casos reales.
+            </Typography>
+            <Button 
+              variant="contained" 
+              size="large"
+              onClick={() => {
+                setShowLimitModal(false);
+                handleUnlock();
+              }}
+              sx={{ 
+                bgcolor: 'var(--pida-primary)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.5, borderRadius: '30px',
+                boxShadow: '0 10px 20px rgba(56, 189, 248, 0.2)',
+                width: '100%',
+                '&:hover': { bgcolor: 'var(--pida-accent)', transform: 'translateY(-2px)' },
+                transition: 'all 0.2s'
+              }}
+            >
+              Crear mi cuenta y suscribirme
+            </Button>
+          </div>
+        </div>
       )}
-      <style>{`
-        @keyframes blink { 50% { border-color: transparent; } }
-      `}</style>
-    </Card>
+    </>
   );
 };
 
