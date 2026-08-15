@@ -167,7 +167,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
             position: 'relative', 
             p: '6px', 
             border: '1px solid #E2E8F0', 
-            borderRadius: '50px', 
+            borderRadius: '8px', 
             bgcolor: 'white', 
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
             alignItems: 'center'
@@ -190,7 +190,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
               variant="contained" 
               disabled={!query.trim() || status === 'loading' || status === 'streaming'}
               sx={{ 
-                borderRadius: '50px', 
+                borderRadius: '8px', 
                 minWidth: '60px', 
                 height: '46px', 
                 bgcolor: 'var(--pida-primary)', 
@@ -256,7 +256,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
                   size="large"
                   onClick={handleUnlock}
                   sx={{ 
-                    bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.5, borderRadius: '30px',
+                    bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.5, borderRadius: '8px',
                     boxShadow: '0 10px 20px rgba(225, 29, 72, 0.3)',
                     '&:hover': { bgcolor: '#be123c', transform: 'translateY(-2px)' },
                     transition: 'all 0.2s'
@@ -294,7 +294,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
                 handleUnlock();
               }}
               sx={{ 
-                bgcolor: 'var(--pida-primary)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.5, borderRadius: '30px',
+                bgcolor: 'var(--pida-primary)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.5, borderRadius: '8px',
                 boxShadow: '0 10px 20px rgba(56, 189, 248, 0.2)',
                 width: '100%',
                 '&:hover': { bgcolor: 'var(--pida-accent)', transform: 'translateY(-2px)' },
