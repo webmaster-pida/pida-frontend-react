@@ -78,13 +78,21 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
               } else if (data.text) {
                 setResponse((prev) => prev + data.text);
               } else if (data.event === 'blur_ready') {
-                setStatus('blurred');
+                // Retrasamos el difuminado para que el usuario pueda leer más
+                setTimeout(() => {
+                  setResponse((prev) => prev + '...');
+                  setStatus((current) => current === 'streaming' ? 'blurred' : current);
+                }, 3500);
               }
             } catch (err) {}
           }
         }
       }
-      setStatus('blurred');
+      // Por si el stream termina sin enviar blur_ready explícito
+      setTimeout(() => {
+        setResponse((prev) => prev + '...');
+        setStatus((current) => current === 'streaming' ? 'blurred' : current);
+      }, 3500);
     } catch (error) {
       console.error("Teaser error", error);
       setStatus('idle');
