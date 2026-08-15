@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { STRIPE_PRICES } from '../config/constants';
 import { db } from '../config/firebase'; 
 
@@ -274,8 +275,8 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
       </Card>
 
       {/* MODAL DE LÍMITE DE PRUEBAS */}
-      {showLimitModal && (
-        <div className="modal-backdrop" style={{ zIndex: 9999 }}>
+      {showLimitModal && ReactDOM.createPortal(
+        <div className="modal-backdrop" style={{ zIndex: 99999 }}>
           <div className="modal-card" style={{ maxWidth: '420px', textAlign: 'center', padding: '40px 30px' }}>
             <button className="modal-close-btn" onClick={() => setShowLimitModal(false)}>×</button>
             <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="Mascota PIDA" style={{ width: '90px', marginBottom: '20px', margin: '0 auto' }} />
@@ -303,7 +304,8 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
               Crear mi cuenta y suscribirme
             </Button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
