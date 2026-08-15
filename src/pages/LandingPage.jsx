@@ -56,13 +56,19 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
               } else if (data.text) {
                 setResponse((prev) => prev + data.text);
               } else if (data.event === 'blur_ready') {
-                setStatus('blurred');
+                // Retrasamos el difuminado para que el usuario pueda leer más
+                setTimeout(() => {
+                  setStatus((current) => current === 'streaming' ? 'blurred' : current);
+                }, 3500); 
               }
             } catch (err) {}
           }
         }
       }
-      setStatus('blurred');
+      // Por si el stream termina sin enviar blur_ready
+      setTimeout(() => {
+        setStatus((current) => current === 'streaming' ? 'blurred' : current);
+      }, 3500);
     } catch (error) {
       console.error("Teaser error", error);
       setStatus('idle');
@@ -106,7 +112,8 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
           border: '1px solid #E2E8F0', 
           borderRadius: '50px', 
           bgcolor: 'white', 
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' 
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+          alignItems: 'center'
         }}>
           <TextField
             fullWidth
@@ -115,9 +122,10 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             disabled={status !== 'idle' && status !== 'blurred'}
+            sx={{ flex: 1, minWidth: 0 }}
             InputProps={{ 
               disableUnderline: true, 
-              sx: { ml: 2, mt: '2px', fontSize: '0.95rem', color: 'var(--navy)' } 
+              sx: { ml: 2, mt: '2px', fontSize: '0.95rem', color: 'var(--navy)', pr: 2 } 
             }}
           />
           <Button 
@@ -133,7 +141,8 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
               p: 0, 
               display: 'flex', 
               alignItems: 'center', 
-              justifyContent: 'center' 
+              justifyContent: 'center',
+              flexShrink: 0
             }}
           >
             {status === 'loading' ? <CircularProgress size={24} color="inherit" /> : <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="Preguntar" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />}
@@ -143,7 +152,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
 
       {/* ÁREA DE RESPUESTA */}
       {(status !== 'idle' || response) && (
-        <Box sx={{ p: 3, position: 'relative', bgcolor: 'white', minHeight: '200px' }}>
+        <Box sx={{ p: 3, position: 'relative', bgcolor: 'white', minHeight: '300px' }}>
           
           {/* Mensaje de estado al cargar */}
           {(status === 'loading' || status === 'streaming') && statusText && (
@@ -159,10 +168,11 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
               color: '#334155', 
               lineHeight: 1.7, 
               whiteSpace: 'pre-line',
-              maskImage: status === 'blurred' ? 'linear-gradient(to bottom, black 20%, transparent 90%)' : 'none',
-              WebkitMaskImage: status === 'blurred' ? 'linear-gradient(to bottom, black 20%, transparent 90%)' : 'none',
-              filter: status === 'blurred' ? 'blur(1.5px)' : 'none',
-              transition: 'all 0.5s ease'
+              maskImage: status === 'blurred' ? 'linear-gradient(to bottom, black 40%, transparent 95%)' : 'none',
+              WebkitMaskImage: status === 'blurred' ? 'linear-gradient(to bottom, black 40%, transparent 95%)' : 'none',
+              filter: status === 'blurred' ? 'blur(1.2px)' : 'none',
+              transition: 'all 1.5s ease',
+              mb: status === 'blurred' ? 4 : 0
             }}
           >
             {response}
@@ -170,12 +180,12 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
           </Typography>
 
           {/* OVERLAY CALL TO ACTION (Aparece cuando el estado es 'blurred') */}
-          <Fade in={status === 'blurred'}>
+          <Fade in={status === 'blurred'} timeout={1000}>
             <Box sx={{ 
               position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,1) 100%)',
-              pt: 10, pb: 3, px: 3, textAlign: 'center', zIndex: 10
+              background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 60%, rgba(255,255,255,1) 100%)',
+              pt: 15, pb: 3, px: 3, textAlign: 'center', zIndex: 10
             }}>
               <LockIcon sx={{ fontSize: 40, color: '#94A3B8', mb: 1 }} />
               <Typography variant="h6" sx={{ color: 'var(--navy)', fontWeight: 'bold', mb: 1 }}>
