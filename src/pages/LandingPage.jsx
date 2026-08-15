@@ -3,10 +3,173 @@ import { STRIPE_PRICES } from '../config/constants';
 import { db } from '../config/firebase'; 
 
 // Importaciones de Material-UI
-import { Box, TextField, Button, Menu, MenuItem, SvgIcon, Card, CardMedia, IconButton, Fade } from '@mui/material';
+import { Box, TextField, Button, Menu, MenuItem, SvgIcon, Card, CardMedia, IconButton, Fade, Typography, CircularProgress } from '@mui/material';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import LockIcon from '@mui/icons-material/Lock';
+
+// --- NUEVO COMPONENTE: LEAD MAGNET (TRY BEFORE YOU BUY) ---
+const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
+  const [query, setQuery] = useState('');
+  const [response, setResponse] = useState('');
+  const [status, setStatus] = useState('idle'); // idle, loading, streaming, blurred
+  const [statusText, setStatusText] = useState('');
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!query.trim() || status === 'loading' || status === 'streaming') return;
+
+    setStatus('loading');
+    setResponse('');
+    setStatusText('Conectando con PIDA...');
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_CHAT}/teaser-chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: query })
+      });
+
+      if (!res.ok) throw new Error('Error de conexión');
+
+      setStatus('streaming');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let streamBuffer = "";
+      
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        
+        streamBuffer += decoder.decode(value, { stream: true });
+        const lines = streamBuffer.split('\n\n');
+        streamBuffer = lines.pop(); 
+        
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            try {
+              const data = JSON.parse(line.substring(6));
+              if (data.event === 'status') {
+                setStatusText(data.message);
+              } else if (data.text) {
+                setResponse((prev) => prev + data.text);
+              } else if (data.event === 'blur_ready') {
+                setStatus('blurred');
+              }
+            } catch (err) {}
+          }
+        }
+      }
+      setStatus('blurred');
+    } catch (error) {
+      console.error("Teaser error", error);
+      setStatus('idle');
+    }
+  };
+
+  const handleUnlock = () => {
+    // Guardamos la pregunta para que cuando el usuario se registre, ya la tenga en su chat
+    sessionStorage.setItem('pida_pending_query', query);
+    sessionStorage.setItem('pida_pending_interval', interval);
+    sessionStorage.setItem('pida_pending_plan', 'basico'); 
+    onOpenAuth('register');
+  };
+
+  return (
+    <Card elevation={0} sx={{ width: '100%', maxWidth: '600px', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--pida-border)', boxShadow: '0 20px 40px rgba(29, 53, 87, 0.1)' }}>
+      
+      {/* BARRA DE BÚSQUEDA */}
+      <Box component="form" onSubmit={handleSearch} sx={{ p: 3, borderBottom: '1px solid #E2E8F0', bgcolor: '#F8FAFC' }}>
+        <Box sx={{ display: 'flex', gap: 1, position: 'relative' }}>
+          <TextField
+            fullWidth
+            placeholder="Ej: ¿Cuáles son los estándares de prisión preventiva en la Corte IDH?"
+            variant="outlined"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            disabled={status !== 'idle' && status !== 'blurred'}
+            sx={{ bgcolor: 'white', '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+          />
+          <Button 
+            type="submit" 
+            variant="contained" 
+            disabled={!query.trim() || status === 'loading' || status === 'streaming'}
+            sx={{ borderRadius: '12px', px: 3, bgcolor: 'var(--pida-primary)', '&:hover': { bgcolor: 'var(--pida-accent)' }, minWidth: '64px' }}
+          >
+            {status === 'loading' ? <CircularProgress size={24} color="inherit" /> : <AutoAwesomeIcon />}
+          </Button>
+        </Box>
+      </Box>
+
+      {/* ÁREA DE RESPUESTA */}
+      {(status !== 'idle' || response) && (
+        <Box sx={{ p: 3, position: 'relative', bgcolor: 'white', minHeight: '200px' }}>
+          
+          {/* Mensaje de estado al cargar */}
+          {(status === 'loading' || status === 'streaming') && statusText && (
+            <Typography variant="caption" sx={{ color: 'var(--pida-accent)', fontWeight: 600, display: 'block', mb: 1 }}>
+              ⚡ {statusText}
+            </Typography>
+          )}
+
+          {/* Texto de la respuesta (con efecto máscara cuando se difumina) */}
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              color: '#334155', 
+              lineHeight: 1.7, 
+              whiteSpace: 'pre-line',
+              maskImage: status === 'blurred' ? 'linear-gradient(to bottom, black 20%, transparent 90%)' : 'none',
+              WebkitMaskImage: status === 'blurred' ? 'linear-gradient(to bottom, black 20%, transparent 90%)' : 'none',
+              filter: status === 'blurred' ? 'blur(1.5px)' : 'none',
+              transition: 'all 0.5s ease'
+            }}
+          >
+            {response}
+            {status === 'streaming' && <span style={{ borderRight: '2px solid var(--pida-primary)', animation: 'blink 1s step-end infinite' }}>&nbsp;</span>}
+          </Typography>
+
+          {/* OVERLAY CALL TO ACTION (Aparece cuando el estado es 'blurred') */}
+          <Fade in={status === 'blurred'}>
+            <Box sx={{ 
+              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,1) 100%)',
+              pt: 10, pb: 3, px: 3, textAlign: 'center', zIndex: 10
+            }}>
+              <LockIcon sx={{ fontSize: 40, color: '#94A3B8', mb: 1 }} />
+              <Typography variant="h6" sx={{ color: 'var(--navy)', fontWeight: 'bold', mb: 1 }}>
+                Respuesta truncada
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748B', mb: 3 }}>
+                Para leer el análisis completo, la fundamentación jurídica y descargar el documento, inicia tu prueba.
+              </Typography>
+              <Button 
+                variant="contained" 
+                size="large"
+                onClick={handleUnlock}
+                sx={{ 
+                  bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.5, borderRadius: '30px',
+                  boxShadow: '0 10px 20px rgba(225, 29, 72, 0.3)',
+                  '&:hover': { bgcolor: '#be123c', transform: 'translateY(-2px)' },
+                  transition: 'all 0.2s'
+                }}
+              >
+                Crear cuenta Gratis y ver respuesta
+              </Button>
+            </Box>
+          </Fade>
+
+        </Box>
+      )}
+      <style>{`
+        @keyframes blink { 50% { border-color: transparent; } }
+      `}</style>
+    </Card>
+  );
+};
 
 export default function LandingPage({ onOpenAuth }) {
   const [interval, setInterval] = useState('monthly'); 
@@ -433,93 +596,19 @@ export default function LandingPage({ onOpenAuth }) {
         
         <section className="bg-circuitos" style={{ paddingTop: '0px' }}>
           <div className="wrapper hero-grid" style={{ backgroundColor: 'var(--white)', padding: '60px 20px 30px 20px' }}>
-            <div className="hero-content">
+            <div className="hero-content" style={{ maxWidth: '600px' }}>
               <h1 style={{ fontSize: '3.0rem', lineHeight: '1.15', marginBottom: '15px', marginTop: '15px' }}>
                 Inteligencia Aumentada para la Defensa de los <br />
                 <span className="text-gradient">Derechos Humanos</span>
               </h1>
               <p className="hero-desc">
-                Los asistentes de Inteligencia Artificial genéricos son un océano de información, pero sin un ancla, pueden llevarte a la deriva con datos imprecisos.
+                Escribe tu caso o duda jurídica a continuación. PIDA consultará la jurisprudencia del IIRESODH y te dará una respuesta fundamentada al instante.
               </p>
-              
-              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
-                <Button 
-                  onClick={() => scrollToSection('planes')}
-                  sx={muiPrimaryBtnStyle}
-                >
-                  Suscríbete
-                </Button>
-                
-              </div>
             </div>
             
-            <div className="hero-visual-column" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <Card 
-                elevation={0}
-                sx={{
-                  width: '100%',
-                  maxWidth: '500px',
-                  borderRadius: '16px',
-                  overflow: 'hidden',
-                  boxShadow: '0 20px 40px rgba(29, 53, 87, 0.1)',
-                  border: '1px solid var(--pida-border)',
-                  position: 'relative', 
-                  backgroundColor: '#FFFFFF'
-                }}
-              >
-                {/* Capa superpuesta: Desaparece permanentemente al darle Play */}
-                <Fade in={!hasStarted}>
-                  <Box
-                    onClick={handlePlayVideo}
-                    sx={{
-                      position: 'absolute',
-                      top: 0, left: 0, right: 0, bottom: 0,
-                      display: 'flex',
-                      alignItems: 'flex-end',
-                      justifyContent: 'flex-end', 
-                      p: 2.5,
-                      backgroundColor: 'transparent', 
-                      zIndex: 2,
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      '&:hover': { 
-                        '& .play-button': { 
-                          transform: 'scale(1.15)',
-                          backgroundColor: '#FFFFFF'
-                        } 
-                      }
-                    }}
-                  >
-                    <IconButton 
-                      className="play-button"
-                      sx={{ 
-                        color: 'var(--pida-primary)', 
-                        backgroundColor: 'rgba(255, 255, 255, 0.8)', 
-                        boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-                        transition: 'all 0.3s ease',
-                      }}
-                    >
-                      <PlayCircleIcon sx={{ fontSize: '3rem' }} />
-                    </IconButton>
-                  </Box>
-                </Fade>
-
-                <CardMedia
-                  component="video"
-                  ref={videoRef}
-                  controls={hasStarted} 
-                  preload="metadata"
-                  poster="/img/video-portada.webp" 
-                  src="https://storage.googleapis.com/img-pida/PIDA.mp4"
-                  sx={{
-                    display: 'block',
-                    aspectRatio: '16/9',
-                    objectFit: 'contain',
-                    backgroundColor: '#FFFFFF',
-                    width: '100%'
-                  }}
-                />
-              </Card>
+            {/* --- COMPONENTE LEAD MAGNET (TRY BEFORE YOU BUY) --- */}
+            <div className="hero-visual-column" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <LeadMagnetTeaser onOpenAuth={onOpenAuth} interval={interval} />
             </div>
 
           </div>
