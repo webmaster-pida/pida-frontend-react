@@ -17,6 +17,16 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
   const [status, setStatus] = useState('idle'); // idle, loading, streaming, blurred
   const [statusText, setStatusText] = useState('');
 
+  const getAnonId = () => {
+    let anonId = localStorage.getItem('pida_anon_id');
+    if (!anonId) {
+      // Genera un ID único y lo guarda
+      anonId = 'anon_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+      localStorage.setItem('pida_anon_id', anonId);
+    }
+    return anonId;
+  };
+
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim() || status === 'loading' || status === 'streaming') return;
@@ -28,11 +38,23 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_CHAT}/teaser-chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Anon-ID': getAnonId() // 👈 AQUÍ ENVIAMOS EL SELLO ÚNICO DEL NAVEGADOR
+        },
         body: JSON.stringify({ prompt: query })
       });
 
-      if (!res.ok) throw new Error('Error de conexión');
+      if (!res.ok) {
+        if (res.status === 429) {
+           setStatus('idle');
+           setStatusText('');
+           alert("Has alcanzado el límite de pruebas anónimas. ¡Crea tu cuenta para continuar!");
+           handleUnlock(); // Abre el modal de registro automáticamente
+           return;
+        }
+        throw new Error('Error de conexión');
+      }
 
       setStatus('streaming');
       const reader = res.body.getReader();
@@ -56,19 +78,13 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
               } else if (data.text) {
                 setResponse((prev) => prev + data.text);
               } else if (data.event === 'blur_ready') {
-                // Retrasamos el difuminado para que el usuario pueda leer más
-                setTimeout(() => {
-                  setStatus((current) => current === 'streaming' ? 'blurred' : current);
-                }, 3500); 
+                setStatus('blurred');
               }
             } catch (err) {}
           }
         }
       }
-      // Por si el stream termina sin enviar blur_ready
-      setTimeout(() => {
-        setStatus((current) => current === 'streaming' ? 'blurred' : current);
-      }, 3500);
+      setStatus('blurred');
     } catch (error) {
       console.error("Teaser error", error);
       setStatus('idle');
