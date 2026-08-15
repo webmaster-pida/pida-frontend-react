@@ -86,7 +86,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
         pb: 1, 
         px: 3, 
         textAlign: 'center',
-        bgcolor: '#F8FAFC'
+        bgcolor: 'white'
       }}>
         <Typography variant="h6" sx={{ color: 'var(--navy)', fontWeight: 800, mb: 0.5, fontSize: '1.35rem' }}>
           Pruébalo gratis ahora
@@ -97,24 +97,46 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
       </Box>
 
       {/* BARRA DE BÚSQUEDA */}
-      <Box component="form" onSubmit={handleSearch} sx={{ px: 3, pb: 4, pt: 1.5, borderBottom: '1px solid #E2E8F0', bgcolor: '#F8FAFC' }}>
-        <Box sx={{ display: 'flex', gap: 1, position: 'relative' }}>
+      <Box component="form" onSubmit={handleSearch} sx={{ px: 3, pb: 4, pt: 1.5, borderBottom: '1px solid #E2E8F0', bgcolor: 'white' }}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 1, 
+          position: 'relative', 
+          p: '6px', 
+          border: '1px solid #E2E8F0', 
+          borderRadius: '50px', 
+          bgcolor: 'white', 
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' 
+        }}>
           <TextField
             fullWidth
             placeholder="Ej: ¿Cuáles son los estándares de prisión preventiva en la Corte IDH?"
-            variant="outlined"
+            variant="standard"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             disabled={status !== 'idle' && status !== 'blurred'}
-            sx={{ bgcolor: 'white', '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+            InputProps={{ 
+              disableUnderline: true, 
+              sx: { ml: 2, mt: '2px', fontSize: '0.95rem', color: 'var(--navy)' } 
+            }}
           />
           <Button 
             type="submit" 
             variant="contained" 
             disabled={!query.trim() || status === 'loading' || status === 'streaming'}
-            sx={{ borderRadius: '12px', px: 2, bgcolor: 'var(--pida-primary)', '&:hover': { bgcolor: 'var(--pida-accent)' }, minWidth: '64px' }}
+            sx={{ 
+              borderRadius: '50px', 
+              minWidth: '60px', 
+              height: '46px', 
+              bgcolor: 'var(--pida-primary)', 
+              '&:hover': { bgcolor: 'var(--pida-accent)' }, 
+              p: 0, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}
           >
-            {status === 'loading' ? <CircularProgress size={24} color="inherit" /> : <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="Preguntar" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />}
+            {status === 'loading' ? <CircularProgress size={24} color="inherit" /> : <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="Preguntar" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />}
           </Button>
         </Box>
       </Box>
@@ -265,12 +287,7 @@ export default function LandingPage({ onOpenAuth }) {
   };
 
   useEffect(() => {
-    if (window.location.hash) {
-      const targetId = window.location.hash.substring(1);
-      setTimeout(() => {
-        scrollToSection(targetId);
-      }, 300);
-    }
+    // Se eliminó el auto-scroll on mount para evitar que salte a los planes al cargar la página
   }, []);
 
   useEffect(() => {
