@@ -99,11 +99,11 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
   );
 }
 
-// Configuración de Markdown
+// Configuración de Markdown (Ajustada para scroll de tabla)
 const markdownComponents = {
   a: ({ node, ...props }) => <PreviewLink href={props.href} {...props}>{props.children}</PreviewLink>,
   table: ({ node, ...props }) => (
-    <TableContainer component={Paper} sx={{ my: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+    <TableContainer component={Paper} sx={{ my: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px', overflowX: 'auto', width: '100%' }}>
       <Table size="small" {...props} />
     </TableContainer>
   ),
@@ -115,7 +115,7 @@ const markdownComponents = {
 };
 
 
-// --- NUEVO COMPONENTE: LEAD MAGNET (TRY BEFORE YOU BUY) ---
+// --- COMPONENTE: LEAD MAGNET (TRY BEFORE YOU BUY) ---
 const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState('');
@@ -140,7 +140,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
     setStatus('loading');
     setResponse('');
     setStatusText('Conectando con PIDA...');
-    setModalOpen(true); // 👈 ABRE EL CUADRO ANCHO INMEDIATAMENTE
+    setModalOpen(true); 
 
     try {
       const res = await fetch(`${import.meta.env.VITE_API_CHAT}/teaser-chat`, {
@@ -213,7 +213,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
     }
   }, [response, modalOpen, statusText]);
 
-  // Lógica de Renderizado del Mensaje (Extraída de ChatInterface)
+  // Lógica de Renderizado del Mensaje 
   const renderResponseContent = () => {
     let displayContent = response;
 
@@ -324,7 +324,6 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
         </Box>
       </Card>
 
-      {/* MODAL ANCHO PARA MOSTRAR LA RESPUESTA COMO EL CHAT */}
       <Dialog 
         open={modalOpen} 
         onClose={() => setModalOpen(false)} 
@@ -343,14 +342,14 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
         <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
            <Box className="pida-view-content" sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, pb: 10 }}>
               
-              {/* Mensaje del Usuario */}
-              <div className="pida-bubble user-message-bubble" style={{ alignSelf: 'flex-end', backgroundColor: '#E2E8F0', padding: '12px 18px', borderRadius: '16px 16px 0 16px', marginBottom: '20px', maxWidth: '85%' }}>
-                 <Typography sx={{ color: '#334155' }}>{query}</Typography>
+              {/* Mensaje del Usuario - CORREGIDO COLOR */}
+              <div className="pida-bubble user-message-bubble" style={{ alignSelf: 'flex-end', backgroundColor: 'var(--navy)', padding: '12px 18px', borderRadius: '16px 16px 0 16px', marginBottom: '20px', maxWidth: '85%' }}>
+                 <Typography sx={{ color: '#ffffff', fontWeight: 500 }}>{query}</Typography>
               </div>
 
-              {/* Mensaje del Modelo */}
+              {/* Mensaje del Modelo - CORREGIDO OVERFLOW */}
               {(status === 'loading' || response) && (
-                <div className="pida-bubble pida-message-bubble" style={{ alignSelf: 'flex-start', backgroundColor: 'white', padding: '20px', borderRadius: '16px 16px 16px 0', border: '1px solid #e2e8f0', maxWidth: '100%', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                <div className="pida-bubble pida-message-bubble" style={{ alignSelf: 'flex-start', backgroundColor: 'white', padding: '20px', borderRadius: '16px 16px 16px 0', border: '1px solid #e2e8f0', maxWidth: '100%', overflowX: 'auto', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
                    {status === 'loading' && (
                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, color: '#475569' }}>
                         <CircularProgress size={20} sx={{ color: 'var(--pida-primary)' }} />
@@ -363,19 +362,21 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
               <div ref={messagesEndRef} style={{ height: '1px' }} />
            </Box>
 
-           {/* BARRA INFERIOR / CALL TO ACTION */}
-           <Box sx={{ p: 3, borderTop: '1px solid #e2e8f0', bgcolor: 'white', textAlign: 'center', boxShadow: '0 -10px 15px -3px rgba(0, 0, 0, 0.05)' }}>
-              <Typography variant="body1" sx={{ mb: 1.5, color: 'var(--navy)', fontWeight: 'bold' }}>
-                ¿Quieres profundizar en este caso o analizar otro documento?
-              </Typography>
-              <Button 
-                variant="contained" 
-                onClick={() => handleUnlock()} 
-                sx={{ bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.2, borderRadius: '8px', '&:hover': { bgcolor: '#be123c' } }}
-              >
-                 Iniciar prueba gratis de 5 días
-              </Button>
-           </Box>
+           {/* BARRA INFERIOR / CALL TO ACTION - APARECE HASTA TERMINAR */}
+           {status === 'done' && (
+             <Box sx={{ p: 3, borderTop: '1px solid #e2e8f0', bgcolor: 'white', textAlign: 'center', boxShadow: '0 -10px 15px -3px rgba(0, 0, 0, 0.05)', zIndex: 10 }}>
+                <Typography variant="body1" sx={{ mb: 1.5, color: 'var(--navy)', fontWeight: 'bold' }}>
+                  ¿Quieres profundizar en este caso o analizar otro documento?
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  onClick={() => handleUnlock()} 
+                  sx={{ bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.2, borderRadius: '8px', '&:hover': { bgcolor: '#be123c' } }}
+                >
+                   Iniciar prueba gratis de 5 días
+                </Button>
+             </Box>
+           )}
         </DialogContent>
       </Dialog>
       <style>{`@keyframes blink { 50% { border-color: transparent; } }`}</style>
@@ -389,7 +390,6 @@ export default function LandingPage({ onOpenAuth }) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isUS, setIsUS] = useState(false);
 
-  // ESTADO: Controla si el menú móvil está abierto
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const [anchorEl, setAnchorEl] = useState(null);
@@ -762,7 +762,6 @@ export default function LandingPage({ onOpenAuth }) {
               </div>
             </div>
             
-            {/* --- COMPONENTE LEAD MAGNET (TRY BEFORE YOU BUY) --- */}
             <div className="hero-visual-column" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
               <LeadMagnetTeaser onOpenAuth={onOpenAuth} interval={interval} />
             </div>
