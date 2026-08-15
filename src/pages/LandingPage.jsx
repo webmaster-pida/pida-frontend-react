@@ -80,6 +80,23 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
   return (
     <Card elevation={0} sx={{ width: '100%', maxWidth: '600px', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--pida-border)', boxShadow: '0 20px 40px rgba(29, 53, 87, 0.1)' }}>
       
+      {/* ENCABEZADO EXPLICATIVO */}
+      <Box sx={{ 
+        bgcolor: 'var(--navy)', 
+        color: 'white', 
+        px: 3, 
+        py: 2.5, 
+        textAlign: 'center',
+        background: 'linear-gradient(135deg, var(--navy) 0%, var(--pida-primary) 100%)'
+      }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, fontSize: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+          <AutoAwesomeIcon sx={{ color: '#FCD34D' }} /> Pruébalo gratis ahora
+        </Typography>
+        <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.95rem' }}>
+          Haz una pregunta jurídica y descubre la precisión de nuestras respuestas.
+        </Typography>
+      </Box>
+
       {/* BARRA DE BÚSQUEDA */}
       <Box component="form" onSubmit={handleSearch} sx={{ p: 3, borderBottom: '1px solid #E2E8F0', bgcolor: '#F8FAFC' }}>
         <Box sx={{ display: 'flex', gap: 1, position: 'relative' }}>
@@ -96,9 +113,9 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
             type="submit" 
             variant="contained" 
             disabled={!query.trim() || status === 'loading' || status === 'streaming'}
-            sx={{ borderRadius: '12px', px: 3, bgcolor: 'var(--pida-primary)', '&:hover': { bgcolor: 'var(--pida-accent)' }, minWidth: '64px' }}
+            sx={{ borderRadius: '12px', px: 2, bgcolor: 'var(--pida-primary)', '&:hover': { bgcolor: 'var(--pida-accent)' }, minWidth: '64px' }}
           >
-            {status === 'loading' ? <CircularProgress size={24} color="inherit" /> : <AutoAwesomeIcon />}
+            {status === 'loading' ? <CircularProgress size={24} color="inherit" /> : <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="Preguntar" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />}
           </Button>
         </Box>
       </Box>
