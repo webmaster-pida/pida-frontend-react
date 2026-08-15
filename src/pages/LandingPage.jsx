@@ -11,7 +11,6 @@ import { Box, TextField, Button, Menu, MenuItem, SvgIcon, Card, CardMedia, IconB
 import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CloseIcon from '@mui/icons-material/Close';
 
 // --- COMPONENTE DE ENLACES PARA EL MARKDOWN (Igual que en ChatInterface) ---
@@ -99,7 +98,7 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
   );
 }
 
-// Configuración de Markdown (Ajustada para scroll de tabla)
+// Configuración de Markdown (Ajustada para scroll horizontal en tablas largas)
 const markdownComponents = {
   a: ({ node, ...props }) => <PreviewLink href={props.href} {...props}>{props.children}</PreviewLink>,
   table: ({ node, ...props }) => (
@@ -142,6 +141,36 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
     setStatusText('Conectando con PIDA...');
     setModalOpen(true); 
 
+    // --- COLA DE EFECTO DE ESCRITURA (TYPEWRITER) ---
+    const textQueue = { current: "" };
+    let isTypingEffectActive = false;
+    let fullText = "";
+
+    const typeWriterEffect = async () => {
+      isTypingEffectActive = true;
+      let lastRenderTime = Date.now();
+
+      while (textQueue.current.length > 0) {
+        const qLen = textQueue.current.length;
+        let chunkSize = 1; let delay = 15;
+        if (qLen > 150) { chunkSize = 4; delay = 10; }
+        else if (qLen > 50) { chunkSize = 2; delay = 12; }
+        else if (qLen < 15) { chunkSize = 1; delay = 35; }
+
+        const chunk = textQueue.current.substring(0, chunkSize);
+        textQueue.current = textQueue.current.substring(chunkSize);
+        fullText += chunk;
+
+        const now = Date.now();
+        if (now - lastRenderTime > 40 || textQueue.current.length === 0) {
+          setResponse(fullText);
+          lastRenderTime = now;
+        }
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+      isTypingEffectActive = false;
+    };
+
     try {
       const res = await fetch(`${import.meta.env.VITE_API_CHAT}/teaser-chat`, {
         method: 'POST',
@@ -183,18 +212,27 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
               if (data.event === 'status') {
                 setStatusText(data.message);
               } else if (data.text) {
-                setResponse((prev) => prev + data.text);
+                textQueue.current += data.text;
+                if (!isTypingEffectActive) {
+                  typeWriterEffect();
+                }
               } else if (data.event === 'done') {
-                setStatus('done');
+                // El backend terminó, pero esperamos a que termine el TypeWriter
               }
             } catch (err) {}
           }
         }
       }
+
+      // Esperar a que la cola visual termine de imprimirse en pantalla
+      while (isTypingEffectActive || textQueue.current.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
       setStatus('done');
     } catch (error) {
       console.error("Teaser error", error);
-      setResponse("❌ Ocurrió un error al procesar la solicitud.");
+      setResponse((prev) => prev + "\n\n❌ Ocurrió un error al procesar la solicitud.");
       setStatus('done');
     }
   };
@@ -312,13 +350,26 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
               onChange={(e) => setQuery(e.target.value)}
               sx={{ bgcolor: '#F8FAFC', '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
             />
+            {/* BOTÓN BLANCO CON LA MASCOTA PIDA */}
             <Button 
               type="submit" 
               variant="contained" 
-              disabled={!query.trim()}
-              sx={{ borderRadius: '12px', px: 3, bgcolor: 'var(--pida-primary)', '&:hover': { bgcolor: 'var(--pida-accent)' }, minWidth: '64px' }}
+              disabled={!query.trim() || status === 'loading' || status === 'streaming'}
+              sx={{ 
+                borderRadius: '12px', 
+                px: 3, 
+                bgcolor: '#ffffff', 
+                border: '1px solid #CBD5E1',
+                '&:hover': { bgcolor: '#F8FAFC' }, 
+                minWidth: '64px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+              }}
             >
-              <AutoAwesomeIcon />
+              {status === 'loading' ? (
+                <CircularProgress size={24} sx={{ color: 'var(--pida-primary)' }} />
+              ) : (
+                <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="PIDA" style={{ height: '26px' }} />
+              )}
             </Button>
           </Box>
         </Box>
@@ -333,7 +384,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', bgcolor: 'white' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-             <AutoAwesomeIcon sx={{ color: 'var(--pida-primary)' }}/>
+             <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="PIDA" style={{ height: '28px' }} />
              <Typography variant="h6" fontWeight="bold" color="var(--navy)">Análisis de PIDA</Typography>
           </Box>
           <IconButton onClick={() => setModalOpen(false)}><CloseIcon /></IconButton>
@@ -347,15 +398,18 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
                  <Typography sx={{ color: '#ffffff', fontWeight: 500 }}>{query}</Typography>
               </div>
 
-              {/* Mensaje del Modelo - CORREGIDO OVERFLOW */}
-              {(status === 'loading' || response) && (
+              {/* Mensaje del Modelo - CORREGIDO OVERFLOW Y AVISOS DE ESTADO */}
+              {(status === 'loading' || status === 'streaming' || response) && (
                 <div className="pida-bubble pida-message-bubble" style={{ alignSelf: 'flex-start', backgroundColor: 'white', padding: '20px', borderRadius: '16px 16px 16px 0', border: '1px solid #e2e8f0', maxWidth: '100%', overflowX: 'auto', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
-                   {status === 'loading' && (
-                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, color: '#475569' }}>
-                        <CircularProgress size={20} sx={{ color: 'var(--pida-primary)' }} />
-                        <Typography variant="body2" sx={{ fontWeight: 500, fontStyle: 'italic' }}>{statusText}</Typography>
+                   
+                   {/* BANNER DE ESTADO VISIBLE MIENTRAS CARGA O PROCESA */}
+                   {status !== 'done' && (
+                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1.5, bgcolor: '#F0F9FF', borderRadius: '8px', mb: response ? 3 : 0, border: '1px solid #BAE6FD' }}>
+                        <CircularProgress size={20} sx={{ color: '#0369A1' }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#0369A1' }}>{statusText || 'Procesando...'}</Typography>
                      </Box>
                    )}
+
                    {response && renderResponseContent()}
                 </div>
               )}
@@ -762,6 +816,7 @@ export default function LandingPage({ onOpenAuth }) {
               </div>
             </div>
             
+            {/* --- COMPONENTE LEAD MAGNET (TRY BEFORE YOU BUY) --- */}
             <div className="hero-visual-column" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
               <LeadMagnetTeaser onOpenAuth={onOpenAuth} interval={interval} />
             </div>
