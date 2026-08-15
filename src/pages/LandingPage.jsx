@@ -70,7 +70,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
   };
 
   const handleUnlock = () => {
-    // Guardamos la pregunta para que cuando el usuario se registre, ya la tenga en su chat
+    // Guardamos la pregunta y el plan básico por defecto para enviarlo a Stripe
     sessionStorage.setItem('pida_pending_query', query);
     sessionStorage.setItem('pida_pending_interval', interval);
     sessionStorage.setItem('pida_pending_plan', 'basico'); 
@@ -144,7 +144,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
                 Respuesta truncada
               </Typography>
               <Typography variant="body2" sx={{ color: '#64748B', mb: 3 }}>
-                Para leer el análisis completo, la fundamentación jurídica y descargar el documento, inicia tu prueba.
+                Para leer el análisis completo y la fundamentación jurídica, suscríbete a uno de nuestros planes.
               </Typography>
               <Button 
                 variant="contained" 
@@ -157,7 +157,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
                   transition: 'all 0.2s'
                 }}
               >
-                Crear cuenta Gratis y ver respuesta
+                Iniciar prueba de 5 días y ver respuesta
               </Button>
             </Box>
           </Fade>
@@ -596,14 +596,23 @@ export default function LandingPage({ onOpenAuth }) {
         
         <section className="bg-circuitos" style={{ paddingTop: '0px' }}>
           <div className="wrapper hero-grid" style={{ backgroundColor: 'var(--white)', padding: '60px 20px 30px 20px' }}>
-            <div className="hero-content" style={{ maxWidth: '600px' }}>
+            <div className="hero-content">
               <h1 style={{ fontSize: '3.0rem', lineHeight: '1.15', marginBottom: '15px', marginTop: '15px' }}>
                 Inteligencia Aumentada para la Defensa de los <br />
                 <span className="text-gradient">Derechos Humanos</span>
               </h1>
               <p className="hero-desc">
-                Escribe tu caso o duda jurídica a continuación. PIDA consultará la jurisprudencia del IIRESODH y te dará una respuesta fundamentada al instante.
+                Los asistentes de Inteligencia Artificial genéricos son un océano de información, pero sin un ancla, pueden llevarte a la deriva con datos imprecisos.
               </p>
+              
+              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+                <Button 
+                  onClick={() => scrollToSection('planes')}
+                  sx={muiPrimaryBtnStyle}
+                >
+                  Suscríbete
+                </Button>
+              </div>
             </div>
             
             {/* --- COMPONENTE LEAD MAGNET (TRY BEFORE YOU BUY) --- */}
