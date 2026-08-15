@@ -1,57 +1,136 @@
 import React, { useState, useEffect, useRef } from 'react';
-import ReactDOM from 'react-dom';
 import { STRIPE_PRICES } from '../config/constants';
 import { db } from '../config/firebase'; 
 
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw'; 
+
 // Importaciones de Material-UI
-import { Box, TextField, Button, Menu, MenuItem, SvgIcon, Card, CardMedia, IconButton, Fade, Typography, CircularProgress } from '@mui/material';
+import { Box, TextField, Button, Menu, MenuItem, SvgIcon, Card, CardMedia, IconButton, Fade, Typography, CircularProgress, Dialog, DialogTitle, DialogContent, Tooltip, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper } from '@mui/material';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import LockIcon from '@mui/icons-material/Lock';
+import CloseIcon from '@mui/icons-material/Close';
+
+// --- COMPONENTE DE ENLACES PARA EL MARKDOWN (Igual que en ChatInterface) ---
+const PreviewLink = ({ href, children, node, title, ...props }) => {
+  const [previewData, setPreviewData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [fetchedUrl, setFetchedUrl] = useState(null);
+  const [isScrapeBlocked, setIsScrapeBlocked] = useState(false); 
+
+  const MICROLINK_API_KEY = import.meta.env.VITE_MICROLINK_KEY || "";
+
+  let hostname = "";
+  try { hostname = new URL(href).hostname.replace('www.', ''); } catch (e) {}
+
+  const fetchPreview = async () => {
+    if (!href || !href.startsWith('http') || fetchedUrl === href) return;
+    
+    setFetchedUrl(href); 
+    setLoading(true);
+    setIsScrapeBlocked(false);
+
+    try {
+      const cleanHref = href.replace(/[\.\)]+$/, '');
+      const res = await fetch(`https://pro.microlink.io?url=${encodeURIComponent(cleanHref)}`, {
+        headers: MICROLINK_API_KEY ? { 'x-api-key': MICROLINK_API_KEY } : {}
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        const returnedTitle = (data.data.title || '').toLowerCase();
+        const blockedKeywords = ['error:', 'could not be satisfied', 'cloudflare', 'attention required', 'access denied', '403 forbidden', 'not acceptable', 'security check'];
+        if (blockedKeywords.some(kw => returnedTitle.includes(kw))) {
+          setIsScrapeBlocked(true); 
+        } else {
+          setPreviewData(data.data);
+        }
+      } else {
+        setIsScrapeBlocked(true);
+      }
+    } catch (e) {
+      setIsScrapeBlocked(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchPreview(), 1500);
+    return () => clearTimeout(timer);
+  }, [href]);
+
+  return (
+    <Tooltip
+      placement="top" arrow enterDelay={100} PopperProps={{ sx: { zIndex: 999999 } }}
+      title={
+        <Box sx={{ width: 380, p: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}><CircularProgress size={24} sx={{ color: '#60a5fa' }} /></Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                <img src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`} alt="icon" style={{ width: 16, height: 16, borderRadius: '2px', backgroundColor: 'white' }} />
+                <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>{hostname}</Typography>
+              </Box>
+              {!isScrapeBlocked && previewData ? (
+                <>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.3, color: 'white', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{previewData.title || "Fuente de información"}</Typography>
+                  {previewData.description && (<Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#cbd5e1', mt: 0.5, display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{previewData.description}</Typography>)}
+                </>
+              ) : (
+                <Typography variant="body2" sx={{ color: '#cbd5e1', mt: 0.5, fontSize: '0.8rem' }}>Documento Institucional Externo</Typography>
+              )}
+            </Box>
+          )}
+        </Box>
+      }
+      slotProps={{
+        tooltip: { sx: { maxWidth: 420, maxHeight: 500, overflowY: 'auto', bgcolor: '#0f172a', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7)', borderRadius: '8px', border: '1px solid #334155' } },
+        arrow: { sx: { color: '#0f172a' } }
+      }}
+    >
+      <span style={{ display: 'inline' }}>
+        <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pida-primary)', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' }} {...props}>{children}</a>
+      </span>
+    </Tooltip>
+  );
+}
+
+// Configuración de Markdown
+const markdownComponents = {
+  a: ({ node, ...props }) => <PreviewLink href={props.href} {...props}>{props.children}</PreviewLink>,
+  table: ({ node, ...props }) => (
+    <TableContainer component={Paper} sx={{ my: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+      <Table size="small" {...props} />
+    </TableContainer>
+  ),
+  thead: ({ node, ...props }) => <TableHead sx={{ bgcolor: '#f1f5f9' }} {...props} />,
+  tbody: ({ node, ...props }) => <TableBody {...props} />,
+  tr: ({ node, ...props }) => <TableRow hover {...props} />,
+  th: ({ node, ...props }) => (<TableCell sx={{ fontWeight: 'bold', color: 'var(--pida-primary)', borderBottom: '2px solid #cbd5e1', whiteSpace: 'nowrap' }} {...props} />),
+  td: ({ node, ...props }) => (<TableCell sx={{ borderColor: '#e2e8f0', verticalAlign: 'top' }} {...props} />)
+};
+
 
 // --- NUEVO COMPONENTE: LEAD MAGNET (TRY BEFORE YOU BUY) ---
 const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState('');
-  const [status, setStatus] = useState('idle'); // idle, loading, streaming, blurred
+  const [status, setStatus] = useState('idle'); // idle, loading, streaming, done
   const [statusText, setStatusText] = useState('');
-  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const messagesEndRef = useRef(null);
 
   const getAnonId = () => {
     let anonId = localStorage.getItem('pida_anon_id');
     if (!anonId) {
-      // Genera un ID único y lo guarda
       anonId = 'anon_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
       localStorage.setItem('pida_anon_id', anonId);
     }
     return anonId;
-  };
-
-  const renderQueue = useRef([]);
-  const isRendering = useRef(false);
-
-  const processQueue = async () => {
-    if (isRendering.current) return;
-    isRendering.current = true;
-    
-    while (renderQueue.current.length > 0) {
-      const item = renderQueue.current.shift();
-      
-      if (item.type === 'text') {
-        setResponse((prev) => prev + item.content);
-        await new Promise(r => setTimeout(r, 15)); // 15ms por carácter para un efecto fluido
-      } else if (item.type === 'blur') {
-        // El blur ocurre SOLO cuando ha terminado de 'escribir' todo el texto en cola
-        setTimeout(() => {
-          setResponse((prev) => prev + '...');
-          setStatus((current) => current === 'streaming' ? 'blurred' : current);
-        }, 3500);
-      }
-    }
-    
-    isRendering.current = false;
   };
 
   const handleSearch = async (e) => {
@@ -61,15 +140,14 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
     setStatus('loading');
     setResponse('');
     setStatusText('Conectando con PIDA...');
-    renderQueue.current = []; // Limpiamos cola previa
-    isRendering.current = false;
+    setModalOpen(true); // 👈 ABRE EL CUADRO ANCHO INMEDIATAMENTE
 
     try {
       const res = await fetch(`${import.meta.env.VITE_API_CHAT}/teaser-chat`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'X-Anon-ID': getAnonId() // 👈 AQUÍ ENVIAMOS EL SELLO ÚNICO DEL NAVEGADOR
+          'X-Anon-ID': getAnonId() 
         },
         body: JSON.stringify({ prompt: query })
       });
@@ -78,7 +156,8 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
         if (res.status === 429) {
            setStatus('idle');
            setStatusText('');
-           setShowLimitModal(true); // Mostramos el modal personalizado en lugar de la alerta
+           alert("Has alcanzado el límite de pruebas anónimas. ¡Inicia tu prueba de 5 días para continuar!");
+           handleUnlock(); 
            return;
         }
         throw new Error('Error de conexión');
@@ -88,7 +167,6 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
       const reader = res.body.getReader();
       const decoder = new TextDecoder("utf-8");
       let streamBuffer = "";
-      let blurQueued = false;
       
       while (true) {
         const { value, done } = await reader.read();
@@ -105,208 +183,202 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
               if (data.event === 'status') {
                 setStatusText(data.message);
               } else if (data.text) {
-                // En lugar de pintar el bloque de golpe, lo mandamos letra por letra a la cola
-                const chars = data.text.split('');
-                chars.forEach(c => renderQueue.current.push({ type: 'text', content: c }));
-                processQueue();
-              } else if (data.event === 'blur_ready') {
-                if (!blurQueued) {
-                  renderQueue.current.push({ type: 'blur' });
-                  blurQueued = true;
-                  processQueue();
-                }
+                setResponse((prev) => prev + data.text);
+              } else if (data.event === 'done') {
+                setStatus('done');
               }
             } catch (err) {}
           }
         }
       }
-      // Por si el stream termina sin enviar blur_ready explícito
-      if (!blurQueued) {
-        renderQueue.current.push({ type: 'blur' });
-        processQueue();
-      }
+      setStatus('done');
     } catch (error) {
       console.error("Teaser error", error);
-      setStatus('idle');
+      setResponse("❌ Ocurrió un error al procesar la solicitud.");
+      setStatus('done');
     }
   };
 
-  const handleUnlock = () => {
-    // Guardamos la pregunta y el plan básico por defecto para enviarlo a Stripe
-    sessionStorage.setItem('pida_pending_query', query);
+  const handleUnlock = (followUpQuery = null) => {
+    sessionStorage.setItem('pida_pending_query', followUpQuery || query);
     sessionStorage.setItem('pida_pending_interval', interval);
     sessionStorage.setItem('pida_pending_plan', 'basico'); 
+    setModalOpen(false);
     onOpenAuth('register');
+  };
+
+  useEffect(() => {
+    if (modalOpen && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [response, modalOpen, statusText]);
+
+  // Lógica de Renderizado del Mensaje (Extraída de ChatInterface)
+  const renderResponseContent = () => {
+    let displayContent = response;
+
+    displayContent = displayContent.split('\n').map(line => {
+      const count = (line.match(/\*\*/g) || []).length;
+      if (count % 2 !== 0) return line.replace(/\*\*/g, ''); 
+      return line;
+    }).join('\n');
+
+    let questions = [];
+    const tagStart = "<pida_questions>";
+    const tagEnd = "</pida_questions>";
+
+    if (displayContent.includes(tagStart)) {
+      const parts = displayContent.split(tagStart);
+      let textBeforeTags = parts[0];
+      let textInsideAndAfter = parts[1] || "";
+      let qString = "";
+      let textAfterTags = ""; 
+
+      if (textInsideAndAfter.includes(tagEnd)) {
+        const subParts = textInsideAndAfter.split(tagEnd);
+        qString = subParts[0]; 
+        textAfterTags = subParts.slice(1).join(tagEnd); 
+      } else {
+        qString = "";
+        textAfterTags = "";
+      }
+
+      displayContent = textBeforeTags + "\n" + textAfterTags;
+
+      if (status === 'done' || textInsideAndAfter.includes(tagEnd)) {
+        questions = qString.split('|').map(q => q.trim()).filter(q => q.length > 0);
+      }
+    }
+
+    displayContent = displayContent.replace(/["']br["']/g, '<br />');
+
+    if (displayContent.includes('## Fuentes y Jurisprudencia')) {
+      const splitPoint = '## Fuentes y Jurisprudencia';
+      const parts = displayContent.split(splitPoint);
+      let fuentesText = parts[1];
+      fuentesText = fuentesText.replace(/\|?\s*:?-{2,}:?\s*\|?/g, '');
+      fuentesText = fuentesText.replace(/\|/g, ' • ');
+      displayContent = parts[0] + splitPoint + fuentesText;
+    }
+
+    return (
+      <>
+        <div className="markdown-content">
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+            {displayContent}
+          </ReactMarkdown>
+          {status === 'streaming' && <span style={{ borderRight: '2px solid var(--pida-primary)', animation: 'blink 1s step-end infinite' }}>&nbsp;</span>}
+        </div>
+        
+        {questions.length > 0 && (
+          <div className="follow-up-section" style={{ marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '15px' }}>
+            <strong style={{ display: 'block', marginBottom: '10px', color: 'var(--pida-primary)' }}>
+              Preguntas de seguimiento sugeridas:
+            </strong>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {questions.map((q, i) => (
+                <button 
+                  key={i} 
+                  className="follow-up-btn"
+                  onClick={() => handleUnlock(q)}
+                  style={{
+                    textAlign: 'left', padding: '10px 15px', borderRadius: '8px', border: '1px solid #cbd5e1',
+                    backgroundColor: 'white', color: '#334155', fontSize: '0.9rem', cursor: 'pointer', transition: '0.2s'
+                  }}
+                  onMouseOver={e => { e.target.style.borderColor = 'var(--pida-primary)'; e.target.style.color = 'var(--pida-primary)'; }}
+                  onMouseOut={e => { e.target.style.borderColor = '#cbd5e1'; e.target.style.color = '#334155'; }}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
+    );
   };
 
   return (
     <>
       <Card elevation={0} sx={{ width: '100%', maxWidth: '600px', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--pida-border)', boxShadow: '0 20px 40px rgba(29, 53, 87, 0.1)' }}>
-        
-        {/* ENCABEZADO EXPLICATIVO */}
-        <Box sx={{ 
-          pt: 4, 
-          pb: 1, 
-          px: 3, 
-          textAlign: 'center',
-          bgcolor: 'white'
-        }}>
-          <Typography variant="h6" sx={{ color: 'var(--navy)', fontWeight: 800, mb: 0.5, fontSize: '1.35rem' }}>
-            Pruébalo gratis ahora
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.95rem' }}>
-            Haz una pregunta jurídica y descubre la precisión de nuestras respuestas.
-          </Typography>
-        </Box>
-
-        {/* BARRA DE BÚSQUEDA */}
-        <Box component="form" onSubmit={handleSearch} sx={{ px: 3, pb: 4, pt: 1.5, borderBottom: '1px solid #E2E8F0', bgcolor: 'white' }}>
-          <Box sx={{ 
-            display: 'flex', 
-            gap: 1, 
-            position: 'relative', 
-            p: '6px', 
-            border: '1px solid #E2E8F0', 
-            borderRadius: '8px', 
-            bgcolor: 'white', 
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-            alignItems: 'center'
-          }}>
+        <Box component="form" onSubmit={handleSearch} sx={{ p: 3, bgcolor: '#ffffff' }}>
+          <Typography variant="subtitle2" sx={{ color: 'var(--navy)', mb: 2, fontWeight: 'bold' }}>Hazle una consulta jurídica a PIDA gratis:</Typography>
+          <Box sx={{ display: 'flex', gap: 1, position: 'relative' }}>
             <TextField
               fullWidth
               placeholder="Ej: ¿Cuáles son los estándares de prisión preventiva en la Corte IDH?"
-              variant="standard"
+              variant="outlined"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              disabled={status !== 'idle' && status !== 'blurred'}
-              sx={{ flex: 1, minWidth: 0 }}
-              InputProps={{ 
-                disableUnderline: true, 
-                sx: { ml: 2, mt: '2px', fontSize: '0.95rem', color: 'var(--navy)', pr: 2 } 
-              }}
+              sx={{ bgcolor: '#F8FAFC', '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
             />
             <Button 
               type="submit" 
               variant="contained" 
-              disabled={!query.trim() || status === 'loading' || status === 'streaming'}
-              sx={{ 
-                borderRadius: '8px', 
-                minWidth: '60px', 
-                height: '46px', 
-                bgcolor: 'var(--pida-primary)', 
-                '&:hover': { bgcolor: 'var(--pida-accent)' }, 
-                p: 0, 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                flexShrink: 0
-              }}
+              disabled={!query.trim()}
+              sx={{ borderRadius: '12px', px: 3, bgcolor: 'var(--pida-primary)', '&:hover': { bgcolor: 'var(--pida-accent)' }, minWidth: '64px' }}
             >
-              {status === 'loading' ? <CircularProgress size={24} color="inherit" /> : <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="Preguntar" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />}
+              <AutoAwesomeIcon />
             </Button>
           </Box>
         </Box>
-
-        {/* ÁREA DE RESPUESTA */}
-        {(status !== 'idle' || response) && (
-          <Box sx={{ p: 3, position: 'relative', bgcolor: 'white', minHeight: '300px' }}>
-            
-            {/* Mensaje de estado al cargar */}
-            {(status === 'loading' || status === 'streaming') && statusText && (
-              <Typography variant="caption" sx={{ color: 'var(--pida-accent)', fontWeight: 600, display: 'block', mb: 1 }}>
-                ⚡ {statusText}
-              </Typography>
-            )}
-
-            {/* Texto de la respuesta (con efecto máscara cuando se difumina) */}
-            <Typography 
-              variant="body1" 
-              sx={{ 
-                color: '#334155', 
-                lineHeight: 1.7, 
-                whiteSpace: 'pre-line',
-                maskImage: status === 'blurred' ? 'linear-gradient(to bottom, black 40%, transparent 95%)' : 'none',
-                WebkitMaskImage: status === 'blurred' ? 'linear-gradient(to bottom, black 40%, transparent 95%)' : 'none',
-                filter: status === 'blurred' ? 'blur(1.2px)' : 'none',
-                transition: 'all 1.5s ease',
-                mb: status === 'blurred' ? 4 : 0
-              }}
-            >
-              {response}
-              {status === 'streaming' && <span style={{ borderRight: '2px solid var(--pida-primary)', animation: 'blink 1s step-end infinite' }}>&nbsp;</span>}
-            </Typography>
-
-            {/* OVERLAY CALL TO ACTION (Aparece cuando el estado es 'blurred') */}
-            <Fade in={status === 'blurred'} timeout={1000}>
-              <Box sx={{ 
-                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 60%, rgba(255,255,255,1) 100%)',
-                pt: 15, pb: 3, px: 3, textAlign: 'center', zIndex: 10
-              }}>
-                <LockIcon sx={{ fontSize: 40, color: '#94A3B8', mb: 1 }} />
-                <Typography variant="h6" sx={{ color: 'var(--navy)', fontWeight: 'bold', mb: 1 }}>
-                  Respuesta truncada
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#64748B', mb: 3 }}>
-                  Para leer el análisis completo y la fundamentación jurídica, suscríbete a uno de nuestros planes.
-                </Typography>
-                <Button 
-                  variant="contained" 
-                  size="large"
-                  onClick={handleUnlock}
-                  sx={{ 
-                    bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.5, borderRadius: '8px',
-                    boxShadow: '0 10px 20px rgba(225, 29, 72, 0.3)',
-                    '&:hover': { bgcolor: '#be123c', transform: 'translateY(-2px)' },
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  Iniciar prueba de 5 días y ver respuesta
-                </Button>
-              </Box>
-            </Fade>
-
-          </Box>
-        )}
-        <style>{`
-          @keyframes blink { 50% { border-color: transparent; } }
-        `}</style>
       </Card>
 
-      {/* MODAL DE LÍMITE DE PRUEBAS */}
-      {showLimitModal && ReactDOM.createPortal(
-        <div className="modal-backdrop" style={{ zIndex: 99999 }}>
-          <div className="modal-card" style={{ maxWidth: '420px', textAlign: 'center', padding: '40px 30px' }}>
-            <button className="modal-close-btn" onClick={() => setShowLimitModal(false)}>×</button>
-            <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="Mascota PIDA" style={{ width: '90px', marginBottom: '20px', margin: '0 auto' }} />
-            <Typography variant="h5" sx={{ color: 'var(--navy)', fontWeight: 800, mb: 1.5, fontSize: '1.4rem' }}>
-              ¡Límite alcanzado!
-            </Typography>
-            <Typography variant="body1" sx={{ color: '#475569', mb: 4, lineHeight: 1.6 }}>
-              Has utilizado todas tus consultas gratuitas anónimas. Crea tu cuenta ahora para descubrir la precisión de PIDA en casos reales.
-            </Typography>
-            <Button 
-              variant="contained" 
-              size="large"
-              onClick={() => {
-                setShowLimitModal(false);
-                handleUnlock();
-              }}
-              sx={{ 
-                bgcolor: 'var(--pida-primary)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.5, borderRadius: '8px',
-                boxShadow: '0 10px 20px rgba(56, 189, 248, 0.2)',
-                width: '100%',
-                '&:hover': { bgcolor: 'var(--pida-accent)', transform: 'translateY(-2px)' },
-                transition: 'all 0.2s'
-              }}
-            >
-              Crear mi cuenta y suscribirme
-            </Button>
-          </div>
-        </div>,
-        document.body
-      )}
+      {/* MODAL ANCHO PARA MOSTRAR LA RESPUESTA COMO EL CHAT */}
+      <Dialog 
+        open={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+        maxWidth="md" 
+        fullWidth 
+        PaperProps={{ sx: { borderRadius: '16px', height: '85vh', maxHeight: '800px', backgroundColor: '#F8FAFC' } }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', bgcolor: 'white' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+             <AutoAwesomeIcon sx={{ color: 'var(--pida-primary)' }}/>
+             <Typography variant="h6" fontWeight="bold" color="var(--navy)">Análisis de PIDA</Typography>
+          </Box>
+          <IconButton onClick={() => setModalOpen(false)}><CloseIcon /></IconButton>
+        </DialogTitle>
+        
+        <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+           <Box className="pida-view-content" sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, pb: 10 }}>
+              
+              {/* Mensaje del Usuario */}
+              <div className="pida-bubble user-message-bubble" style={{ alignSelf: 'flex-end', backgroundColor: '#E2E8F0', padding: '12px 18px', borderRadius: '16px 16px 0 16px', marginBottom: '20px', maxWidth: '85%' }}>
+                 <Typography sx={{ color: '#334155' }}>{query}</Typography>
+              </div>
+
+              {/* Mensaje del Modelo */}
+              {(status === 'loading' || response) && (
+                <div className="pida-bubble pida-message-bubble" style={{ alignSelf: 'flex-start', backgroundColor: 'white', padding: '20px', borderRadius: '16px 16px 16px 0', border: '1px solid #e2e8f0', maxWidth: '100%', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                   {status === 'loading' && (
+                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, color: '#475569' }}>
+                        <CircularProgress size={20} sx={{ color: 'var(--pida-primary)' }} />
+                        <Typography variant="body2" sx={{ fontWeight: 500, fontStyle: 'italic' }}>{statusText}</Typography>
+                     </Box>
+                   )}
+                   {response && renderResponseContent()}
+                </div>
+              )}
+              <div ref={messagesEndRef} style={{ height: '1px' }} />
+           </Box>
+
+           {/* BARRA INFERIOR / CALL TO ACTION */}
+           <Box sx={{ p: 3, borderTop: '1px solid #e2e8f0', bgcolor: 'white', textAlign: 'center', boxShadow: '0 -10px 15px -3px rgba(0, 0, 0, 0.05)' }}>
+              <Typography variant="body1" sx={{ mb: 1.5, color: 'var(--navy)', fontWeight: 'bold' }}>
+                ¿Quieres profundizar en este caso o analizar otro documento?
+              </Typography>
+              <Button 
+                variant="contained" 
+                onClick={() => handleUnlock()} 
+                sx={{ bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.2, borderRadius: '8px', '&:hover': { bgcolor: '#be123c' } }}
+              >
+                 Iniciar prueba gratis de 5 días
+              </Button>
+           </Box>
+        </DialogContent>
+      </Dialog>
+      <style>{`@keyframes blink { 50% { border-color: transparent; } }`}</style>
     </>
   );
 };
@@ -320,18 +392,6 @@ export default function LandingPage({ onOpenAuth }) {
   // ESTADO: Controla si el menú móvil está abierto
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // ESTADOS Y REF PARA EL VIDEO
-  const videoRef = useRef(null);
-  const [hasStarted, setHasStarted] = useState(false); 
-
-  const handlePlayVideo = () => {
-    if (videoRef.current) {
-      videoRef.current.play();
-      setHasStarted(true); 
-    }
-  };
-
-  // ESTADOS MUI: Controlan el menú desplegable del Newsletter
   const [anchorEl, setAnchorEl] = useState(null);
   const openNewsletter = Boolean(anchorEl);
 
@@ -367,29 +427,23 @@ export default function LandingPage({ onOpenAuth }) {
     detectLocation();
   }, []);
 
-  // --- FUNCIÓN OPTIMIZADA PARA EVITAR FORCED REFLOW ---
   const scrollToSection = (targetId) => {
-    // Usamos requestAnimationFrame para sincronizarnos con el motor de dibujado del navegador
     window.requestAnimationFrame(() => {
       const element = document.getElementById(targetId);
       if (element) {
-        // En lugar de forzar al navegador a medir el navbar (offsetHeight), 
-        // usamos un valor fijo estimado (100px) que es lo que mide tu header.
         const headerOffset = 100; 
-        
         const elementPosition = element.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.scrollY - headerOffset;
-        
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        });
+        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
       }
     });
   };
 
   useEffect(() => {
-    // Se eliminó el auto-scroll on mount para evitar que salte a los planes al cargar la página
+    if (window.location.hash) {
+      const targetId = window.location.hash.substring(1);
+      setTimeout(() => { scrollToSection(targetId); }, 300);
+    }
   }, []);
 
   useEffect(() => {
@@ -408,12 +462,8 @@ export default function LandingPage({ onOpenAuth }) {
     return () => { document.body.style.overflow = 'unset'; };
   }, [isMenuOpen]);
 
-  const handleNewsletterClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-  const handleNewsletterClose = () => {
-    setAnchorEl(null);
-  };
+  const handleNewsletterClick = (event) => { setAnchorEl(event.currentTarget); };
+  const handleNewsletterClose = () => { setAnchorEl(null); };
 
   const handleSelectPlan = (planKey) => {
     sessionStorage.setItem('pida_pending_plan', planKey);
@@ -449,13 +499,11 @@ export default function LandingPage({ onOpenAuth }) {
 
   const handleNavClick = (targetId) => {
     setIsMenuOpen(false);
-    setTimeout(() => {
-      scrollToSection(targetId);
-    }, 100);
+    setTimeout(() => { scrollToSection(targetId); }, 100);
   };
 
   const muiPrimaryBtnStyle = {
-    backgroundColor: 'var(--navy)', // Azul más vivo y corporativo
+    backgroundColor: 'var(--navy)',
     color: 'var(--white)',
     textTransform: 'none',
     fontWeight: 600,
@@ -466,14 +514,14 @@ export default function LandingPage({ onOpenAuth }) {
     fontFamily: 'var(--font-body)',
     transition: 'background-color 250ms ease, box-shadow 250ms ease, color 250ms ease',
     '&:hover': {
-      backgroundColor: 'var(--pida-accent)', // Nuevo color al pasar el cursor
+      backgroundColor: 'var(--pida-accent)',
       color: '#ffffff',
-      boxShadow: '0px 4px 12px rgba(56, 189, 248, 0.35)', // Resplandor acorde al nuevo color
+      boxShadow: '0px 4px 12px rgba(56, 189, 248, 0.35)', 
     }
   };
 
   const muiCorpBtnStyle = {
-    backgroundColor: 'var(--white)', // Azul más vivo y corporativo
+    backgroundColor: 'var(--white)',
     color: 'var(--pida-primary)',
     textTransform: 'none',
     fontWeight: 600,
@@ -484,9 +532,9 @@ export default function LandingPage({ onOpenAuth }) {
     fontFamily: 'var(--font-body)',
     transition: 'background-color 250ms ease, box-shadow 250ms ease, color 250ms ease',
     '&:hover': {
-      backgroundColor: 'var(--white)', // Nuevo color al pasar el cursor
+      backgroundColor: 'var(--white)',
       color: 'var(--pida-primary)',
-      boxShadow: '0px 4px 12px rgba(56, 189, 248, 0.35)', // Resplandor acorde al nuevo color
+      boxShadow: '0px 4px 12px rgba(56, 189, 248, 0.35)',
     }
   };
 
@@ -497,12 +545,12 @@ export default function LandingPage({ onOpenAuth }) {
     display: 'flex',
     flexDirection: 'column',
     textAlign: 'left',
-    overflow: 'visible', // Fundamental para que el badge "Más Popular" no se corte
+    overflow: 'visible', 
     backgroundColor: '#ffffff',
     transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     '&:hover': {
       transform: 'translateY(-8px)',
-      boxShadow: '0 22px 45px rgba(29, 53, 87, 0.12)', // Sombra elegante al levantar
+      boxShadow: '0 22px 45px rgba(29, 53, 87, 0.12)', 
     }
   };
 
@@ -511,17 +559,17 @@ export default function LandingPage({ onOpenAuth }) {
     border: '2.5px solid var(--pida-primary)',
     boxShadow: '0 15px 30px rgba(29, 53, 87, 0.08)',
     position: 'relative',
-    transform: { xs: 'none', md: 'scale(1.04)' }, // Ligeramente más grande en PC
+    transform: { xs: 'none', md: 'scale(1.04)' },
     '&:hover': {
       transform: { xs: 'translateY(-8px)', md: 'scale(1.04) translateY(-8px)' },
-      boxShadow: '0 25px 50px rgba(29, 53, 87, 0.18)', // Sombra más pronunciada
+      boxShadow: '0 25px 50px rgba(29, 53, 87, 0.18)',
     }
   };
 
   const muiGhostBtnStyle = {
     backgroundColor: 'white',
-    color: 'var(--navy)', // Texto en azul vibrante
-    border: '2px solid var(--navy)', // Borde en azul vibrante
+    color: 'var(--navy)',
+    border: '2px solid var(--navy)',
     textTransform: 'none',
     fontWeight: 800,
     fontSize: '0.95rem',
@@ -530,8 +578,8 @@ export default function LandingPage({ onOpenAuth }) {
     fontFamily: 'var(--font-body)',
     transition: 'all 250ms ease',
     '&:hover': {
-      backgroundColor: 'var(--navy)', // Se rellena del color vibrante al pasar el mouse
-      color: 'white', // El texto pasa a blanco para contrastar
+      backgroundColor: 'var(--navy)',
+      color: 'white',
     }
   }
 
@@ -648,7 +696,6 @@ export default function LandingPage({ onOpenAuth }) {
                 </Menu>
               </div>
 
-              {/* Botón LOGIN */}
               <Button 
                 onClick={() => { setIsMenuOpen(false); onOpenAuth('login'); }}
                 sx={{
@@ -665,62 +712,27 @@ export default function LandingPage({ onOpenAuth }) {
           </div>
         </div>
 
-        {/* ESTILOS EN LÍNEA CORREGIDOS SOLO PARA EL MENÚ MÓVIL */}
         <style>
           {`
             @media (max-width: 1024px) {
-              .header-logo {
-                height: 60px !important;
-              }
-              .mobile-menu-toggle {
-                display: block !important;
-              }
+              .header-logo { height: 60px !important; }
+              .mobile-menu-toggle { display: block !important; }
               .hide-on-mobile { display: block !important; }
-              
               .nav-right-container {
-                position: fixed;
-                top: 0;
-                right: -100%;
-                width: 260px;
-                height: 100vh;
-                background-color: #ffffff;
-                box-shadow: -5px 0 25px rgba(0,0,0,0.15);
-                display: flex !important;
-                flex-direction: column;
-                align-items: flex-start !important;
-                padding: 90px 25px 20px 25px;
-                transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                z-index: 999;
-                gap: 25px !important;
+                position: fixed; top: 0; right: -100%; width: 260px; height: 100vh;
+                background-color: #ffffff; box-shadow: -5px 0 25px rgba(0,0,0,0.15);
+                display: flex !important; flex-direction: column; align-items: flex-start !important;
+                padding: 90px 25px 20px 25px; transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                z-index: 999; gap: 25px !important;
               }
-              .nav-right-container.open {
-                right: 0;
-              }
-              .nav-right-container .nav-menu {
-                flex-direction: column;
-                align-items: flex-start !important;
-                width: 100%;
-                gap: 20px;
-              }
+              .nav-right-container.open { right: 0; }
+              .nav-right-container .nav-menu { flex-direction: column; align-items: flex-start !important; width: 100%; gap: 20px; }
               .nav-right-container .nav-link {
-                font-size: 1.1rem !important;
-                font-weight: 600 !important;
-                color: var(--pida-primary) !important; /* <--- De vuelta al original */
-                width: 100%;
-                padding: 5px 0;
-                border-bottom: 1px solid #f1f5f9;
-                justify-content: flex-start;
+                font-size: 1.1rem !important; font-weight: 600 !important; color: var(--pida-primary) !important;
+                width: 100%; padding: 5px 0; border-bottom: 1px solid #f1f5f9; justify-content: flex-start;
               }
-              .social-links-row {
-                width: 100%;
-                justify-content: flex-start;
-                padding-bottom: 15px;
-                border-bottom: 2px solid #e2e8f0;
-              }
-              @media (max-width: 1024px) {
-              #pida {
-                padding: 10px 0 !important; /* Ajusta el 10px al tamaño que prefieras */
-              }
+              .social-links-row { width: 100%; justify-content: flex-start; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0; }
+              #pida { padding: 10px 0 !important; }
             }
           `}
         </style>
@@ -954,7 +966,6 @@ export default function LandingPage({ onOpenAuth }) {
                     <br /><br />
                     Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario.
                 </p>
-                {/* BOTÓN CORPORATIVO - Actualizado a MUI */}
                 <Button 
                   onClick={() => setIsContactOpen(true)}
                   sx={muiCorpBtnStyle}
@@ -1017,7 +1028,7 @@ export default function LandingPage({ onOpenAuth }) {
                     gap: '40px', 
                     maxWidth: '1200px',
                     margin: '0 auto',
-                    borderTop: 'none' /* <-- ¡Esto anula la línea blanca del CSS! */
+                    borderTop: 'none'
                 }}
             >
                 <span style={{ color: 'var(--white)' }}>&copy; 2026 IIRESODH PAYMENTS, LLC.</span>
