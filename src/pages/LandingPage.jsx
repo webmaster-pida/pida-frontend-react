@@ -82,23 +82,22 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
       
       {/* ENCABEZADO EXPLICATIVO */}
       <Box sx={{ 
-        bgcolor: 'var(--navy)', 
-        color: 'white', 
+        pt: 4, 
+        pb: 1, 
         px: 3, 
-        py: 2.5, 
         textAlign: 'center',
-        background: 'linear-gradient(135deg, var(--navy) 0%, var(--pida-primary) 100%)'
+        bgcolor: '#F8FAFC'
       }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, fontSize: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-          <AutoAwesomeIcon sx={{ color: '#FCD34D' }} /> Pruébalo gratis ahora
+        <Typography variant="h6" sx={{ color: 'var(--navy)', fontWeight: 800, mb: 0.5, fontSize: '1.35rem' }}>
+          Pruébalo gratis ahora
         </Typography>
-        <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.95rem' }}>
+        <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.95rem' }}>
           Haz una pregunta jurídica y descubre la precisión de nuestras respuestas.
         </Typography>
       </Box>
 
       {/* BARRA DE BÚSQUEDA */}
-      <Box component="form" onSubmit={handleSearch} sx={{ p: 3, borderBottom: '1px solid #E2E8F0', bgcolor: '#F8FAFC' }}>
+      <Box component="form" onSubmit={handleSearch} sx={{ px: 3, pb: 4, pt: 1.5, borderBottom: '1px solid #E2E8F0', bgcolor: '#F8FAFC' }}>
         <Box sx={{ display: 'flex', gap: 1, position: 'relative' }}>
           <TextField
             fullWidth
