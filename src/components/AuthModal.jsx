@@ -75,7 +75,17 @@ function AuthFormContent({ onClose, initialMode }) {
     setLoadingText('Conectando...');
     try {
       await auth.signInWithPopup(googleProvider);
-      onClose();
+      
+      // 👇 PARCHE DE SEGURIDAD: 
+      // Si el usuario viene del Teaser (tiene un plan pendiente en memoria),
+      // lo enviamos OBLIGATORIAMENTE a que ponga la tarjeta.
+      // Si no tiene plan pendiente (es un login normal de alguien que ya pagó), entra a la app.
+      if (sessionStorage.getItem('pida_pending_plan')) {
+        setMode('checkout');
+        setIsLoading(false);
+      } else {
+        onClose();
+      }
     } catch (err) {
       setError('No se pudo iniciar sesión con Google.');
       setIsLoading(false);
@@ -356,6 +366,23 @@ function AuthFormContent({ onClose, initialMode }) {
           </button>
           <div className="login-divider" style={{ textAlign: 'center', margin: '15px 0', position: 'relative' }}><span style={{ background: 'white', padding: '0 10px', fontSize: '0.8rem', color: '#94A3B8' }}>O usa tu correo</span></div>
         </>
+      )}
+
+      {mode === 'register' && (
+        <Button 
+          variant="outlined" 
+          fullWidth 
+          onClick={handleGoogleLogin} 
+          disabled={isLoading}
+          sx={{ mb: 2, py: 1, borderColor: '#CBD5E1', color: '#334155', textTransform: 'none', fontWeight: 600, display: 'flex', gap: 1 }}
+        >
+          <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style={{width: '18px'}}/> 
+          Regístrate rápido con Google
+        </Button>
+      )}
+
+      {mode === 'register' && (
+        <div className="login-divider" style={{ textAlign: 'center', margin: '15px 0', position: 'relative' }}><span style={{ background: 'white', padding: '0 10px', fontSize: '0.8rem', color: '#94A3B8' }}>O usa tu correo</span></div>
       )}
 
       <form onSubmit={mode === 'verify-email' ? handleCheckVerification : mode === 'checkout' ? handleProcessPayment : handleFormSubmit} style={{ textAlign: 'left' }}>
