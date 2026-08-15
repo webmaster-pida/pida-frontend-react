@@ -27,6 +27,31 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
     return anonId;
   };
 
+  const renderQueue = useRef([]);
+  const isRendering = useRef(false);
+
+  const processQueue = async () => {
+    if (isRendering.current) return;
+    isRendering.current = true;
+    
+    while (renderQueue.current.length > 0) {
+      const item = renderQueue.current.shift();
+      
+      if (item.type === 'text') {
+        setResponse((prev) => prev + item.content);
+        await new Promise(r => setTimeout(r, 15)); // 15ms por carácter para un efecto fluido
+      } else if (item.type === 'blur') {
+        // El blur ocurre SOLO cuando ha terminado de 'escribir' todo el texto en cola
+        setTimeout(() => {
+          setResponse((prev) => prev + '...');
+          setStatus((current) => current === 'streaming' ? 'blurred' : current);
+        }, 3500);
+      }
+    }
+    
+    isRendering.current = false;
+  };
+
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim() || status === 'loading' || status === 'streaming') return;
@@ -34,6 +59,8 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
     setStatus('loading');
     setResponse('');
     setStatusText('Conectando con PIDA...');
+    renderQueue.current = []; // Limpiamos cola previa
+    isRendering.current = false;
 
     try {
       const res = await fetch(`${import.meta.env.VITE_API_CHAT}/teaser-chat`, {
@@ -60,6 +87,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
       const reader = res.body.getReader();
       const decoder = new TextDecoder("utf-8");
       let streamBuffer = "";
+      let blurQueued = false;
       
       while (true) {
         const { value, done } = await reader.read();
@@ -76,23 +104,26 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
               if (data.event === 'status') {
                 setStatusText(data.message);
               } else if (data.text) {
-                setResponse((prev) => prev + data.text);
+                // En lugar de pintar el bloque de golpe, lo mandamos letra por letra a la cola
+                const chars = data.text.split('');
+                chars.forEach(c => renderQueue.current.push({ type: 'text', content: c }));
+                processQueue();
               } else if (data.event === 'blur_ready') {
-                // Retrasamos el difuminado para que el usuario pueda leer más
-                setTimeout(() => {
-                  setResponse((prev) => prev + '...');
-                  setStatus((current) => current === 'streaming' ? 'blurred' : current);
-                }, 3500);
+                if (!blurQueued) {
+                  renderQueue.current.push({ type: 'blur' });
+                  blurQueued = true;
+                  processQueue();
+                }
               }
             } catch (err) {}
           }
         }
       }
       // Por si el stream termina sin enviar blur_ready explícito
-      setTimeout(() => {
-        setResponse((prev) => prev + '...');
-        setStatus((current) => current === 'streaming' ? 'blurred' : current);
-      }, 3500);
+      if (!blurQueued) {
+        renderQueue.current.push({ type: 'blur' });
+        processQueue();
+      }
     } catch (error) {
       console.error("Teaser error", error);
       setStatus('idle');
