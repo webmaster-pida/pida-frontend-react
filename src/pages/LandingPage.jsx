@@ -341,6 +341,9 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval, scrollToSection }) => {
   return (
     <>
       <Card elevation={0} sx={{ width: '100%', maxWidth: '650px', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(29, 53, 87, 0.1)', boxShadow: '0 15px 35px rgba(29, 53, 87, 0.08)' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, pb: 0, bgcolor: '#ffffff' }}>
+          <img src="/img/Prueba_PIDA-leadmagnet.png" alt="PIDA Preview" style={{ width: '100%', height: 'auto', display: 'block', margin: '0 auto', borderRadius: '8px' }} />
+        </Box>
         <Box component="form" onSubmit={handleSearch} sx={{ p: { xs: 2.5, sm: 3 }, bgcolor: '#ffffff' }}>
           <Typography variant="subtitle2" sx={{ color: 'var(--navy)', mb: 1.5, fontWeight: '700', fontSize: '0.95rem' }}>
             Hazle una consulta jurídica a PIDA gratis:
