@@ -416,7 +416,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval, scrollToSection }) => {
 
           
 
-          <Box sx={{ bgcolor: 'var(--navy)', color: 'white', px: 2, py: 0.5, borderRadius: '999px', display: 'inline-block', mb: 2.5, fontWeight: '600', fontSize: '0.85rem' }}>
+          <Box sx={{ bgcolor: 'white', color: '#4caf50', border: '1px solid #4caf50', px: 2, py: 0.5, borderRadius: '999px', display: 'inline-block', mb: 2.5, fontWeight: '600', fontSize: '0.85rem' }}>
 
             5 días de prueba gratis
 
@@ -426,7 +426,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval, scrollToSection }) => {
 
           <Typography variant="body1" sx={{ color: '#475569', mb: 3, lineHeight: 1.5 }}>
 
-            Sigue disfrutando sin restricciones — planes desde <strong>$9.99/mes</strong>.
+            Sigue disfrutando sin restricciones — planes desde <strong>$9.99 USD ($199 MXN)/mes</strong>.
 
           </Typography>
 
