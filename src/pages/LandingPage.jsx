@@ -100,7 +100,7 @@ const PreviewLink = ({ href, children, node, title, ...props }) => {
   );
 }
 
-// Configuración de Markdown (Ajustada para scroll horizontal en tablas largas)
+// Configuración de Markdown
 const markdownComponents = {
   a: ({ node, ...props }) => <PreviewLink href={props.href} {...props}>{props.children}</PreviewLink>,
   table: ({ node, ...props }) => (
@@ -116,17 +116,15 @@ const markdownComponents = {
 };
 
 
-// --- COMPONENTE: LEAD MAGNET (TRY BEFORE YOU BUY) ---
-const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
+// --- COMPONENTE: LEAD MAGNET ---
+// 👇 AHORA RECIBE LA FUNCIÓN scrollToSection
+const LeadMagnetTeaser = ({ onOpenAuth, interval, scrollToSection }) => {
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState('');
-  const [status, setStatus] = useState('idle'); // idle, loading, streaming, done
+  const [status, setStatus] = useState('idle'); 
   const [statusText, setStatusText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  
-  // NUEVO ESTADO: Controla el modal de límite excedido
   const [limitReached, setLimitReached] = useState(false); 
-  
   const messagesEndRef = useRef(null);
 
   const getAnonId = () => {
@@ -147,7 +145,6 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
     setStatusText('Conectando con PIDA...');
     setModalOpen(true); 
 
-    // --- COLA DE EFECTO DE ESCRITURA (TYPEWRITER) ---
     const textQueue = { current: "" };
     let isTypingEffectActive = false;
     let fullText = "";
@@ -192,7 +189,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
            setStatus('idle');
            setStatusText('');
            setModalOpen(false);
-           setLimitReached(true); // Abre el modal estilizado en vez del alert()
+           setLimitReached(true); 
            return;
         }
         throw new Error('Error de conexión');
@@ -223,14 +220,13 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
                   typeWriterEffect();
                 }
               } else if (data.event === 'done') {
-                // El backend terminó, pero esperamos a que termine el TypeWriter
+                // Done
               }
             } catch (err) {}
           }
         }
       }
 
-      // Esperar a que la cola visual termine de imprimirse en pantalla
       while (isTypingEffectActive || textQueue.current.length > 0) {
         await new Promise(resolve => setTimeout(resolve, 50));
       }
@@ -244,11 +240,12 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
   };
 
   const handleUnlock = (followUpQuery = null) => {
+    // Solo guardamos la pregunta para cuando complete su suscripción
     sessionStorage.setItem('pida_pending_query', followUpQuery || query);
-    sessionStorage.setItem('pida_pending_interval', interval);
-    sessionStorage.setItem('pida_pending_plan', 'basico'); 
     setModalOpen(false);
-    onOpenAuth('register');
+    
+    // 👇 SOLUCIÓN: Lo llevamos a la sección de planes para que él elija su nivel
+    scrollToSection('planes');
   };
 
   useEffect(() => {
@@ -257,7 +254,6 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
     }
   }, [response, modalOpen, statusText]);
 
-  // Lógica de Renderizado del Mensaje 
   const renderResponseContent = () => {
     let displayContent = response;
 
@@ -367,14 +363,13 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
                 } 
               }}
             />
-            {/* BOTÓN CON MASCOTA MÁS GRANDE Y FONDO BLANCO */}
             <Button 
               type="submit" 
               variant="contained" 
               disabled={!query.trim() || status === 'loading' || status === 'streaming'}
               sx={{ 
                 borderRadius: '12px', 
-                p: 0, // Quitamos padding horizontal forzado para que la imagen mande
+                p: 0, 
                 width: '64px',
                 minWidth: '64px',
                 bgcolor: '#ffffff', 
@@ -393,7 +388,6 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
         </Box>
       </Card>
 
-      {/* MODAL DE LÍMITE EXCEDIDO (REEMPLAZA EL ALERT) */}
       <Dialog 
         open={limitReached} 
         onClose={() => setLimitReached(false)}
@@ -413,7 +407,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
             onClick={() => { setLimitReached(false); handleUnlock(); }} 
             sx={{ bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', py: 1.5, borderRadius: '8px', boxShadow: '0 4px 12px rgba(225, 29, 72, 0.25)', '&:hover': { bgcolor: '#be123c' } }}
           >
-            Iniciar prueba gratis de 5 días
+            Ver planes y suscribirme
           </Button>
         </DialogContent>
       </Dialog>
@@ -436,16 +430,13 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
         <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
            <Box className="pida-view-content" sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, pb: 10 }}>
               
-              {/* Mensaje del Usuario */}
               <div className="pida-bubble user-message-bubble" style={{ alignSelf: 'flex-end', backgroundColor: 'var(--navy)', padding: '12px 18px', borderRadius: '16px 16px 0 16px', marginBottom: '20px', maxWidth: '85%' }}>
                  <Typography sx={{ color: '#ffffff', fontWeight: 500 }}>{query}</Typography>
               </div>
 
-              {/* Mensaje del Modelo */}
               {(status === 'loading' || status === 'streaming' || response) && (
                 <div className="pida-bubble pida-message-bubble" style={{ alignSelf: 'flex-start', backgroundColor: 'white', padding: '20px', borderRadius: '16px 16px 16px 0', border: '1px solid #e2e8f0', maxWidth: '100%', overflowX: 'auto', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
                    
-                   {/* BANNER DE ESTADO VISIBLE MIENTRAS CARGA O PROCESA */}
                    {status !== 'done' && (
                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1.5, bgcolor: '#F0F9FF', borderRadius: '8px', mb: response ? 3 : 0, border: '1px solid #BAE6FD' }}>
                         <CircularProgress size={20} sx={{ color: '#0369A1' }} />
@@ -459,7 +450,6 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
               <div ref={messagesEndRef} style={{ height: '1px' }} />
            </Box>
 
-           {/* BARRA INFERIOR / CALL TO ACTION - APARECE HASTA TERMINAR */}
            {status === 'done' && (
              <Box sx={{ p: 3, borderTop: '1px solid #e2e8f0', bgcolor: 'white', textAlign: 'center', boxShadow: '0 -10px 15px -3px rgba(0, 0, 0, 0.05)', zIndex: 10 }}>
                 <Typography variant="body1" sx={{ mb: 1.5, color: 'var(--navy)', fontWeight: 'bold' }}>
@@ -470,7 +460,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
                   onClick={() => handleUnlock()} 
                   sx={{ bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.2, borderRadius: '8px', '&:hover': { bgcolor: '#be123c' } }}
                 >
-                   Iniciar prueba gratis de 5 días
+                   Ver planes e iniciar prueba gratis
                 </Button>
              </Box>
            )}
@@ -859,8 +849,9 @@ export default function LandingPage({ onOpenAuth }) {
               </div>
             </div>
             
+            {/* --- COMPONENTE LEAD MAGNET --- */}
             <div className="hero-visual-column" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-              <LeadMagnetTeaser onOpenAuth={onOpenAuth} interval={interval} />
+              <LeadMagnetTeaser onOpenAuth={onOpenAuth} interval={interval} scrollToSection={scrollToSection} />
             </div>
 
           </div>
