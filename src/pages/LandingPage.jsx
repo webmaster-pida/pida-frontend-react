@@ -14,6 +14,7 @@ import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import CloseIcon from '@mui/icons-material/Close';
 import LockIcon from '@mui/icons-material/Lock';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import SendIcon from '@mui/icons-material/Send';
 
 // --- COMPONENTE DE ENLACES PARA EL MARKDOWN (Igual que en ChatInterface) ---
 const PreviewLink = ({ href, children, node, title, ...props }) => {
@@ -384,7 +385,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval, scrollToSection }) => {
               {status === 'loading' ? (
                 <CircularProgress size={24} sx={{ color: 'var(--pida-primary)' }} />
               ) : (
-                <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="PIDA" style={{ height: '42px', objectFit: 'contain' }} />
+                <SendIcon sx={{ color: 'var(--pida-primary)', fontSize: 32, transform: 'translateX(2px)' }} />
               )}
             </Button>
           </Box>
@@ -424,7 +425,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval, scrollToSection }) => {
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', bgcolor: 'white' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-             <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="PIDA" style={{ height: '28px' }} />
+             <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="PIDA" style={{ height: '48px' }} />
              <Typography variant="h6" fontWeight="bold" color="var(--navy)">Análisis de PIDA</Typography>
           </Box>
           <IconButton onClick={() => setModalOpen(false)}><CloseIcon /></IconButton>
