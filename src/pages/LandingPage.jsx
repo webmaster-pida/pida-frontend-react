@@ -2,11 +2,523 @@ import React, { useState, useEffect, useRef } from 'react';
 import { STRIPE_PRICES } from '../config/constants';
 import { db } from '../config/firebase'; 
 
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw'; 
+
 // Importaciones de Material-UI
-import { Box, TextField, Button, Menu, MenuItem, SvgIcon, Card, CardMedia, IconButton, Fade } from '@mui/material';
+import { Box, TextField, Button, Menu, MenuItem, SvgIcon, Card, IconButton, Fade, Typography, CircularProgress, Dialog, DialogTitle, DialogContent, Tooltip, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper } from '@mui/material';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import CloseIcon from '@mui/icons-material/Close';
+import LockIcon from '@mui/icons-material/Lock';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import SendIcon from '@mui/icons-material/Send';
+
+// --- COMPONENTE DE ENLACES PARA EL MARKDOWN (Igual que en ChatInterface) ---
+const PreviewLink = ({ href, children, node, title, ...props }) => {
+  const [previewData, setPreviewData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [fetchedUrl, setFetchedUrl] = useState(null);
+  const [isScrapeBlocked, setIsScrapeBlocked] = useState(false); 
+
+  const MICROLINK_API_KEY = import.meta.env.VITE_MICROLINK_KEY || "";
+
+  let hostname = "";
+  try { hostname = new URL(href).hostname.replace('www.', ''); } catch (e) {}
+
+  const fetchPreview = async () => {
+    if (!href || !href.startsWith('http') || fetchedUrl === href) return;
+    
+    setFetchedUrl(href); 
+    setLoading(true);
+    setIsScrapeBlocked(false);
+
+    try {
+      const cleanHref = href.replace(/[\.\)]+$/, '');
+      const res = await fetch(`https://pro.microlink.io?url=${encodeURIComponent(cleanHref)}`, {
+        headers: MICROLINK_API_KEY ? { 'x-api-key': MICROLINK_API_KEY } : {}
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        const returnedTitle = (data.data.title || '').toLowerCase();
+        const blockedKeywords = ['error:', 'could not be satisfied', 'cloudflare', 'attention required', 'access denied', '403 forbidden', 'not acceptable', 'security check'];
+        if (blockedKeywords.some(kw => returnedTitle.includes(kw))) {
+          setIsScrapeBlocked(true); 
+        } else {
+          setPreviewData(data.data);
+        }
+      } else {
+        setIsScrapeBlocked(true);
+      }
+    } catch (e) {
+      setIsScrapeBlocked(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchPreview(), 1500);
+    return () => clearTimeout(timer);
+  }, [href]);
+
+  return (
+    <Tooltip
+      placement="top" arrow enterDelay={100} PopperProps={{ sx: { zIndex: 999999 } }}
+      title={
+        <Box sx={{ width: 380, p: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}><CircularProgress size={24} sx={{ color: '#60a5fa' }} /></Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                <img src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`} alt="icon" style={{ width: 16, height: 16, borderRadius: '2px', backgroundColor: 'white' }} />
+                <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>{hostname}</Typography>
+              </Box>
+              {!isScrapeBlocked && previewData ? (
+                <>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', lineHeight: 1.3, color: 'white', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{previewData.title || "Fuente de información"}</Typography>
+                  {previewData.description && (<Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#cbd5e1', mt: 0.5, display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{previewData.description}</Typography>)}
+                </>
+              ) : (
+                <Typography variant="body2" sx={{ color: '#cbd5e1', mt: 0.5, fontSize: '0.8rem' }}>Documento Institucional Externo</Typography>
+              )}
+            </Box>
+          )}
+        </Box>
+      }
+      slotProps={{
+        tooltip: { sx: { maxWidth: 420, maxHeight: 500, overflowY: 'auto', bgcolor: '#0f172a', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7)', borderRadius: '8px', border: '1px solid #334155' } },
+        arrow: { sx: { color: '#0f172a' } }
+      }}
+    >
+      <span style={{ display: 'inline' }}>
+        <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pida-primary)', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' }} {...props}>{children}</a>
+      </span>
+    </Tooltip>
+  );
+}
+
+// Configuración de Markdown
+const markdownComponents = {
+  a: ({ node, ...props }) => <PreviewLink href={props.href} {...props}>{props.children}</PreviewLink>,
+  table: ({ node, ...props }) => (
+    <TableContainer component={Paper} sx={{ my: 2, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px', overflowX: 'auto', width: '100%' }}>
+      <Table size="small" {...props} />
+    </TableContainer>
+  ),
+  thead: ({ node, ...props }) => <TableHead sx={{ bgcolor: '#f1f5f9' }} {...props} />,
+  tbody: ({ node, ...props }) => <TableBody {...props} />,
+  tr: ({ node, ...props }) => <TableRow hover {...props} />,
+  th: ({ node, ...props }) => (<TableCell sx={{ fontWeight: 'bold', color: 'var(--pida-primary)', borderBottom: '2px solid #cbd5e1', whiteSpace: 'nowrap' }} {...props} />),
+  td: ({ node, ...props }) => (<TableCell sx={{ borderColor: '#e2e8f0', verticalAlign: 'top' }} {...props} />)
+};
+
+
+// --- COMPONENTE: LEAD MAGNET ---
+// 👇 AHORA RECIBE LA FUNCIÓN scrollToSection
+const LeadMagnetTeaser = ({ onOpenAuth, interval, scrollToSection }) => {
+  const [query, setQuery] = useState('');
+  const [response, setResponse] = useState('');
+  const [status, setStatus] = useState('idle'); 
+  const [statusText, setStatusText] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [limitReached, setLimitReached] = useState(false); 
+  const messagesEndRef = useRef(null);
+
+  const getAnonId = () => {
+    let anonId = localStorage.getItem('pida_anon_id');
+    if (!anonId) {
+      anonId = 'anon_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+      localStorage.setItem('pida_anon_id', anonId);
+    }
+    return anonId;
+  };
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!query.trim() || status === 'loading' || status === 'streaming') return;
+
+    setStatus('loading');
+    setResponse('');
+    setStatusText('Conectando con PIDA...');
+    setModalOpen(true); 
+
+    const textQueue = { current: "" };
+    let isTypingEffectActive = false;
+    let fullText = "";
+
+    const typeWriterEffect = async () => {
+      isTypingEffectActive = true;
+      let lastRenderTime = Date.now();
+
+      while (textQueue.current.length > 0) {
+        const qLen = textQueue.current.length;
+        let chunkSize = 1; let delay = 15;
+        if (qLen > 150) { chunkSize = 4; delay = 10; }
+        else if (qLen > 50) { chunkSize = 2; delay = 12; }
+        else if (qLen < 15) { chunkSize = 1; delay = 35; }
+
+        const chunk = textQueue.current.substring(0, chunkSize);
+        textQueue.current = textQueue.current.substring(chunkSize);
+        fullText += chunk;
+
+        const now = Date.now();
+        if (now - lastRenderTime > 40 || textQueue.current.length === 0) {
+          setResponse(fullText);
+          lastRenderTime = now;
+        }
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+      isTypingEffectActive = false;
+    };
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_CHAT}/teaser-chat`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Anon-ID': getAnonId() 
+        },
+        body: JSON.stringify({ prompt: query })
+      });
+
+      if (!res.ok) {
+        if (res.status === 429) {
+           setStatus('idle');
+           setStatusText('');
+           setModalOpen(false);
+           setLimitReached(true); 
+           return;
+        }
+        throw new Error('Error de conexión');
+      }
+
+      setStatus('streaming');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let streamBuffer = "";
+      
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        
+        streamBuffer += decoder.decode(value, { stream: true });
+        const lines = streamBuffer.split('\n\n');
+        streamBuffer = lines.pop(); 
+        
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            try {
+              const data = JSON.parse(line.substring(6));
+              if (data.event === 'status') {
+                setStatusText(data.message);
+              } else if (data.text) {
+                textQueue.current += data.text;
+                if (!isTypingEffectActive) {
+                  typeWriterEffect();
+                }
+              } else if (data.event === 'done') {
+                // Done
+              }
+            } catch (err) {}
+          }
+        }
+      }
+
+      while (isTypingEffectActive || textQueue.current.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      setStatus('done');
+    } catch (error) {
+      console.error("Teaser error", error);
+      setResponse((prev) => prev + "\n\n❌ Ocurrió un error al procesar la solicitud.");
+      setStatus('done');
+    }
+  };
+
+  const handleUnlock = (followUpQuery = null) => {
+    // Solo guardamos la pregunta para cuando complete su suscripción
+    sessionStorage.setItem('pida_pending_query', followUpQuery || query);
+    setModalOpen(false);
+    
+    // 👇 SOLUCIÓN: Lo llevamos a la sección de planes para que él elija su nivel
+    scrollToSection('planes');
+  };
+
+  useEffect(() => {
+    if (modalOpen && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [response, modalOpen, statusText]);
+
+  const renderResponseContent = () => {
+    let displayContent = response;
+
+    displayContent = displayContent.split('\n').map(line => {
+      const count = (line.match(/\*\*/g) || []).length;
+      if (count % 2 !== 0) return line.replace(/\*\*/g, ''); 
+      return line;
+    }).join('\n');
+
+    let questions = [];
+    const tagStart = "<pida_questions>";
+    const tagEnd = "</pida_questions>";
+
+    if (displayContent.includes(tagStart)) {
+      const parts = displayContent.split(tagStart);
+      let textBeforeTags = parts[0];
+      let textInsideAndAfter = parts[1] || "";
+      let qString = "";
+      let textAfterTags = ""; 
+
+      if (textInsideAndAfter.includes(tagEnd)) {
+        const subParts = textInsideAndAfter.split(tagEnd);
+        qString = subParts[0]; 
+        textAfterTags = subParts.slice(1).join(tagEnd); 
+      } else {
+        qString = "";
+        textAfterTags = "";
+      }
+
+      displayContent = textBeforeTags + "\n" + textAfterTags;
+
+      if (status === 'done' || textInsideAndAfter.includes(tagEnd)) {
+        questions = qString.split('|').map(q => q.trim()).filter(q => q.length > 0);
+      }
+    }
+
+    displayContent = displayContent.replace(/["']br["']/g, '<br />');
+
+    if (displayContent.includes('## Fuentes y Jurisprudencia')) {
+      const splitPoint = '## Fuentes y Jurisprudencia';
+      const parts = displayContent.split(splitPoint);
+      let fuentesText = parts[1];
+      fuentesText = fuentesText.replace(/\|?\s*:?-{2,}:?\s*\|?/g, '');
+      fuentesText = fuentesText.replace(/\|/g, ' • ');
+      displayContent = parts[0] + splitPoint + fuentesText;
+    }
+
+    return (
+      <>
+        <div className="markdown-content">
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+            {displayContent}
+          </ReactMarkdown>
+          {status === 'streaming' && <span style={{ borderRight: '2px solid var(--pida-primary)', animation: 'blink 1s step-end infinite' }}>&nbsp;</span>}
+        </div>
+        
+        {questions.length > 0 && (
+          <div className="follow-up-section" style={{ marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '15px' }}>
+            <strong style={{ display: 'block', marginBottom: '10px', color: 'var(--pida-primary)' }}>
+              Preguntas de seguimiento sugeridas:
+            </strong>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {questions.map((q, i) => (
+                <button 
+                  key={i} 
+                  className="follow-up-btn"
+                  onClick={() => handleUnlock(q)}
+                  style={{
+                    textAlign: 'left', padding: '10px 15px', borderRadius: '8px', border: '1px solid #cbd5e1',
+                    backgroundColor: 'white', color: '#334155', fontSize: '0.9rem', cursor: 'pointer', transition: '0.2s'
+                  }}
+                  onMouseOver={e => { e.target.style.borderColor = 'var(--pida-primary)'; e.target.style.color = 'var(--pida-primary)'; }}
+                  onMouseOut={e => { e.target.style.borderColor = '#cbd5e1'; e.target.style.color = '#334155'; }}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
+
+  return (
+    <>
+      <Card elevation={0} sx={{ width: '100%', maxWidth: '650px', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(29, 53, 87, 0.1)', boxShadow: '0 15px 35px rgba(29, 53, 87, 0.08)' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, pb: 0, bgcolor: '#ffffff' }}>
+          <img src="/img/30AniosDEG-576.png" alt="PIDA Preview" style={{ width: '100%', height: 'auto', display: 'block', margin: '0 auto', borderRadius: '8px' }} />
+        </Box>
+        <Box component="form" onSubmit={handleSearch} sx={{ p: { xs: 2.5, sm: 3 }, bgcolor: '#ffffff' }}>
+          <Typography variant="subtitle2" sx={{ color: 'var(--navy)', mb: 1.5, fontWeight: '700', fontSize: '0.95rem' }}>
+            Hazle una consulta jurídica a PIDA gratis:
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1.5, position: 'relative' }}>
+            <TextField
+              fullWidth
+              placeholder="Ej: ¿Cuáles son los estándares de prisión preventiva en la Corte IDH?"
+              variant="outlined"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              disabled={status === 'loading' || status === 'streaming'}
+              sx={{ 
+                bgcolor: '#F8FAFC', 
+                '& .MuiOutlinedInput-root': { 
+                  borderRadius: '12px',
+                  '& fieldset': { borderColor: '#E2E8F0' },
+                  '&:hover fieldset': { borderColor: '#CBD5E1' },
+                  '&.Mui-focused fieldset': { borderColor: 'var(--pida-primary)' }
+                } 
+              }}
+            />
+            <Button 
+              type="submit" 
+              variant="contained" 
+              disabled={!query.trim() || status === 'loading' || status === 'streaming'}
+              sx={{ 
+                borderRadius: '12px', 
+                p: 0, 
+                width: '64px',
+                minWidth: '64px',
+                bgcolor: '#ffffff', 
+                border: '1px solid #CBD5E1',
+                '&:hover': { bgcolor: '#F8FAFC', borderColor: 'var(--pida-primary)' }, 
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+              }}
+            >
+              {status === 'loading' ? (
+                <CircularProgress size={24} sx={{ color: 'var(--pida-primary)' }} />
+              ) : (
+                <SendIcon sx={{ color: 'var(--pida-primary)', fontSize: 32, transform: 'translateX(2px)' }} />
+              )}
+            </Button>
+          </Box>
+        </Box>
+      </Card>
+
+          <Dialog 
+
+        open={limitReached} 
+
+        onClose={() => setLimitReached(false)}
+
+        PaperProps={{ sx: { borderRadius: '24px', p: { xs: 2, sm: 3 }, textAlign: 'center', maxWidth: '420px', backgroundColor: '#ffffff' } }}
+
+      >
+
+        <DialogTitle sx={{ pt: 2, pb: 1 }}>
+
+          <Typography variant="h5" fontWeight="800" color="var(--navy)" sx={{ lineHeight: 1.2 }}>
+
+            Ya viste de qué es capaz PIDA
+
+          </Typography>
+
+        </DialogTitle>
+
+        <DialogContent sx={{ pb: 3, pt: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+          
+
+          <Box sx={{ bgcolor: 'white', color: '#4caf50', border: '1px solid #4caf50', px: 2, py: 0.5, borderRadius: '999px', display: 'inline-block', mb: 2.5, fontWeight: '600', fontSize: '0.85rem' }}>
+
+            5 días de prueba gratis
+
+          </Box>
+
+          
+
+          <Typography variant="body1" sx={{ color: '#475569', mb: 3, lineHeight: 1.5 }}>
+
+            Sigue disfrutando sin restricciones — planes desde <strong>$9.99 USD ($199 MXN)/mes</strong>.
+
+          </Typography>
+
+          
+
+          <Button 
+
+            variant="contained" 
+
+            fullWidth
+
+            onClick={() => { setLimitReached(false); handleUnlock(); }} 
+
+            sx={{ bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', py: 1.5, mb: 2, borderRadius: '12px', fontSize: '1rem', boxShadow: '0 4px 12px rgba(225, 29, 72, 0.25)', '&:hover': { bgcolor: '#be123c' } }}
+
+          >
+
+            Empezar prueba gratis
+
+          </Button>
+
+
+          <Typography variant="body2" sx={{ color: '#64748B', fontSize: '0.85rem' }}>
+
+            o <span style={{ textDecoration: 'underline', cursor: 'pointer', color: 'var(--navy)', fontWeight: '600' }} onClick={() => setLimitReached(false)}>vuelve mañana</span> por más consultas gratis
+
+          </Typography>
+
+          
+
+        </DialogContent>
+
+      </Dialog>
+
+      <Dialog 
+        open={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+        maxWidth="md" 
+        fullWidth 
+        PaperProps={{ sx: { borderRadius: '16px', height: '85vh', maxHeight: '800px', backgroundColor: '#F8FAFC' } }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', bgcolor: 'white' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+             <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="PIDA" style={{ height: '48px' }} />
+             <Typography variant="h6" fontWeight="bold" color="var(--navy)">Análisis de PIDA</Typography>
+          </Box>
+          <IconButton onClick={() => setModalOpen(false)}><CloseIcon /></IconButton>
+        </DialogTitle>
+        
+        <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+           <Box className="pida-view-content" sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, pb: 10 }}>
+              
+              <div className="pida-bubble user-message-bubble" style={{ alignSelf: 'flex-end', backgroundColor: 'var(--navy)', padding: '12px 18px', borderRadius: '16px 16px 0 16px', marginBottom: '20px', maxWidth: '85%' }}>
+                 <Typography sx={{ color: '#ffffff', fontWeight: 500 }}>{query}</Typography>
+              </div>
+
+              {(status === 'loading' || status === 'streaming' || response) && (
+                <div className="pida-bubble pida-message-bubble" style={{ alignSelf: 'flex-start', backgroundColor: 'white', padding: '20px', borderRadius: '16px 16px 16px 0', border: '1px solid #e2e8f0', maxWidth: '100%', overflowX: 'auto', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                   
+                   {status !== 'done' && (
+                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1.5, bgcolor: '#F0F9FF', borderRadius: '8px', mb: response ? 3 : 0, border: '1px solid #BAE6FD' }}>
+                        <CircularProgress size={20} sx={{ color: '#0369A1' }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#0369A1' }}>{statusText || 'Procesando...'}</Typography>
+                     </Box>
+                   )}
+
+                   {response && renderResponseContent()}
+                </div>
+              )}
+              <div ref={messagesEndRef} style={{ height: '1px' }} />
+           </Box>
+
+           {status === 'done' && (
+             <Box sx={{ p: 3, borderTop: '1px solid #e2e8f0', bgcolor: 'white', textAlign: 'center', boxShadow: '0 -10px 15px -3px rgba(0, 0, 0, 0.05)', zIndex: 10 }}>
+                <Typography variant="body1" sx={{ mb: 1.5, color: 'var(--navy)', fontWeight: 'bold' }}>
+                  ¿Quieres profundizar en este caso o analizar otro documento?
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  onClick={() => handleUnlock()} 
+                  sx={{ bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.2, borderRadius: '8px', '&:hover': { bgcolor: '#be123c' } }}
+                >
+                   Ver planes e iniciar prueba gratis
+                </Button>
+             </Box>
+           )}
+        </DialogContent>
+      </Dialog>
+      <style>{`@keyframes blink { 50% { border-color: transparent; } }`}</style>
+    </>
+  );
+};
 
 export default function LandingPage({ onOpenAuth }) {
   const [interval, setInterval] = useState('monthly'); 
@@ -14,21 +526,8 @@ export default function LandingPage({ onOpenAuth }) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isUS, setIsUS] = useState(false);
 
-  // ESTADO: Controla si el menú móvil está abierto
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // ESTADOS Y REF PARA EL VIDEO
-  const videoRef = useRef(null);
-  const [hasStarted, setHasStarted] = useState(false); 
-
-  const handlePlayVideo = () => {
-    if (videoRef.current) {
-      videoRef.current.play();
-      setHasStarted(true); 
-    }
-  };
-
-  // ESTADOS MUI: Controlan el menú desplegable del Newsletter
   const [anchorEl, setAnchorEl] = useState(null);
   const openNewsletter = Boolean(anchorEl);
 
@@ -64,23 +563,14 @@ export default function LandingPage({ onOpenAuth }) {
     detectLocation();
   }, []);
 
-  // --- FUNCIÓN OPTIMIZADA PARA EVITAR FORCED REFLOW ---
   const scrollToSection = (targetId) => {
-    // Usamos requestAnimationFrame para sincronizarnos con el motor de dibujado del navegador
     window.requestAnimationFrame(() => {
       const element = document.getElementById(targetId);
       if (element) {
-        // En lugar de forzar al navegador a medir el navbar (offsetHeight), 
-        // usamos un valor fijo estimado (100px) que es lo que mide tu header.
         const headerOffset = 100; 
-        
         const elementPosition = element.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.scrollY - headerOffset;
-        
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        });
+        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
       }
     });
   };
@@ -88,9 +578,7 @@ export default function LandingPage({ onOpenAuth }) {
   useEffect(() => {
     if (window.location.hash) {
       const targetId = window.location.hash.substring(1);
-      setTimeout(() => {
-        scrollToSection(targetId);
-      }, 300);
+      setTimeout(() => { scrollToSection(targetId); }, 300);
     }
   }, []);
 
@@ -110,12 +598,8 @@ export default function LandingPage({ onOpenAuth }) {
     return () => { document.body.style.overflow = 'unset'; };
   }, [isMenuOpen]);
 
-  const handleNewsletterClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-  const handleNewsletterClose = () => {
-    setAnchorEl(null);
-  };
+  const handleNewsletterClick = (event) => { setAnchorEl(event.currentTarget); };
+  const handleNewsletterClose = () => { setAnchorEl(null); };
 
   const handleSelectPlan = (planKey) => {
     sessionStorage.setItem('pida_pending_plan', planKey);
@@ -151,13 +635,11 @@ export default function LandingPage({ onOpenAuth }) {
 
   const handleNavClick = (targetId) => {
     setIsMenuOpen(false);
-    setTimeout(() => {
-      scrollToSection(targetId);
-    }, 100);
+    setTimeout(() => { scrollToSection(targetId); }, 100);
   };
 
   const muiPrimaryBtnStyle = {
-    backgroundColor: 'var(--navy)', // Azul más vivo y corporativo
+    backgroundColor: 'var(--navy)',
     color: 'var(--white)',
     textTransform: 'none',
     fontWeight: 600,
@@ -168,14 +650,14 @@ export default function LandingPage({ onOpenAuth }) {
     fontFamily: 'var(--font-body)',
     transition: 'background-color 250ms ease, box-shadow 250ms ease, color 250ms ease',
     '&:hover': {
-      backgroundColor: 'var(--pida-accent)', // Nuevo color al pasar el cursor
+      backgroundColor: 'var(--pida-accent)',
       color: '#ffffff',
-      boxShadow: '0px 4px 12px rgba(56, 189, 248, 0.35)', // Resplandor acorde al nuevo color
+      boxShadow: '0px 4px 12px rgba(56, 189, 248, 0.35)', 
     }
   };
 
   const muiCorpBtnStyle = {
-    backgroundColor: 'var(--white)', // Azul más vivo y corporativo
+    backgroundColor: 'var(--white)',
     color: 'var(--pida-primary)',
     textTransform: 'none',
     fontWeight: 600,
@@ -186,9 +668,9 @@ export default function LandingPage({ onOpenAuth }) {
     fontFamily: 'var(--font-body)',
     transition: 'background-color 250ms ease, box-shadow 250ms ease, color 250ms ease',
     '&:hover': {
-      backgroundColor: 'var(--white)', // Nuevo color al pasar el cursor
+      backgroundColor: 'var(--white)',
       color: 'var(--pida-primary)',
-      boxShadow: '0px 4px 12px rgba(56, 189, 248, 0.35)', // Resplandor acorde al nuevo color
+      boxShadow: '0px 4px 12px rgba(56, 189, 248, 0.35)',
     }
   };
 
@@ -199,12 +681,12 @@ export default function LandingPage({ onOpenAuth }) {
     display: 'flex',
     flexDirection: 'column',
     textAlign: 'left',
-    overflow: 'visible', // Fundamental para que el badge "Más Popular" no se corte
+    overflow: 'visible', 
     backgroundColor: '#ffffff',
     transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     '&:hover': {
       transform: 'translateY(-8px)',
-      boxShadow: '0 22px 45px rgba(29, 53, 87, 0.12)', // Sombra elegante al levantar
+      boxShadow: '0 22px 45px rgba(29, 53, 87, 0.12)', 
     }
   };
 
@@ -213,17 +695,17 @@ export default function LandingPage({ onOpenAuth }) {
     border: '2.5px solid var(--pida-primary)',
     boxShadow: '0 15px 30px rgba(29, 53, 87, 0.08)',
     position: 'relative',
-    transform: { xs: 'none', md: 'scale(1.04)' }, // Ligeramente más grande en PC
+    transform: { xs: 'none', md: 'scale(1.04)' },
     '&:hover': {
       transform: { xs: 'translateY(-8px)', md: 'scale(1.04) translateY(-8px)' },
-      boxShadow: '0 25px 50px rgba(29, 53, 87, 0.18)', // Sombra más pronunciada
+      boxShadow: '0 25px 50px rgba(29, 53, 87, 0.18)',
     }
   };
 
   const muiGhostBtnStyle = {
     backgroundColor: 'white',
-    color: 'var(--navy)', // Texto en azul vibrante
-    border: '2px solid var(--navy)', // Borde en azul vibrante
+    color: 'var(--navy)',
+    border: '2px solid var(--navy)',
     textTransform: 'none',
     fontWeight: 800,
     fontSize: '0.95rem',
@@ -232,8 +714,8 @@ export default function LandingPage({ onOpenAuth }) {
     fontFamily: 'var(--font-body)',
     transition: 'all 250ms ease',
     '&:hover': {
-      backgroundColor: 'var(--navy)', // Se rellena del color vibrante al pasar el mouse
-      color: 'white', // El texto pasa a blanco para contrastar
+      backgroundColor: 'var(--navy)',
+      color: 'white',
     }
   }
 
@@ -350,7 +832,6 @@ export default function LandingPage({ onOpenAuth }) {
                 </Menu>
               </div>
 
-              {/* Botón LOGIN */}
               <Button 
                 onClick={() => { setIsMenuOpen(false); onOpenAuth('login'); }}
                 sx={{
@@ -367,62 +848,27 @@ export default function LandingPage({ onOpenAuth }) {
           </div>
         </div>
 
-        {/* ESTILOS EN LÍNEA CORREGIDOS SOLO PARA EL MENÚ MÓVIL */}
         <style>
           {`
             @media (max-width: 1024px) {
-              .header-logo {
-                height: 60px !important;
-              }
-              .mobile-menu-toggle {
-                display: block !important;
-              }
+              .header-logo { height: 60px !important; }
+              .mobile-menu-toggle { display: block !important; }
               .hide-on-mobile { display: block !important; }
-              
               .nav-right-container {
-                position: fixed;
-                top: 0;
-                right: -100%;
-                width: 260px;
-                height: 100vh;
-                background-color: #ffffff;
-                box-shadow: -5px 0 25px rgba(0,0,0,0.15);
-                display: flex !important;
-                flex-direction: column;
-                align-items: flex-start !important;
-                padding: 90px 25px 20px 25px;
-                transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                z-index: 999;
-                gap: 25px !important;
+                position: fixed; top: 0; right: -100%; width: 260px; height: 100vh;
+                background-color: #ffffff; box-shadow: -5px 0 25px rgba(0,0,0,0.15);
+                display: flex !important; flex-direction: column; align-items: flex-start !important;
+                padding: 90px 25px 20px 25px; transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                z-index: 999; gap: 25px !important;
               }
-              .nav-right-container.open {
-                right: 0;
-              }
-              .nav-right-container .nav-menu {
-                flex-direction: column;
-                align-items: flex-start !important;
-                width: 100%;
-                gap: 20px;
-              }
+              .nav-right-container.open { right: 0; }
+              .nav-right-container .nav-menu { flex-direction: column; align-items: flex-start !important; width: 100%; gap: 20px; }
               .nav-right-container .nav-link {
-                font-size: 1.1rem !important;
-                font-weight: 600 !important;
-                color: var(--pida-primary) !important; /* <--- De vuelta al original */
-                width: 100%;
-                padding: 5px 0;
-                border-bottom: 1px solid #f1f5f9;
-                justify-content: flex-start;
+                font-size: 1.1rem !important; font-weight: 600 !important; color: var(--pida-primary) !important;
+                width: 100%; padding: 5px 0; border-bottom: 1px solid #f1f5f9; justify-content: flex-start;
               }
-              .social-links-row {
-                width: 100%;
-                justify-content: flex-start;
-                padding-bottom: 15px;
-                border-bottom: 2px solid #e2e8f0;
-              }
-              @media (max-width: 1024px) {
-              #pida {
-                padding: 10px 0 !important; /* Ajusta el 10px al tamaño que prefieras */
-              }
+              .social-links-row { width: 100%; justify-content: flex-start; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0; }
+              #pida { padding: 10px 0 !important; }
             }
           `}
         </style>
@@ -449,77 +895,12 @@ export default function LandingPage({ onOpenAuth }) {
                 >
                   Suscríbete
                 </Button>
-                
               </div>
             </div>
             
-            <div className="hero-visual-column" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <Card 
-                elevation={0}
-                sx={{
-                  width: '100%',
-                  maxWidth: '500px',
-                  borderRadius: '16px',
-                  overflow: 'hidden',
-                  boxShadow: '0 20px 40px rgba(29, 53, 87, 0.1)',
-                  border: '1px solid var(--pida-border)',
-                  position: 'relative', 
-                  backgroundColor: '#FFFFFF'
-                }}
-              >
-                {/* Capa superpuesta: Desaparece permanentemente al darle Play */}
-                <Fade in={!hasStarted}>
-                  <Box
-                    onClick={handlePlayVideo}
-                    sx={{
-                      position: 'absolute',
-                      top: 0, left: 0, right: 0, bottom: 0,
-                      display: 'flex',
-                      alignItems: 'flex-end',
-                      justifyContent: 'flex-end', 
-                      p: 2.5,
-                      backgroundColor: 'transparent', 
-                      zIndex: 2,
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      '&:hover': { 
-                        '& .play-button': { 
-                          transform: 'scale(1.15)',
-                          backgroundColor: '#FFFFFF'
-                        } 
-                      }
-                    }}
-                  >
-                    <IconButton 
-                      className="play-button"
-                      sx={{ 
-                        color: 'var(--pida-primary)', 
-                        backgroundColor: 'rgba(255, 255, 255, 0.8)', 
-                        boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-                        transition: 'all 0.3s ease',
-                      }}
-                    >
-                      <PlayCircleIcon sx={{ fontSize: '3rem' }} />
-                    </IconButton>
-                  </Box>
-                </Fade>
-
-                <CardMedia
-                  component="video"
-                  ref={videoRef}
-                  controls={hasStarted} 
-                  preload="metadata"
-                  poster="/img/video-portada.webp" 
-                  src="https://storage.googleapis.com/img-pida/PIDA.mp4"
-                  sx={{
-                    display: 'block',
-                    aspectRatio: '16/9',
-                    objectFit: 'contain',
-                    backgroundColor: '#FFFFFF',
-                    width: '100%'
-                  }}
-                />
-              </Card>
+            {/* --- COMPONENTE LEAD MAGNET --- */}
+            <div className="hero-visual-column" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <LeadMagnetTeaser onOpenAuth={onOpenAuth} interval={interval} scrollToSection={scrollToSection} />
             </div>
 
           </div>
@@ -721,7 +1102,6 @@ export default function LandingPage({ onOpenAuth }) {
                     <br /><br />
                     Nuestros planes corporativos incluyen costos unitarios preferenciales, facturación institucional centralizada y soporte técnico prioritario.
                 </p>
-                {/* BOTÓN CORPORATIVO - Actualizado a MUI */}
                 <Button 
                   onClick={() => setIsContactOpen(true)}
                   sx={muiCorpBtnStyle}
@@ -784,7 +1164,7 @@ export default function LandingPage({ onOpenAuth }) {
                     gap: '40px', 
                     maxWidth: '1200px',
                     margin: '0 auto',
-                    borderTop: 'none' /* <-- ¡Esto anula la línea blanca del CSS! */
+                    borderTop: 'none'
                 }}
             >
                 <span style={{ color: 'var(--white)' }}>&copy; 2026 IIRESODH PAYMENTS, LLC.</span>

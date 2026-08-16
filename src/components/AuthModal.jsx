@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth, googleProvider } from '../config/firebase';
+import { auth, googleProvider, db } from '../config/firebase';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { STRIPE_PRICES, PIDA_CONFIG } from '../config/constants';
@@ -74,8 +74,50 @@ function AuthFormContent({ onClose, initialMode }) {
     setIsLoading(true);
     setLoadingText('Conectando...');
     try {
-      await auth.signInWithPopup(googleProvider);
-      onClose();
+      const result = await auth.signInWithPopup(googleProvider);
+      
+      if (sessionStorage.getItem('pida_pending_plan')) {
+        // Verificar si ya es usuario con acceso o VIP
+        setLoadingText('Verificando acceso...');
+        const user = result.user;
+        let hasAccess = false;
+        
+        try {
+          const token = await user.getIdToken();
+          const vipRes = await fetch(`${PIDA_CONFIG.API_CHAT}/check-vip-access`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (vipRes.ok) {
+            const vipData = await vipRes.json();
+            if (vipData.is_vip_user) hasAccess = true;
+          }
+          
+          if (!hasAccess) {
+            const doc = await db.collection('customers').doc(user.uid).get();
+            if (doc.exists) {
+              const data = doc.data();
+              if (data.status === 'active' || data.status === 'trialing') {
+                hasAccess = true;
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Error al verificar acceso de usuario de Google:", e);
+        }
+
+        if (hasAccess) {
+          // Ya tiene plan, omitir checkout
+          sessionStorage.removeItem('pida_pending_plan');
+          sessionStorage.removeItem('pida_pending_interval');
+          onClose();
+        } else {
+          setMode('checkout');
+          setIsLoading(false);
+        }
+      } else {
+        onClose();
+      }
     } catch (err) {
       setError('No se pudo iniciar sesión con Google.');
       setIsLoading(false);
@@ -141,8 +183,40 @@ function AuthFormContent({ onClose, initialMode }) {
         }
 
         if (sessionStorage.getItem('pida_pending_plan')) {
-          setMode('checkout');
-          setIsLoading(false);
+          setLoadingText('Verificando acceso...');
+          const user = cred.user;
+          let hasAccess = false;
+          
+          try {
+            const token = await user.getIdToken();
+            const vipRes = await fetch(`${PIDA_CONFIG.API_CHAT}/check-vip-access`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (vipRes.ok) {
+              const vipData = await vipRes.json();
+              if (vipData.is_vip_user) hasAccess = true;
+            }
+            
+            if (!hasAccess) {
+              const doc = await db.collection('customers').doc(user.uid).get();
+              if (doc.exists) {
+                const data = doc.data();
+                if (data.status === 'active' || data.status === 'trialing') {
+                  hasAccess = true;
+                }
+              }
+            }
+          } catch (e) {
+            console.error("Error al verificar acceso de usuario:", e);
+          }
+
+          if (hasAccess) {
+            onClose();
+          } else {
+            setMode('checkout');
+            setIsLoading(false);
+          }
           return;
         }
 
