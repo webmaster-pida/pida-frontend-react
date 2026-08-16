@@ -7,11 +7,13 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw'; 
 
 // Importaciones de Material-UI
-import { Box, TextField, Button, Menu, MenuItem, SvgIcon, Card, CardMedia, IconButton, Fade, Typography, CircularProgress, Dialog, DialogTitle, DialogContent, Tooltip, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper } from '@mui/material';
+import { Box, TextField, Button, Menu, MenuItem, SvgIcon, Card, IconButton, Fade, Typography, CircularProgress, Dialog, DialogTitle, DialogContent, Tooltip, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper } from '@mui/material';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import CloseIcon from '@mui/icons-material/Close';
+import LockIcon from '@mui/icons-material/Lock';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 
 // --- COMPONENTE DE ENLACES PARA EL MARKDOWN (Igual que en ChatInterface) ---
 const PreviewLink = ({ href, children, node, title, ...props }) => {
@@ -121,6 +123,10 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
   const [status, setStatus] = useState('idle'); // idle, loading, streaming, done
   const [statusText, setStatusText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  
+  // NUEVO ESTADO: Controla el modal de límite excedido
+  const [limitReached, setLimitReached] = useState(false); 
+  
   const messagesEndRef = useRef(null);
 
   const getAnonId = () => {
@@ -185,8 +191,8 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
         if (res.status === 429) {
            setStatus('idle');
            setStatusText('');
-           alert("Has alcanzado el límite de pruebas anónimas. ¡Inicia tu prueba de 5 días para continuar!");
-           handleUnlock(); 
+           setModalOpen(false);
+           setLimitReached(true); // Abre el modal estilizado en vez del alert()
            return;
         }
         throw new Error('Error de conexión');
@@ -338,42 +344,79 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
 
   return (
     <>
-      <Card elevation={0} sx={{ width: '100%', maxWidth: '600px', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--pida-border)', boxShadow: '0 20px 40px rgba(29, 53, 87, 0.1)' }}>
-        <Box component="form" onSubmit={handleSearch} sx={{ p: 3, bgcolor: '#ffffff' }}>
-          <Typography variant="subtitle2" sx={{ color: 'var(--navy)', mb: 2, fontWeight: 'bold' }}>Hazle una consulta jurídica a PIDA gratis:</Typography>
-          <Box sx={{ display: 'flex', gap: 1, position: 'relative' }}>
+      <Card elevation={0} sx={{ width: '100%', maxWidth: '650px', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(29, 53, 87, 0.1)', boxShadow: '0 15px 35px rgba(29, 53, 87, 0.08)' }}>
+        <Box component="form" onSubmit={handleSearch} sx={{ p: { xs: 2.5, sm: 3 }, bgcolor: '#ffffff' }}>
+          <Typography variant="subtitle2" sx={{ color: 'var(--navy)', mb: 1.5, fontWeight: '700', fontSize: '0.95rem' }}>
+            Hazle una consulta jurídica a PIDA gratis:
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1.5, position: 'relative' }}>
             <TextField
               fullWidth
               placeholder="Ej: ¿Cuáles son los estándares de prisión preventiva en la Corte IDH?"
               variant="outlined"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              sx={{ bgcolor: '#F8FAFC', '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+              disabled={status === 'loading' || status === 'streaming'}
+              sx={{ 
+                bgcolor: '#F8FAFC', 
+                '& .MuiOutlinedInput-root': { 
+                  borderRadius: '12px',
+                  '& fieldset': { borderColor: '#E2E8F0' },
+                  '&:hover fieldset': { borderColor: '#CBD5E1' },
+                  '&.Mui-focused fieldset': { borderColor: 'var(--pida-primary)' }
+                } 
+              }}
             />
-            {/* BOTÓN BLANCO CON LA MASCOTA PIDA */}
+            {/* BOTÓN CON MASCOTA MÁS GRANDE Y FONDO BLANCO */}
             <Button 
               type="submit" 
               variant="contained" 
               disabled={!query.trim() || status === 'loading' || status === 'streaming'}
               sx={{ 
                 borderRadius: '12px', 
-                px: 3, 
+                p: 0, // Quitamos padding horizontal forzado para que la imagen mande
+                width: '64px',
+                minWidth: '64px',
                 bgcolor: '#ffffff', 
                 border: '1px solid #CBD5E1',
-                '&:hover': { bgcolor: '#F8FAFC' }, 
-                minWidth: '64px',
+                '&:hover': { bgcolor: '#F8FAFC', borderColor: 'var(--pida-primary)' }, 
                 boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
               }}
             >
               {status === 'loading' ? (
                 <CircularProgress size={24} sx={{ color: 'var(--pida-primary)' }} />
               ) : (
-                <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="PIDA" style={{ height: '26px' }} />
+                <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="PIDA" style={{ height: '42px', objectFit: 'contain' }} />
               )}
             </Button>
           </Box>
         </Box>
       </Card>
+
+      {/* MODAL DE LÍMITE EXCEDIDO (REEMPLAZA EL ALERT) */}
+      <Dialog 
+        open={limitReached} 
+        onClose={() => setLimitReached(false)}
+        PaperProps={{ sx: { borderRadius: '16px', p: { xs: 1, sm: 2 }, textAlign: 'center', maxWidth: '420px' } }}
+      >
+        <DialogTitle sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, pb: 1 }}>
+          <LockIcon sx={{ fontSize: 48, color: 'var(--red)' }} />
+          <Typography variant="h6" fontWeight="bold" color="var(--navy)">Límite Alcanzado</Typography>
+        </DialogTitle>
+        <DialogContent sx={{ pb: 3 }}>
+          <Typography variant="body2" sx={{ color: '#64748B', mb: 3, lineHeight: 1.6 }}>
+            Has alcanzado el límite de consultas anónimas gratuitas por el día de hoy. Inicia tu prueba de 5 días para continuar conversando con PIDA sin restricciones.
+          </Typography>
+          <Button 
+            variant="contained" 
+            fullWidth
+            onClick={() => { setLimitReached(false); handleUnlock(); }} 
+            sx={{ bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', py: 1.5, borderRadius: '8px', boxShadow: '0 4px 12px rgba(225, 29, 72, 0.25)', '&:hover': { bgcolor: '#be123c' } }}
+          >
+            Iniciar prueba gratis de 5 días
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       <Dialog 
         open={modalOpen} 
@@ -393,12 +436,12 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval }) => {
         <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
            <Box className="pida-view-content" sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, pb: 10 }}>
               
-              {/* Mensaje del Usuario - CORREGIDO COLOR */}
+              {/* Mensaje del Usuario */}
               <div className="pida-bubble user-message-bubble" style={{ alignSelf: 'flex-end', backgroundColor: 'var(--navy)', padding: '12px 18px', borderRadius: '16px 16px 0 16px', marginBottom: '20px', maxWidth: '85%' }}>
                  <Typography sx={{ color: '#ffffff', fontWeight: 500 }}>{query}</Typography>
               </div>
 
-              {/* Mensaje del Modelo - CORREGIDO OVERFLOW Y AVISOS DE ESTADO */}
+              {/* Mensaje del Modelo */}
               {(status === 'loading' || status === 'streaming' || response) && (
                 <div className="pida-bubble pida-message-bubble" style={{ alignSelf: 'flex-start', backgroundColor: 'white', padding: '20px', borderRadius: '16px 16px 16px 0', border: '1px solid #e2e8f0', maxWidth: '100%', overflowX: 'auto', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
                    
@@ -816,7 +859,6 @@ export default function LandingPage({ onOpenAuth }) {
               </div>
             </div>
             
-            {/* --- COMPONENTE LEAD MAGNET (TRY BEFORE YOU BUY) --- */}
             <div className="hero-visual-column" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
               <LeadMagnetTeaser onOpenAuth={onOpenAuth} interval={interval} />
             </div>
