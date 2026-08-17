@@ -518,12 +518,18 @@ export default function AnalyzerInterface({ user, resetSignal, loadAnaId }) {
         setStatusText('Cargando documentos en el servidor seguro...');
         
         // 2. Subimos los archivos DIRECTO a Google usando el método PUT
-        const uploadPromises = files.map((file, i) => {
-          return fetch(urls[i].upload_url, {
+        const uploadPromises = files.map(async (file, i) => {
+          const res = await fetch(urls[i].upload_url, {
             method: 'PUT',
             body: file,
             headers: { 'Content-Type': file.type || 'application/pdf' }
           });
+          
+          // 👇 ESTA ES LA CLAVE: Validar que la subida fue un éxito real
+          if (!res.ok) {
+            throw new Error(`La conexión falló al intentar subir el archivo: ${file.name}. Por favor, revisa tu conexión a internet e inténtalo de nuevo.`);
+          }
+          return res;
         });
 
         await Promise.all(uploadPromises);
