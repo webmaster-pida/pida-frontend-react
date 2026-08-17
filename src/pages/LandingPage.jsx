@@ -7,7 +7,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw'; 
 
 // Importaciones de Material-UI
-import { Box, TextField, Button, Menu, MenuItem, SvgIcon, Card, IconButton, Fade, Typography, CircularProgress, Dialog, DialogTitle, DialogContent, Tooltip, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper } from '@mui/material';
+import { Box, TextField, Button, Menu, MenuItem, SvgIcon, Card, IconButton, Fade, Typography, CircularProgress, Dialog, DialogTitle, DialogContent, Tooltip, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper, useTheme, useMediaQuery } from '@mui/material';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
@@ -120,6 +120,9 @@ const markdownComponents = {
 // --- COMPONENTE: LEAD MAGNET ---
 // 👇 AHORA RECIBE LA FUNCIÓN scrollToSection
 const LeadMagnetTeaser = ({ onOpenAuth, interval, scrollToSection }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState('');
   const [status, setStatus] = useState('idle'); 
@@ -393,13 +396,11 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval, scrollToSection }) => {
       </Card>
 
           <Dialog 
-
         open={limitReached} 
-
         onClose={() => setLimitReached(false)}
-
-        PaperProps={{ sx: { borderRadius: '24px', p: { xs: 2, sm: 3 }, textAlign: 'center', maxWidth: '420px', backgroundColor: '#ffffff' } }}
-
+        fullWidth
+        maxWidth="xs"
+        PaperProps={{ sx: { borderRadius: '24px', p: { xs: 2, sm: 3 }, textAlign: 'center', backgroundColor: '#ffffff', m: { xs: 2, sm: 'auto' } } }}
       >
 
         <DialogTitle sx={{ pt: 2, pb: 1 }}>
@@ -466,25 +467,26 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval, scrollToSection }) => {
         onClose={() => setModalOpen(false)} 
         maxWidth="md" 
         fullWidth 
-        PaperProps={{ sx: { borderRadius: '16px', height: '85vh', maxHeight: '800px', backgroundColor: '#F8FAFC' } }}
+        fullScreen={isMobile}
+        PaperProps={{ sx: { borderRadius: isMobile ? 0 : '16px', height: isMobile ? '100%' : '85vh', maxHeight: isMobile ? '100%' : '800px', backgroundColor: '#F8FAFC' } }}
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', bgcolor: 'white' }}>
+        <DialogTitle sx={{ p: { xs: 1.5, sm: 2 }, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', bgcolor: 'white' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
              <img src="/img/PIDA-MASCOTA-Trans-menu-peq.png" alt="PIDA" style={{ height: '48px' }} />
-             <Typography variant="h6" fontWeight="bold" color="var(--navy)">Análisis de PIDA</Typography>
+             <Typography variant="h6" fontWeight="bold" color="var(--navy)" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>Análisis de PIDA</Typography>
           </Box>
           <IconButton onClick={() => setModalOpen(false)}><CloseIcon /></IconButton>
         </DialogTitle>
         
         <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-           <Box className="pida-view-content" sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, pb: 10 }}>
+           <Box className="pida-view-content" sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, pb: 10, display: 'flex', flexDirection: 'column' }}>
               
-              <div className="pida-bubble user-message-bubble" style={{ alignSelf: 'flex-end', backgroundColor: 'var(--navy)', padding: '12px 18px', borderRadius: '16px 16px 0 16px', marginBottom: '20px', maxWidth: '85%' }}>
+              <div className="pida-bubble user-message-bubble" style={{ alignSelf: 'flex-end', backgroundColor: 'var(--navy)', padding: '12px 18px', borderRadius: '16px 16px 0 16px', marginBottom: '20px', maxWidth: isMobile ? '95%' : '85%' }}>
                  <Typography sx={{ color: '#ffffff', fontWeight: 500 }}>{query}</Typography>
               </div>
 
               {(status === 'loading' || status === 'streaming' || response) && (
-                <div className="pida-bubble pida-message-bubble" style={{ alignSelf: 'flex-start', backgroundColor: 'white', padding: '20px', borderRadius: '16px 16px 16px 0', border: '1px solid #e2e8f0', maxWidth: '100%', overflowX: 'auto', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                <div className="pida-bubble pida-message-bubble" style={{ alignSelf: 'flex-start', backgroundColor: 'white', padding: isMobile ? '15px' : '20px', borderRadius: '16px 16px 16px 0', border: '1px solid #e2e8f0', maxWidth: '100%', overflowX: 'auto', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
                    
                    {status !== 'done' && (
                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1.5, bgcolor: '#F0F9FF', borderRadius: '8px', mb: response ? 3 : 0, border: '1px solid #BAE6FD' }}>
@@ -507,7 +509,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval, scrollToSection }) => {
                 <Button 
                   variant="contained" 
                   onClick={() => handleUnlock()} 
-                  sx={{ bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: 4, py: 1.2, borderRadius: '8px', '&:hover': { bgcolor: '#be123c' } }}
+                  sx={{ bgcolor: 'var(--red)', color: 'white', fontWeight: 'bold', textTransform: 'none', px: { xs: 2, sm: 4 }, py: 1.2, width: { xs: '100%', sm: 'auto' }, borderRadius: '8px', '&:hover': { bgcolor: '#be123c' } }}
                 >
                    Ver planes e iniciar prueba gratis
                 </Button>
