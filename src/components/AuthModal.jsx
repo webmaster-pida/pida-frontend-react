@@ -126,12 +126,13 @@ function AuthFormContent({ onClose, initialMode }) {
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) return;
+    const cleanCode = promoCode.trim().toUpperCase();
     setPromoMessage({ text: 'Validando...', type: 'info' });
     try {
       const res = await fetch(`${PIDA_CONFIG.API_CHAT}/validate-promo-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: promoCode.trim(), priceId: planDetails.id })
+        body: JSON.stringify({ code: cleanCode, priceId: planDetails.id })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Código inválido');
@@ -611,13 +612,21 @@ function AuthFormContent({ onClose, initialMode }) {
 
 export default function AuthModal({ isOpen, initialMode = 'login', onClose }) {
   if (!isOpen) return null;
+
+  const handleClose = () => {
+    // Si queremos asegurar una limpieza de estado al cerrar (e.g. cupones pendientes),
+    // el padre debe reconstruir el componente o el usuario será forzado al Dashboard
+    // y el Dashboard lo expulsará si no tiene plan. 
+    onClose();
+  };
+
   return (
-    <div className="modal-backdrop" onClick={onClose} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 2000 }}>
+    <div className="modal-backdrop" onClick={handleClose} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 2000 }}>
       <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px', width: '90%', padding: '30px', background: 'white', borderRadius: '16px', position: 'relative', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-        <button onClick={onClose} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748B' }}>×</button>
+        <button onClick={handleClose} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748B' }}>×</button>
         <img src="/img/PIDA_logo-100-blue-red.webp" alt="PIDA Logo" style={{ width: '140px', marginBottom: '25px', display: 'block', margin: '0 auto' }} />
         <Elements stripe={stripePromise}>
-          <AuthFormContent onClose={onClose} initialMode={initialMode} />
+          <AuthFormContent onClose={handleClose} initialMode={initialMode} />
         </Elements>
       </div>
     </div>
