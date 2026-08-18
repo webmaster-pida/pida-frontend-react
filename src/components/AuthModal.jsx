@@ -150,8 +150,20 @@ function AuthFormContent({ onClose, initialMode }) {
     setError('');
     try {
       if (auth.currentUser) {
-        await auth.currentUser.sendEmailVerification();
-        setError('✅ Enlace de verificación reenviado. Revisa tu bandeja de entrada.');
+        const token = await auth.currentUser.getIdToken();
+        const fullName = auth.currentUser.displayName || '';
+        await fetch(`${PIDA_CONFIG.API_CHAT}/send-verification-email`, {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            frontend_url: window.location.origin,
+            display_name: fullName
+          })
+        });
+        setError('✅ Enlace de verificación reenviado. Revise su bandeja de entrada.');
       }
     } catch (err) {
       setError('Error al intentar reenviar el correo de verificación.');
@@ -177,7 +189,20 @@ function AuthFormContent({ onClose, initialMode }) {
         const cred = await auth.signInWithEmailAndPassword(email, password);
         
         if (!cred.user.emailVerified) {
-          await cred.user.sendEmailVerification();
+          const token = await cred.user.getIdToken();
+          const fullName = cred.user.displayName || '';
+          fetch(`${PIDA_CONFIG.API_CHAT}/send-verification-email`, {
+            method: 'POST',
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+              frontend_url: window.location.origin,
+              display_name: fullName
+            })
+          }).catch(err => console.error("Error enviando email en segundo plano:", err));
+          
           setMode('verify-email');
           setError('⚠️ Tu correo electrónico no está verificado. Te hemos enviado un enlace de activación.');
           setIsLoading(false);
