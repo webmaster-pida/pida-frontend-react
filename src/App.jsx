@@ -140,7 +140,7 @@ function App() {
         isOpen={authModalConfig.isOpen} 
         initialMode={authModalConfig.mode}
         onClose={(success) => {
-          if (authModalConfig.mode === 'checkout' && !success && user) {
+          if (!success && user) {
             auth.signOut();
           }
           setAuthModalConfig({ isOpen: false, mode: 'login' });

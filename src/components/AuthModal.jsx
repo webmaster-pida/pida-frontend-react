@@ -410,7 +410,7 @@ function AuthFormContent({ onClose, initialMode }) {
           <span className="modal-info-title" style={{ fontWeight: '700', fontSize: '0.85rem', color: 'var(--navy)' }}>¿Aún no tienes cuenta?</span>
           <p className="modal-info-text" style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0 0' }}>
             PIDA es una plataforma premium. Para registrarte, primero debes seleccionar un plan.<br/>
-            <button type="button" className="modal-link-btn" onClick={() => { onClose(); window.location.href = '/#planes'; }} style={{ background: 'none', border: 'none', color: 'var(--pida-primary)', fontWeight: '600', cursor: 'pointer', padding: 0, marginTop: '4px' }}>
+            <button type="button" className="modal-link-btn" onClick={() => { onClose(false); window.location.href = '/'; }} style={{ background: 'none', border: 'none', color: 'var(--pida-primary)', fontWeight: '600', cursor: 'pointer', padding: 0, marginTop: '4px' }}>
               Explorar planes y pruebas gratis →
             </button>
           </p>
@@ -572,14 +572,17 @@ function AuthFormContent({ onClose, initialMode }) {
       </form>
 
       <div className="bottom-link" style={{ textAlign: 'center', marginTop: '20px' }}>
-        {(mode === 'reset' || mode === 'register' || mode === 'verify-email' || mode === 'checkout') && (
+        {(mode === 'reset' || mode === 'verify-email' || mode === 'checkout') && (
           <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }}>← Volver al login</span>
+        )}
+        {mode === 'register' && (
+          <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }}>¿Ya tienes cuenta? Inicia sesión aquí</span>
         )}
         {mode === 'login' && (
           <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { 
             if (!sessionStorage.getItem('pida_pending_plan')) {
-              onClose(true);
-              window.location.href = '/#planes';
+              onClose(false);
+              window.location.href = '/';
             } else {
               setMode('register'); 
               setError(''); 
