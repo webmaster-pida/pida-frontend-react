@@ -5,7 +5,8 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 import { STRIPE_PRICES, PIDA_CONFIG } from '../config/constants';
 import { Box, TextField, Button, CircularProgress, Backdrop, Typography } from '@mui/material';
 
-const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3kjrZGFGln3bhwEQKnpoNXf2MnLXGHylM1OQ6SvWJmNVCNqhCxg6x000l605E1B');
+// const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3kjrZGFGln3bhwEQKnpoNXf2MnLXGHylM1OQ6SvWJmNVCNqhCxg6x000l605E1B');
+const stripePromise = loadStripe('pk_test_51RMB12GaDEQrzamxhgBfRodlN2Es6kmTYJIB5XUouHAoGNzj2Fcgcz116sIbY3UeeKRIMESrHkSy4zmb9RSwQ2Ql00mK5e53gD');
 
 const cardStyle = {
   style: {
