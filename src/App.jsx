@@ -142,6 +142,8 @@ function App() {
         onClose={(success) => {
           if (!success && user) {
             auth.signOut();
+            sessionStorage.removeItem('pida_pending_plan');
+            sessionStorage.removeItem('pida_pending_interval');
           }
           setAuthModalConfig({ isOpen: false, mode: 'login' });
         }} 

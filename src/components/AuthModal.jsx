@@ -258,9 +258,11 @@ function AuthFormContent({ onClose, initialMode }) {
       if (err.code === 'auth/user-not-found') {
           msg = "No encontramos una cuenta con este correo. Recuerda que PIDA es premium, debes adquirir un plan primero.";
       } else if (err.code === 'auth/email-already-in-use') {
-          msg = "Este correo ya está registrado. Haz clic en 'Iniciar sesión' abajo e ingresa tus datos.";
+          msg = "Esta dirección de correo electrónico ya cuenta con un registro en PIDA.";
       } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
           msg = "Datos incorrectos. Revisa tu correo y contraseña.";
+      } else if (err.code === 'auth/too-many-requests') {
+          msg = "Por motivos de seguridad institucional y prevención de accesos no autorizados, el acceso se ha pausado temporalmente tras varios intentos fallidos. Por favor, espere unos minutos antes de volver a intentarlo o restablezca su contraseña.";
       }
       setError(msg);
       setIsLoading(false);
@@ -576,18 +578,18 @@ function AuthFormContent({ onClose, initialMode }) {
           <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }}>← Volver al login</span>
         )}
         {mode === 'register' && (
-          <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }}>¿Ya tienes cuenta? Inicia sesión aquí</span>
+          <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }}>¿Ya dispone de una cuenta? Inicie sesión aquí</span>
         )}
         {mode === 'login' && (
           <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { 
             if (!sessionStorage.getItem('pida_pending_plan')) {
               onClose(false);
-              window.location.href = '/';
+              window.location.href = '/#planes';
             } else {
               setMode('register'); 
               setError(''); 
             }
-          }}>← No tengo cuenta, registrarme</span>
+          }}>¿No dispone de una cuenta? Seleccione un plan aquí</span>
         )}
       </div>
 
