@@ -139,11 +139,21 @@ function App() {
       <AuthModal 
         isOpen={authModalConfig.isOpen} 
         initialMode={authModalConfig.mode}
-        onClose={() => setAuthModalConfig({ isOpen: false, mode: 'login' })} 
+        onClose={(success) => {
+          if (!success && user) {
+            auth.signOut();
+            sessionStorage.removeItem('pida_pending_plan');
+            sessionStorage.removeItem('pida_pending_interval');
+          }
+          setAuthModalConfig({ isOpen: false, mode: 'login' });
+        }} 
       />
 
       {user && !authModalConfig.isOpen && (
-        <Dashboard user={user} />
+        <Dashboard 
+          user={user} 
+          onRequireSubscription={() => setAuthModalConfig({ isOpen: true, mode: 'checkout' })}
+        />
       )}
     </>
   );

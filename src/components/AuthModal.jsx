@@ -6,6 +6,7 @@ import { STRIPE_PRICES, PIDA_CONFIG } from '../config/constants';
 import { Box, TextField, Button, CircularProgress, Backdrop, Typography } from '@mui/material';
 
 const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3kjrZGFGln3bhwEQKnpoNXf2MnLXGHylM1OQ6SvWJmNVCNqhCxg6x000l605E1B');
+// const stripePromise = loadStripe('pk_test_51RMB12GaDEQrzamxhgBfRodlN2Es6kmTYJIB5XUouHAoGNzj2Fcgcz116sIbY3UeeKRIMESrHkSy4zmb9RSwQ2Ql00mK5e53gD');
 
 const cardStyle = {
   style: {
@@ -110,7 +111,7 @@ function AuthFormContent({ onClose, initialMode }) {
           // Ya tiene plan, omitir checkout
           sessionStorage.removeItem('pida_pending_plan');
           sessionStorage.removeItem('pida_pending_interval');
-          onClose();
+          onClose(true);
         } else {
           setMode('checkout');
           setIsLoading(false);
@@ -126,12 +127,13 @@ function AuthFormContent({ onClose, initialMode }) {
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) return;
+    const cleanCode = promoCode.trim().toUpperCase();
     setPromoMessage({ text: 'Validando...', type: 'info' });
     try {
       const res = await fetch(`${PIDA_CONFIG.API_CHAT}/validate-promo-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: promoCode.trim(), priceId: planDetails.id })
+        body: JSON.stringify({ code: cleanCode, priceId: planDetails.id })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Código inválido');
@@ -212,7 +214,7 @@ function AuthFormContent({ onClose, initialMode }) {
           }
 
           if (hasAccess) {
-            onClose();
+            onClose(true);
           } else {
             setMode('checkout');
             setIsLoading(false);
@@ -231,13 +233,11 @@ function AuthFormContent({ onClose, initialMode }) {
         
         await user.updateProfile({ displayName: `${firstName} ${lastName}`.trim() });
 
-        setLoadingText('Enviando correo de activación...');
         const token = await user.getIdToken();
-
-        // 👇 ENVIAMOS EL ORIGEN DINÁMICO AL BACKEND
         const fullName = `${firstName} ${lastName}`.trim();
 
-        await fetch(`${PIDA_CONFIG.API_CHAT}/send-verification-email`, {
+        // 👇 LLAMADA EN SEGUNDO PLANO (sin await) PARA NO BLOQUEAR EL FLUJO
+        fetch(`${PIDA_CONFIG.API_CHAT}/send-verification-email`, {
           method: 'POST',
           headers: { 
             'Authorization': `Bearer ${token}`,
@@ -245,11 +245,11 @@ function AuthFormContent({ onClose, initialMode }) {
           },
           body: JSON.stringify({ 
             frontend_url: window.location.origin,
-            display_name: fullName  // 👈 LE PASAMOS EL NOMBRE EN TIEMPO REAL
+            display_name: fullName
           })
-        });
+        }).catch(err => console.error("Error enviando email en segundo plano:", err));
         
-        setMode('verify-email');
+        setMode('checkout');
         setIsLoading(false);
         return;
       }
@@ -259,9 +259,11 @@ function AuthFormContent({ onClose, initialMode }) {
       if (err.code === 'auth/user-not-found') {
           msg = "No encontramos una cuenta con este correo. Recuerda que PIDA es premium, debes adquirir un plan primero.";
       } else if (err.code === 'auth/email-already-in-use') {
-          msg = "Este correo ya está registrado. Haz clic en 'Iniciar sesión' abajo e ingresa tus datos.";
+          msg = "Esta dirección de correo electrónico ya cuenta con un registro en PIDA.";
       } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
           msg = "Datos incorrectos. Revisa tu correo y contraseña.";
+      } else if (err.code === 'auth/too-many-requests') {
+          msg = "Por motivos de seguridad institucional y prevención de accesos no autorizados, el acceso se ha pausado temporalmente tras varios intentos fallidos. Por favor, espere unos minutos antes de volver a intentarlo o restablezca su contraseña.";
       }
       setError(msg);
       setIsLoading(false);
@@ -306,10 +308,6 @@ function AuthFormContent({ onClose, initialMode }) {
       if (!user) throw new Error("Sesión expirada. Por favor, inicia sesión nuevamente.");
       
       await user.reload();
-      if (!user.emailVerified) {
-        setMode('verify-email');
-        throw new Error("Acceso denegado. Tu dirección de correo debe estar verificada.");
-      }
 
       const fullName = user.displayName || `${firstName} ${lastName}`.trim();
       const cardElement = elements.getElement(CardElement);
@@ -415,7 +413,7 @@ function AuthFormContent({ onClose, initialMode }) {
           <span className="modal-info-title" style={{ fontWeight: '700', fontSize: '0.85rem', color: 'var(--navy)' }}>¿Aún no tienes cuenta?</span>
           <p className="modal-info-text" style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0 0' }}>
             PIDA es una plataforma premium. Para registrarte, primero debes seleccionar un plan.<br/>
-            <button type="button" className="modal-link-btn" onClick={() => { onClose(); window.location.href = '/#planes'; }} style={{ background: 'none', border: 'none', color: 'var(--pida-primary)', fontWeight: '600', cursor: 'pointer', padding: 0, marginTop: '4px' }}>
+            <button type="button" className="modal-link-btn" onClick={() => { onClose(false); window.location.href = '/'; }} style={{ background: 'none', border: 'none', color: 'var(--pida-primary)', fontWeight: '600', cursor: 'pointer', padding: 0, marginTop: '4px' }}>
               Explorar planes y pruebas gratis →
             </button>
           </p>
@@ -521,8 +519,11 @@ function AuthFormContent({ onClose, initialMode }) {
             </div>
 
             <label className="input-label" style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '8px' }}>Datos de la tarjeta</label>
-            <div className="stripe-element-box" style={{ padding: '12px', border: '1px solid #CBD5E1', borderRadius: '8px', marginBottom: '15px' }}>
+            <div className="stripe-element-box" style={{ padding: '12px', border: '1px solid #CBD5E1', borderRadius: '8px', marginBottom: '8px' }}>
               <CardElement options={cardStyle} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '15px', color: '#166534', fontSize: '0.78rem', fontWeight: '500' }}>
+              🔒 Procesamiento seguro y cifrado con tecnología Stripe
             </div>
 
             <div className="promo-group" style={{ display: 'flex', flexDirection: 'row', gap: '8px', marginBottom: '10px', alignItems: 'stretch' }}>
@@ -556,17 +557,40 @@ function AuthFormContent({ onClose, initialMode }) {
             mode === 'login' ? 'Ingresar' : 
             mode === 'register' ? 'Registrar mi cuenta' : 
             mode === 'verify-email' ? 'Ya lo verifiqué, continuar' :
-            mode === 'checkout' ? 'Activar cuenta y probar 5 días' : 'Enviar enlace'
+            mode === 'checkout' ? 'Comenzar 5 días gratis — $0.00 hoy' : 'Enviar enlace'
           )}
         </button>
+
+        {mode === 'verify-email' && (
+          <button type="button" onClick={() => setMode('checkout')} style={{ width: '100%', padding: '10px', marginTop: '10px', fontSize: '0.9rem', cursor: 'pointer', border: '1px solid #CBD5E1', borderRadius: '8px', background: 'transparent', color: '#475569', fontWeight: '600' }}>
+            Omitir por ahora y configurar suscripción →
+          </button>
+        )}
+
+        {mode === 'checkout' && (
+          <div style={{ color: '#64748B', fontSize: '0.78rem', marginTop: '8px', textAlign: 'center' }}>
+            No se realiza ningún cobro hoy. Cancela en cualquier momento con un clic.
+          </div>
+        )}
       </form>
 
       <div className="bottom-link" style={{ textAlign: 'center', marginTop: '20px' }}>
-        {(mode === 'reset' || mode === 'register' || mode === 'verify-email' || mode === 'checkout') && (
+        {(mode === 'reset' || mode === 'verify-email' || mode === 'checkout') && (
           <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }}>← Volver al login</span>
         )}
+        {mode === 'register' && (
+          <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }}>¿Ya dispone de una cuenta? Inicie sesión aquí</span>
+        )}
         {mode === 'login' && (
-          <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('register'); setError(''); }}>← No tengo cuenta, registrarme</span>
+          <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { 
+            if (!sessionStorage.getItem('pida_pending_plan')) {
+              onClose(false);
+              window.location.href = '/#planes';
+            } else {
+              setMode('register'); 
+              setError(''); 
+            }
+          }}>¿No dispone de una cuenta? Seleccione un plan aquí</span>
         )}
       </div>
 
@@ -594,13 +618,19 @@ function AuthFormContent({ onClose, initialMode }) {
 
 export default function AuthModal({ isOpen, initialMode = 'login', onClose }) {
   if (!isOpen) return null;
+
+  const handleClose = (success = false) => {
+    const isSuccess = typeof success === 'boolean' ? success : false;
+    onClose(isSuccess);
+  };
+
   return (
-    <div className="modal-backdrop" onClick={onClose} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 2000 }}>
+    <div className="modal-backdrop" onClick={() => handleClose(false)} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 2000 }}>
       <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px', width: '90%', padding: '30px', background: 'white', borderRadius: '16px', position: 'relative', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-        <button onClick={onClose} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748B' }}>×</button>
+        <button onClick={() => handleClose(false)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748B' }}>×</button>
         <img src="/img/PIDA_logo-100-blue-red.webp" alt="PIDA Logo" style={{ width: '140px', marginBottom: '25px', display: 'block', margin: '0 auto' }} />
         <Elements stripe={stripePromise}>
-          <AuthFormContent onClose={onClose} initialMode={initialMode} />
+          <AuthFormContent onClose={handleClose} initialMode={initialMode} />
         </Elements>
       </div>
     </div>
