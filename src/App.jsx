@@ -139,11 +139,19 @@ function App() {
       <AuthModal 
         isOpen={authModalConfig.isOpen} 
         initialMode={authModalConfig.mode}
-        onClose={() => setAuthModalConfig({ isOpen: false, mode: 'login' })} 
+        onClose={(success) => {
+          if (authModalConfig.mode === 'checkout' && !success && user) {
+            auth.signOut();
+          }
+          setAuthModalConfig({ isOpen: false, mode: 'login' });
+        }} 
       />
 
       {user && !authModalConfig.isOpen && (
-        <Dashboard user={user} />
+        <Dashboard 
+          user={user} 
+          onRequireSubscription={() => setAuthModalConfig({ isOpen: true, mode: 'checkout' })}
+        />
       )}
     </>
   );

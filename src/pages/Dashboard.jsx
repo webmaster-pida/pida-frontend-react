@@ -163,7 +163,7 @@ const TermsUpdateModal = () => {
   );
 };
 
-export default function Dashboard({ user }) {
+export default function Dashboard({ user, onRequireSubscription }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
@@ -210,8 +210,10 @@ export default function Dashboard({ user }) {
         setUserPlan(resolvedPlan); 
         setIsTrial(resolvedTrial);
         setHasValidAccess(true);
+        fetchHistories();
       } else { 
         setHasValidAccess(false); 
+        if (onRequireSubscription) onRequireSubscription();
       }
       setIsCheckingAccess(false);
     };
@@ -251,20 +253,28 @@ export default function Dashboard({ user }) {
       evaluateFinalAccess(); 
     });
 
-    fetchHistories();
     return () => unsubscribe();
   }, [user]);
 
   const fetchHistories = async () => {
-    const token = await user.getIdToken();
-    const fetchRes = async (url) => {
-        const r = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` }});
-        return r.ok ? await r.json() : [];
-    };
-    setChatHistory(await fetchRes(`${PIDA_CONFIG.API_CHAT}/conversations`));
-    setAnaHistory(await fetchRes(`${PIDA_CONFIG.API_ANA}/analysis-history/`));
-    const snap = await db.collection('users').doc(user.uid).collection('prequalifications').orderBy('created_at', 'desc').limit(20).get();
-    setPreHistory(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    try {
+      const token = await user.getIdToken();
+      const fetchRes = async (url) => {
+          const r = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` }});
+          if (r.status === 403) throw new Error('403');
+          return r.ok ? await r.json() : [];
+      };
+      setChatHistory(await fetchRes(`${PIDA_CONFIG.API_CHAT}/conversations`));
+      setAnaHistory(await fetchRes(`${PIDA_CONFIG.API_ANA}/analysis-history/`));
+      const snap = await db.collection('users').doc(user.uid).collection('prequalifications').orderBy('created_at', 'desc').limit(20).get();
+      setPreHistory(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (err) {
+      if (err.message === '403') {
+        if (onRequireSubscription) onRequireSubscription();
+      } else {
+        console.error("Error fetching histories:", err);
+      }
+    }
   };
 
   const handleMenuOpen = (event) => { 
@@ -348,8 +358,6 @@ export default function Dashboard({ user }) {
   }
 
   if (!hasValidAccess) {
-    // Si no tiene acceso válido (no es VIP ni tiene plan activo/prueba), lo devolvemos a la landing page.
-    window.location.href = '/#planes';
     return null;
   }
 

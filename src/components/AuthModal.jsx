@@ -110,7 +110,7 @@ function AuthFormContent({ onClose, initialMode }) {
           // Ya tiene plan, omitir checkout
           sessionStorage.removeItem('pida_pending_plan');
           sessionStorage.removeItem('pida_pending_interval');
-          onClose();
+          onClose(true);
         } else {
           setMode('checkout');
           setIsLoading(false);
@@ -213,7 +213,7 @@ function AuthFormContent({ onClose, initialMode }) {
           }
 
           if (hasAccess) {
-            onClose();
+            onClose(true);
           } else {
             setMode('checkout');
             setIsLoading(false);
@@ -578,7 +578,7 @@ function AuthFormContent({ onClose, initialMode }) {
         {mode === 'login' && (
           <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { 
             if (!sessionStorage.getItem('pida_pending_plan')) {
-              onClose();
+              onClose(true);
               window.location.href = '/#planes';
             } else {
               setMode('register'); 
@@ -613,17 +613,15 @@ function AuthFormContent({ onClose, initialMode }) {
 export default function AuthModal({ isOpen, initialMode = 'login', onClose }) {
   if (!isOpen) return null;
 
-  const handleClose = () => {
-    // Si queremos asegurar una limpieza de estado al cerrar (e.g. cupones pendientes),
-    // el padre debe reconstruir el componente o el usuario será forzado al Dashboard
-    // y el Dashboard lo expulsará si no tiene plan. 
-    onClose();
+  const handleClose = (success = false) => {
+    const isSuccess = typeof success === 'boolean' ? success : false;
+    onClose(isSuccess);
   };
 
   return (
-    <div className="modal-backdrop" onClick={handleClose} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 2000 }}>
+    <div className="modal-backdrop" onClick={() => handleClose(false)} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 2000 }}>
       <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px', width: '90%', padding: '30px', background: 'white', borderRadius: '16px', position: 'relative', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-        <button onClick={handleClose} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748B' }}>×</button>
+        <button onClick={() => handleClose(false)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748B' }}>×</button>
         <img src="/img/PIDA_logo-100-blue-red.webp" alt="PIDA Logo" style={{ width: '140px', marginBottom: '25px', display: 'block', margin: '0 auto' }} />
         <Elements stripe={stripePromise}>
           <AuthFormContent onClose={handleClose} initialMode={initialMode} />
