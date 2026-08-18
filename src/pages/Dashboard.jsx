@@ -33,7 +33,10 @@ import {
   Drawer,
   FormControl,
   InputLabel,
-  Select
+  Select,
+  Dialog,
+  DialogTitle,
+  DialogContent
 } from '@mui/material';
 
 import { 
@@ -54,6 +57,111 @@ import {
 } from '@stripe/react-stripe-js';
 
 const stripePromise = loadStripe('pk_live_51QriCdGgaloBN5L8XyzW4M1QePJK316USJg3kjrZGFGln3bhwEQKnpoNXf2MnLXGHylM1OQ6SvWJmNVCNqhCxg6x000l605E1B');
+
+const CURRENT_TERMS_VERSION = "2025-12-09";
+
+const TermsUpdateModal = () => {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        setUserId(user.uid);
+        try {
+          const userDoc = await db.collection('customers').doc(user.uid).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            if (userData.accepted_terms_version !== CURRENT_TERMS_VERSION) {
+              setOpen(true);
+            }
+          } else {
+            setOpen(true);
+          }
+        } catch (error) {
+          console.error("Error verificando términos:", error);
+        }
+      } else {
+        setOpen(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleAccept = async () => {
+    setLoading(true);
+    try {
+      await db.collection('customers').doc(userId).set({
+        accepted_terms_version: CURRENT_TERMS_VERSION,
+        terms_accepted_at: db.app.internal_from_config ? db.app.firebase_.firestore.FieldValue.serverTimestamp() : new Date()
+      }, { merge: true });
+      setOpen(false);
+    } catch (error) {
+      console.error("Error al guardar aceptación:", error);
+      alert("Hubo un error al procesar tu solicitud. Por favor, intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog 
+      open={open} 
+      disableEscapeKeyDown 
+      onClose={(event, reason) => {
+        if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+          setOpen(false);
+        }
+      }}
+      PaperProps={{ sx: { borderRadius: '16px', p: 1, maxWidth: '500px' } }}
+      sx={{ zIndex: 9999999 }}
+    >
+      <DialogTitle sx={{ fontWeight: 'bold', color: 'var(--navy)', textAlign: 'center', pb: 1 }}>
+        Actualización Importante
+      </DialogTitle>
+      <DialogContent sx={{ textAlign: 'center' }}>
+        <Typography variant="body1" sx={{ mb: 2, color: '#475569' }}>
+          Hemos mejorado nuestras <strong>Políticas de Privacidad</strong> y <strong>Términos de Uso</strong> para ofrecerte mayor seguridad.
+        </Typography>
+        
+        <Box sx={{ bgcolor: '#F0F9FF', p: 2, borderRadius: '8px', mb: 3, textAlign: 'left', border: '1px solid #BAE6FD' }}>
+          <Typography variant="body2" sx={{ color: '#0369A1', fontWeight: 600, mb: 1 }}>
+            Nuevas garantías para tu información:
+          </Typography>
+          <ul style={{ margin: 0, paddingLeft: '20px', color: '#0284C7', fontSize: '0.85rem' }}>
+            <li>Tus documentos originales se eliminan automáticamente en 48 horas.</li>
+            <li>Garantizamos explícitamente que <strong>nunca</strong> usamos tus datos para entrenar modelos de Inteligencia Artificial.</li>
+          </ul>
+        </Box>
+
+        <Typography variant="body2" sx={{ mb: 3, color: '#64748B' }}>
+          Para continuar usando PIDA, por favor revisa y acepta las nuevas políticas. <br/>
+          <a href="/terminos.html" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-primary)', textDecoration: 'underline' }}>Términos de Uso</a> | <a href="/privacidad.html" target="_blank" rel="noreferrer" style={{ color: 'var(--pida-primary)', textDecoration: 'underline' }}>Política de Privacidad</a>
+        </Typography>
+
+        <Button 
+          variant="contained" 
+          fullWidth 
+          onClick={handleAccept} 
+          disabled={loading}
+          sx={{ 
+            bgcolor: 'var(--pida-primary)', 
+            color: 'white', 
+            fontWeight: 'bold', 
+            py: 1.5, 
+            borderRadius: '8px',
+            textTransform: 'none',
+            fontSize: '1rem',
+            '&:hover': { bgcolor: 'var(--pida-accent)' }
+          }}
+        >
+          {loading ? 'Guardando...' : 'He leído y acepto los términos'}
+        </Button>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const InAppCheckout = ({ user }) => {
   const stripe = useStripe();
@@ -452,6 +560,7 @@ export default function Dashboard({ user }) {
   if (!hasValidAccess) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', bgcolor: '#f3f4f6', py: 4 }}>
+        <TermsUpdateModal />
         <Elements stripe={stripePromise}><InAppCheckout user={user} /></Elements>
       </Box>
     );
@@ -469,6 +578,7 @@ export default function Dashboard({ user }) {
 
   return (
     <Box id="pida-app-layout" sx={{ display: 'flex', bgcolor: 'var(--pida-bg-app)', height: '100vh', overflow: 'hidden' }}>
+      <TermsUpdateModal />
       <Sidebar currentView={currentView} setCurrentView={setCurrentView} user={user} />
       <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
         <Box component="header" sx={{ height: 70, bgcolor: 'white', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', px: { xs: 2, md: 4 }, gap: 2, zIndex: 1100 }}>
