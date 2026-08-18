@@ -231,13 +231,11 @@ function AuthFormContent({ onClose, initialMode }) {
         
         await user.updateProfile({ displayName: `${firstName} ${lastName}`.trim() });
 
-        setLoadingText('Enviando correo de activación...');
         const token = await user.getIdToken();
-
-        // 👇 ENVIAMOS EL ORIGEN DINÁMICO AL BACKEND
         const fullName = `${firstName} ${lastName}`.trim();
 
-        await fetch(`${PIDA_CONFIG.API_CHAT}/send-verification-email`, {
+        // 👇 LLAMADA EN SEGUNDO PLANO (sin await) PARA NO BLOQUEAR EL FLUJO
+        fetch(`${PIDA_CONFIG.API_CHAT}/send-verification-email`, {
           method: 'POST',
           headers: { 
             'Authorization': `Bearer ${token}`,
@@ -245,11 +243,11 @@ function AuthFormContent({ onClose, initialMode }) {
           },
           body: JSON.stringify({ 
             frontend_url: window.location.origin,
-            display_name: fullName  // 👈 LE PASAMOS EL NOMBRE EN TIEMPO REAL
+            display_name: fullName
           })
-        });
+        }).catch(err => console.error("Error enviando email en segundo plano:", err));
         
-        setMode('verify-email');
+        setMode('checkout');
         setIsLoading(false);
         return;
       }
@@ -306,10 +304,6 @@ function AuthFormContent({ onClose, initialMode }) {
       if (!user) throw new Error("Sesión expirada. Por favor, inicia sesión nuevamente.");
       
       await user.reload();
-      if (!user.emailVerified) {
-        setMode('verify-email');
-        throw new Error("Acceso denegado. Tu dirección de correo debe estar verificada.");
-      }
 
       const fullName = user.displayName || `${firstName} ${lastName}`.trim();
       const cardElement = elements.getElement(CardElement);
@@ -521,8 +515,11 @@ function AuthFormContent({ onClose, initialMode }) {
             </div>
 
             <label className="input-label" style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '8px' }}>Datos de la tarjeta</label>
-            <div className="stripe-element-box" style={{ padding: '12px', border: '1px solid #CBD5E1', borderRadius: '8px', marginBottom: '15px' }}>
+            <div className="stripe-element-box" style={{ padding: '12px', border: '1px solid #CBD5E1', borderRadius: '8px', marginBottom: '8px' }}>
               <CardElement options={cardStyle} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '15px', color: '#166534', fontSize: '0.78rem', fontWeight: '500' }}>
+              🔒 Procesamiento seguro y cifrado con tecnología Stripe
             </div>
 
             <div className="promo-group" style={{ display: 'flex', flexDirection: 'row', gap: '8px', marginBottom: '10px', alignItems: 'stretch' }}>
@@ -556,9 +553,21 @@ function AuthFormContent({ onClose, initialMode }) {
             mode === 'login' ? 'Ingresar' : 
             mode === 'register' ? 'Registrar mi cuenta' : 
             mode === 'verify-email' ? 'Ya lo verifiqué, continuar' :
-            mode === 'checkout' ? 'Activar cuenta y probar 5 días' : 'Enviar enlace'
+            mode === 'checkout' ? 'Comenzar 5 días gratis — $0.00 hoy' : 'Enviar enlace'
           )}
         </button>
+
+        {mode === 'verify-email' && (
+          <button type="button" onClick={() => setMode('checkout')} style={{ width: '100%', padding: '10px', marginTop: '10px', fontSize: '0.9rem', cursor: 'pointer', border: '1px solid #CBD5E1', borderRadius: '8px', background: 'transparent', color: '#475569', fontWeight: '600' }}>
+            Omitir por ahora y configurar suscripción →
+          </button>
+        )}
+
+        {mode === 'checkout' && (
+          <div style={{ color: '#64748B', fontSize: '0.78rem', marginTop: '8px', textAlign: 'center' }}>
+            No se realiza ningún cobro hoy. Cancela en cualquier momento con un clic.
+          </div>
+        )}
       </form>
 
       <div className="bottom-link" style={{ textAlign: 'center', marginTop: '20px' }}>
@@ -566,7 +575,15 @@ function AuthFormContent({ onClose, initialMode }) {
           <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('login'); setError(''); setDiscountData(null); setPromoCode(''); setPromoMessage({text:'', type:''}); }}>← Volver al login</span>
         )}
         {mode === 'login' && (
-          <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { setMode('register'); setError(''); }}>← No tengo cuenta, registrarme</span>
+          <span style={{ cursor: 'pointer', color: 'var(--pida-primary)', fontSize: '0.9rem', fontWeight: '500' }} onClick={() => { 
+            if (!sessionStorage.getItem('pida_pending_plan')) {
+              onClose();
+              window.location.href = '/#planes';
+            } else {
+              setMode('register'); 
+              setError(''); 
+            }
+          }}>← No tengo cuenta, registrarme</span>
         )}
       </div>
 
