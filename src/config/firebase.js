@@ -18,13 +18,13 @@ const firebaseConfig = {
 // Inicializar Firebase solo si no se ha iniciado antes
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
-    firebase.analytics();
 }
 
 // Exportar los servicios para usarlos en el resto de la app
 export const auth = firebase.auth();
 export const db = firebase.firestore();
 export const remoteConfig = firebase.remoteConfig();
+export const analytics = firebase.analytics();
 export const googleProvider = new firebase.auth.GoogleAuthProvider();
 
 googleProvider.setCustomParameters({ prompt: 'select_account' });
