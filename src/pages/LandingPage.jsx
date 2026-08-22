@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import fpPromise from '@fingerprintjs/fingerprintjs';
 import { STRIPE_PRICES } from '../config/constants';
 import { db } from '../config/firebase'; 
 
@@ -129,20 +130,36 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval, scrollToSection }) => {
   const [statusText, setStatusText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [limitReached, setLimitReached] = useState(false); 
+  const [anonId, setAnonId] = useState('');
   const messagesEndRef = useRef(null);
 
-  const getAnonId = () => {
-    let anonId = localStorage.getItem('pida_anon_id');
-    if (!anonId) {
-      anonId = 'anon_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
-      localStorage.setItem('pida_anon_id', anonId);
-    }
-    return anonId;
-  };
+  useEffect(() => {
+    const initFingerprint = async () => {
+      const storedId = localStorage.getItem('pida_anon_id');
+      if (storedId) {
+        setAnonId(storedId);
+        return;
+      }
+
+      try {
+        const fp = await fpPromise.load();
+        const result = await fp.get();
+        const finalId = `fp_${result.visitorId}`;
+        setAnonId(finalId);
+        localStorage.setItem('pida_anon_id', finalId);
+      } catch (error) {
+        console.error("Error generating fingerprint, using fallback:", error);
+        const fallbackId = 'anon_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+        setAnonId(fallbackId);
+        localStorage.setItem('pida_anon_id', fallbackId);
+      }
+    };
+    initFingerprint();
+  }, []);
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!query.trim() || status === 'loading' || status === 'streaming') return;
+    if (!anonId || !query.trim() || status === 'loading' || status === 'streaming') return;
 
     setStatus('loading');
     setResponse('');
@@ -183,7 +200,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval, scrollToSection }) => {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'X-Anon-ID': getAnonId() 
+          'X-Anon-ID': anonId 
         },
         body: JSON.stringify({ prompt: query })
       });
@@ -359,7 +376,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval, scrollToSection }) => {
               variant="outlined"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              disabled={status === 'loading' || status === 'streaming'}
+              disabled={!anonId || status === 'loading' || status === 'streaming'}
               sx={{ 
                 bgcolor: '#F8FAFC', 
                 '& .MuiOutlinedInput-root': { 
@@ -373,7 +390,7 @@ const LeadMagnetTeaser = ({ onOpenAuth, interval, scrollToSection }) => {
             <Button 
               type="submit" 
               variant="contained" 
-              disabled={!query.trim() || status === 'loading' || status === 'streaming'}
+              disabled={!anonId || !query.trim() || status === 'loading' || status === 'streaming'}
               sx={{ 
                 borderRadius: '12px', 
                 p: 0, 
