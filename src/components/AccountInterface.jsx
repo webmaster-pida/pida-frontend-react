@@ -224,7 +224,7 @@ export default function AccountInterface({ user, isVip }) {
                   ml: 1
                 }}
               >
-                PIDA33
+                PIDA25
               </Box>
             </Typography>
           </Box>
